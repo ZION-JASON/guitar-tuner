@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { getNoteFromFrequency } from '../utils/frequencyUtils';
 
 export const useTuner = () => {
-  const [data, setData] = useState({ note: '-', cents: 0, frequency: 0 });
+  const [data, setData] = useState({ noteName: '-', cents: 0, frequency: 0 });
   const [isListening, setIsListening] = useState(false);
   
   const audioContext = useRef(null);
@@ -10,24 +10,29 @@ export const useTuner = () => {
   const requestRef = useRef(null);
 
   const startTuner = async () => {
-    audioContext.current = new (window.AudioContext || window.webkitAudioContext)();
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const source = audioContext.current.createMediaStreamSource(stream);
-    
-    analyser.current = audioContext.current.createAnalyser();
-    analyser.current.fftSize = 2048;
-    source.connect(analyser.current);
-    
-    setIsListening(true);
-    update(); // Start the loop
+    try {
+      audioContext.current = new (window.AudioContext || window.webkitAudioContext)();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const source = audioContext.current.createMediaStreamSource(stream);
+      
+      analyser.current = audioContext.current.createAnalyser();
+      analyser.current.fftSize = 2048;
+      source.connect(analyser.current);
+      
+      setIsListening(true);
+      update(); 
+    } catch (err) {
+      console.error("Microphone access denied or AudioContext failed:", err);
+    }
   };
 
   const update = () => {
+    if (!analyser.current) return;
+
     const bufferLength = analyser.current.fftSize;
     const buffer = new Float32Array(bufferLength);
     analyser.current.getFloatTimeDomainData(buffer);
 
-    // Basic Autocorrelation Logic
     const freq = autoCorrelate(buffer, audioContext.current.sampleRate);
 
     if (freq !== -1) {
@@ -41,14 +46,9 @@ export const useTuner = () => {
   return { data, isListening, startTuner };
 };
 
-// Simplified Autocorrelation function
-function autoCorrelate(buffer, sampleRate) {
-  // Logic to find the fundamental frequency from the buffer array
-  // If the signal is too weak, we return -1
-  // (We can refine the specific math here as we go!)
-  return 440; // Placeholder for now
-}
-
+/**
+ * Autocorrelation algorithm to find the fundamental frequency
+ */
 function autoCorrelate(buffer, sampleRate) {
   // 1. Accuracy Check: Is the signal too quiet?
   const SIZE = buffer.length;
@@ -57,7 +57,7 @@ function autoCorrelate(buffer, sampleRate) {
     rms += buffer[i] * buffer[i];
   }
   rms = Math.sqrt(rms / SIZE);
-  if (rms < 0.01) return -1; // Signal too weak
+  if (rms < 0.01) return -1; 
 
   // 2. Trimming: Focus on the "busy" part of the signal
   let r1 = 0, r2 = SIZE - 1, threshold = 0.2;
