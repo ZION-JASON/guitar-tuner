@@ -1,31 +1,26 @@
 import React from 'react';
-import './TunerDisplay.css'; // We'll define the needle movement here
+import './TunerDisplay.css';
 
 const TunerDisplay = ({ note, cents, frequency }) => {
-  // Map -50/50 cents to -90deg/90deg rotation
-  const rotation = (cents * 90) / 50;
-  
-  // Determine if we are "in tune" (within 5 cents of perfect)
+  const rotation = (cents * 180) / 50;
   const inTune = Math.abs(cents) < 5 && note !== '-';
 
   return (
-    <div className="tuner-container">
-      <div className="frequency-readout">{frequency.toFixed(1)} Hz</div>
-      
-      <div className={`note-display ${inTune ? 'success' : ''}`}>
-        {note}
+    <div className={`tuner-container ${inTune ? 'in-tune' : ''}`}>
+      <div className="hud-side left">
+        <span className="hud-val">{frequency > 0 ? frequency.toFixed(1) : '0.0'}</span>
+        <small>HZ</small>
       </div>
 
-      <div className="gauge">
-        <div 
-          className="needle" 
-          style={{ transform: `rotate(${rotation}deg)` }}
-        ></div>
-        <div className="center-dot"></div>
+      <div className="needle-orbit" style={{ transform: `rotate(${rotation}deg)` }}>
+        <div className="laser-needle"></div>
       </div>
-      
-      <div className="cents-display">
-        {cents > 0 ? `+${cents}` : cents} cents
+
+      <div className="note-name">{note}</div>
+
+      <div className="hud-side right">
+        <span className="hud-val">{Math.round(cents)}</span>
+        <small>CENTS</small>
       </div>
     </div>
   );

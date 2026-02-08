@@ -1,29 +1,69 @@
-.gauge {
+.tuner-container {
   position: relative;
-  width: 300px;
-  height: 150px;
-  border: 2px solid #333;
-  border-radius: 150px 150px 0 0; /* Semi-circle */
-  overflow: hidden;
-  background: #f4f4f4;
+  /* Use viewport units so it scales with screen width */
+  width: 80vw; 
+  height: 80vw;
+  /* Set a maximum size so it doesn't get huge on desktop */
+  max-width: 320px;
+  max-height: 320px;
+  
+  background: radial-gradient(circle, rgba(255,255,255,0.02) 0%, transparent 70%);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Ensure it doesn't get squashed */
+  aspect-ratio: 1 / 1; 
 }
 
-.needle {
+/* Adjust the Note Name to scale with the smaller circle */
+.note-name {
+  font-family: 'Orbitron';
+  /* Using clamp helps the font size stay proportional */
+  font-size: clamp(5rem, 25vw, 9rem); 
+  font-weight: 900;
+  color: #fff;
+  transition: 0.2s;
+  z-index: 2;
+}
+
+.in-tune .note-name { color: var(--neon-green); text-shadow: 0 0 50px var(--neon-green); }
+
+.hud-side {
   position: absolute;
-  bottom: 0;
-  left: 50%;
-  width: 2px;
-  height: 140px;
-  background: red;
-  transform-origin: bottom center;
-  /* This makes the needle move smoothly instead of jumping */
-  transition: transform 0.1s ease-out; 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: 'Orbitron';
+  color: #333;
 }
 
-.note-display.success {
-  color: var(--accent-color);
-  text-shadow: 0 0 20px rgba(0, 230, 118, 0.6);
-  transition: all 0.3s ease;
-  font-size: 4rem;
-  font-weight: bold;
+/* Position them relative to the circle edges */
+.hud-side.left {
+  left: -15%; 
 }
+
+.hud-side.right {
+  right: -15%;
+}
+
+/* On very small screens, move labels below/above to prevent clipping */
+@media (max-width: 400px) {
+  .hud-side.left {
+    left: 0;
+    top: -40px;
+    transform: translateY(0);
+  }
+  .hud-side.right {
+    right: 0;
+    bottom: -40px;
+    top: auto;
+    transform: translateY(0);
+  }
+}
+.hud-val { color: #888; font-size: 1.2rem; }
+
+.needle-orbit { position: absolute; width: 110%; height: 110%; transition: transform 0.1s cubic-bezier(0,0,0.2,1); }
+.laser-needle { position: absolute; top: 0; left: 50%; width: 2px; height: 35px; background: #ff0055; box-shadow: 0 0 10px #ff0055; }
+.in-tune .laser-needle { background: var(--neon-green); box-shadow: 0 0 15px var(--neon-green); width: 4px; }

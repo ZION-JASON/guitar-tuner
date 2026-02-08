@@ -1,63 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Rajdhani:wght@500;700&display=swap');
+
 :root {
-  --bg-color: #121212;
-  --text-color: #e0e0e0;
-  --accent-color: #00e676; /* "In-tune" Green */
-  --error-color: #ff5252;  /* Sharp/Flat Red */
+  --neon-cyan: #00f2ff;
+  --neon-green: #00ff88;
+  --bg-dark: #080808;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-dark);
+  color: #fff;
+  font-family: 'Rajdhani', sans-serif;
+  overflow: hidden;
 }
 
 .App {
-  text-align: center;
-  background-color: var(--bg-color);
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  padding: 40px 20px;
+  box-sizing: border-box;
+}
+
+/* Header/Footer positioning */
+.tuner-header { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+.tuner-main {
+  flex: 1;
+  display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Inter', -apple-system, sans-serif;
-  color: var(--text-color);
+  width: 100%;
+  /* This prevents the main area from being too cramped */
+  padding: 20px 0; 
+  overflow: hidden;
 }
+.tuner-footer { display: flex; justify-content: space-around; width: 100%; padding-bottom: 20px; }
 
-.App-header h1 {
-  font-weight: 300;
-  letter-spacing: 2px;
-  margin-bottom: 2rem;
-  text-transform: uppercase;
-}
+/* Status Indicators */
+.status-group { display: flex; align-items: center; gap: 10px; font-size: 0.7rem; color: var(--neon-cyan); letter-spacing: 2px; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #333; }
+.status-dot.active { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
 
-/* Setup Screen */
-.setup-screen {
-  padding: 2rem;
-  border: 1px solid #333;
-  border-radius: 12px;
-  background: #1a1a1a;
-}
+/* Typography */
+.readout-item { text-align: center; font-family: 'Orbitron'; }
+.readout-item small { display: block; color: #444; font-size: 0.6rem; letter-spacing: 2px; margin-bottom: 5px; }
+.readout-item span.highlight { color: var(--neon-green); text-shadow: 0 0 10px var(--neon-green); }
 
-/* The Start Button */
-.start-button {
-  background-color: var(--accent-color);
-  color: #000;
-  border: none;
-  padding: 1rem 2.5rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  border-radius: 30px;
-  cursor: pointer;
-  transition: transform 0.2s, background-color 0.2s;
-  box-shadow: 0 4px 14px rgba(0, 230, 118, 0.3);
-}
-
-.start-button:hover {
-  transform: translateY(-2px);
-  background-color: #00c853;
-}
-
-.start-button:active {
-  transform: translateY(0);
-}
-
-/* Responsiveness */
-@media (max-width: 600px) {
-  .App-header h1 {
-    font-size: 1.5rem;
-  }
-}
+/* Ref Buttons */
+.ref-selector { display: flex; background: rgba(255,255,255,0.05); border-radius: 4px; padding: 2px; }
+.ref-selector button { background: transparent; border: none; color: #555; padding: 5px 10px; font-family: 'Orbitron'; font-size: 0.6rem; cursor: pointer; }
+.ref-selector button.active { color: white; background: rgba(255,255,255,0.1); }
