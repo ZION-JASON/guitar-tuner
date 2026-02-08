@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { getNoteFromFrequency } from '../utils/frequencyUtils';
 
 export const useTuner = () => {
@@ -11,56 +11,63 @@ export const useTuner = () => {
   const requestRef = useRef(null);
   const smoothingBuffer = useRef([]);
 
-  const startTuner = async () => {
-    try {
-      audioContext.current = new (window.AudioContext || window.webkitAudioContext)();
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const source = audioContext.current.createMediaStreamSource(stream);
-      analyser.current = audioContext.current.createAnalyser();
-      analyser.current.fftSize = 2048;
-      source.connect(analyser.current);
-      setIsListening(true);
-      update(); 
-    } catch (err) {
-      console.error("Mic access denied", err);
-    }
-  };
-
-  const update = () => {
+  const update = useCallback(() => {
     if (!analyser.current) return;
+
     const buffer = new Float32Array(analyser.current.fftSize);
     analyser.current.getFloatTimeDomainData(buffer);
 
     const freq = autoCorrelate(buffer, audioContext.current.sampleRate);
 
-    // NOISE FILTER: Only process if freq is between 40Hz and 1500Hz
-    if (freq > 40 && freq < 1500) {
+    // FILTER: Guitar range + Noise Gate
+    if (freq > 40 && freq < 1200) { 
       smoothingBuffer.current.push(freq);
       if (smoothingBuffer.current.length > 5) smoothingBuffer.current.shift();
+      
       const averageFreq = smoothingBuffer.current.reduce((a, b) => a + b) / smoothingBuffer.current.length;
-
       const noteInfo = getNoteFromFrequency(averageFreq, refFrequency);
+      
       setData({ ...noteInfo, frequency: averageFreq });
     } else {
-      // If noise or silence, zero out frequency display but keep system active
-      setData(prev => ({ ...prev, frequency: 0 }));
+      // CLEAR BUFFER: If signal is lost, clear the average so it doesn't "drift"
+      smoothingBuffer.current = [];
+      setData(prev => ({ ...prev, frequency: 0, noteName: '-', cents: 0 }));
     }
 
     requestRef.current = requestAnimationFrame(update);
+  }, [refFrequency]);
+
+  const startTuner = async () => {
+    try {
+      if (audioContext.current) await audioContext.current.close();
+      
+      audioContext.current = new (window.AudioContext || window.webkitAudioContext)();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const source = audioContext.current.createMediaStreamSource(stream);
+      
+      analyser.current = audioContext.current.createAnalyser();
+      analyser.current.fftSize = 2048;
+      source.connect(analyser.current);
+      
+      setIsListening(true);
+      requestRef.current = requestAnimationFrame(update);
+    } catch (err) {
+      console.error("Mic access denied", err);
+      alert("Please allow microphone access to use the tuner.");
+    }
   };
 
   return { data, isListening, startTuner, refFrequency, setRefFrequency };
 };
 
-// ... keep your existing autoCorrelate function below ...
-
+// Autocorrelate function remains as you have it
 function autoCorrelate(buffer, sampleRate) {
   const SIZE = buffer.length;
   let rms = 0;
   for (let i = 0; i < SIZE; i++) rms += buffer[i] * buffer[i];
   rms = Math.sqrt(rms / SIZE);
 
-  // SENSITIVITY FIX: ignore anything quieter than 0.05 (up from 0.01)
+  // Ignore silence
   if (rms < 0.05) return -1; 
 
   let r1 = 0, r2 = SIZE - 1, threshold = 0.2;
