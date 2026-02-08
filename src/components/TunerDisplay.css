@@ -21,7 +21,9 @@
 }
 
 .note-display.success {
-  color: #2ecc71; /* Green when in tune */
+  color: var(--accent-color);
+  text-shadow: 0 0 20px rgba(0, 230, 118, 0.6);
+  transition: all 0.3s ease;
   font-size: 4rem;
   font-weight: bold;
 }

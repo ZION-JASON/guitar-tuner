@@ -1,0 +1,63 @@
+:root {
+  --bg-color: #121212;
+  --text-color: #e0e0e0;
+  --accent-color: #00e676; /* "In-tune" Green */
+  --error-color: #ff5252;  /* Sharp/Flat Red */
+}
+
+.App {
+  text-align: center;
+  background-color: var(--bg-color);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', -apple-system, sans-serif;
+  color: var(--text-color);
+}
+
+.App-header h1 {
+  font-weight: 300;
+  letter-spacing: 2px;
+  margin-bottom: 2rem;
+  text-transform: uppercase;
+}
+
+/* Setup Screen */
+.setup-screen {
+  padding: 2rem;
+  border: 1px solid #333;
+  border-radius: 12px;
+  background: #1a1a1a;
+}
+
+/* The Start Button */
+.start-button {
+  background-color: var(--accent-color);
+  color: #000;
+  border: none;
+  padding: 1rem 2.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: transform 0.2s, background-color 0.2s;
+  box-shadow: 0 4px 14px rgba(0, 230, 118, 0.3);
+}
+
+.start-button:hover {
+  transform: translateY(-2px);
+  background-color: #00c853;
+}
+
+.start-button:active {
+  transform: translateY(0);
+}
+
+/* Responsiveness */
+@media (max-width: 600px) {
+  .App-header h1 {
+    font-size: 1.5rem;
+  }
+}
