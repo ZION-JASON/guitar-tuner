@@ -10,8 +10,15 @@ function App() {
       {!isListening ? (
         <button onClick={startTuner}>Start Tuner</button>
       ) : (
-        <TunerDisplay {...data} />
+        /* Explicitly passing props helps debug casing issues */
+        <TunerDisplay 
+          note={data.noteName} 
+          cents={data.cents} 
+          frequency={data.frequency} 
+        />
       )}
     </div>
   );
 }
+
+export default App; // Ensure this export is at the bottom!
