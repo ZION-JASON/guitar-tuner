@@ -1,96 +1,415 @@
-import { useState, useRef, useCallback } from 'react';
-import { getNoteFromFrequency } from '../utils/frequencyUtils';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { detectPitchYIN } from '../utils/pitchAlgorithm';
+import {
+  clampRefFrequency,
+  DEFAULT_REF_FREQUENCY,
+  matchPresetString,
+  PitchStabilizer,
+} from '../utils/frequencyUtils';
 
-export const useTuner = () => {
-  const [refFrequency, setRefFrequency] = useState(440);
-  const [data, setData] = useState({ noteName: '-', cents: 0, frequency: 0 });
-  const [isListening, setIsListening] = useState(false);
-  
-  const audioContext = useRef(null);
-  const analyser = useRef(null);
-  const requestRef = useRef(null);
-  const smoothingBuffer = useRef([]);
-
-  const update = useCallback(() => {
-    if (!analyser.current) return;
-
-    const buffer = new Float32Array(analyser.current.fftSize);
-    analyser.current.getFloatTimeDomainData(buffer);
-
-    const freq = autoCorrelate(buffer, audioContext.current.sampleRate);
-
-    // FILTER: Guitar range + Noise Gate
-    if (freq > 40 && freq < 1200) { 
-      smoothingBuffer.current.push(freq);
-      if (smoothingBuffer.current.length > 5) smoothingBuffer.current.shift();
-      
-      const averageFreq = smoothingBuffer.current.reduce((a, b) => a + b) / smoothingBuffer.current.length;
-      const noteInfo = getNoteFromFrequency(averageFreq, refFrequency);
-      
-      setData({ ...noteInfo, frequency: averageFreq });
-    } else {
-      // CLEAR BUFFER: If signal is lost, clear the average so it doesn't "drift"
-      smoothingBuffer.current = [];
-      setData(prev => ({ ...prev, frequency: 0, noteName: '-', cents: 0 }));
-    }
-
-    requestRef.current = requestAnimationFrame(update);
-  }, [refFrequency]);
-
-  const startTuner = async () => {
-    try {
-      if (audioContext.current) await audioContext.current.close();
-      
-      audioContext.current = new (window.AudioContext || window.webkitAudioContext)();
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const source = audioContext.current.createMediaStreamSource(stream);
-      
-      analyser.current = audioContext.current.createAnalyser();
-      analyser.current.fftSize = 2048;
-      source.connect(analyser.current);
-      
-      setIsListening(true);
-      requestRef.current = requestAnimationFrame(update);
-    } catch (err) {
-      console.error("Mic access denied", err);
-      alert("Please allow microphone access to use the tuner.");
-    }
-  };
-
-  return { data, isListening, startTuner, refFrequency, setRefFrequency };
+const IDLE_DATA = {
+  noteName: '-',
+  octave: null,
+  fullNote: '--',
+  cents: 0,
+  frequency: 0,
+  targetFrequency: 0,
+  clarity: 0,
+  rms: 0,
+  matchedStringNum: null,
 };
 
-// Autocorrelate function remains as you have it
-function autoCorrelate(buffer, sampleRate) {
-  const SIZE = buffer.length;
-  let rms = 0;
-  for (let i = 0; i < SIZE; i++) rms += buffer[i] * buffer[i];
-  rms = Math.sqrt(rms / SIZE);
-
-  // Ignore silence
-  if (rms < 0.05) return -1; 
-
-  let r1 = 0, r2 = SIZE - 1, threshold = 0.2;
-  for (let i = 0; i < SIZE / 2; i++) if (Math.abs(buffer[i]) < threshold) { r1 = i; break; }
-  for (let i = 1; i < SIZE / 2; i++) if (Math.abs(buffer[SIZE - i]) < threshold) { r2 = SIZE - i; break; }
-  const trimmedBuffer = buffer.slice(r1, r2);
-  const newSize = trimmedBuffer.length;
-
-  const c = new Array(newSize).fill(0);
-  for (let i = 0; i < newSize; i++) {
-    for (let j = 0; j < newSize - i; j++) {
-      c[i] = c[i] + trimmedBuffer[j] * trimmedBuffer[j + i];
-    }
+function mapMicError(err) {
+  const name = err?.name || '';
+  if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+    return {
+      code: 'PERMISSION_DENIED',
+      title: 'Microphone access denied',
+      detail: 'Allow microphone permissions in your browser settings and try again.',
+    };
   }
-
-  let d = 0;
-  while (c[d] > c[d + 1]) d++;
-  let maxval = -1, maxpos = -1;
-  for (let i = d; i < newSize; i++) {
-    if (c[i] > maxval) {
-      maxval = c[i];
-      maxpos = i;
-    }
+  if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+    return {
+      code: 'NO_MICROPHONE',
+      title: 'No microphone detected',
+      detail: 'Connect an audio input or microphone, or use the Reference Tone generator.',
+    };
   }
-  return sampleRate / maxpos;
+  if (name === 'NotReadableError' || name === 'TrackStartError') {
+    return {
+      code: 'HARDWARE_BUSY',
+      title: 'Audio device unavailable',
+      detail: 'Your microphone may be in use by another application.',
+    };
+  }
+  return {
+    code: 'GENERIC',
+    title: 'Unable to initialize audio input',
+    detail: err?.message || 'Check your browser audio permissions and try again.',
+  };
 }
+
+export const useTuner = () => {
+  const [refFrequency, setRefFrequencyState] = useState(DEFAULT_REF_FREQUENCY);
+  const [presetId, setPresetIdState] = useState('standard');
+  const [lockedStringNum, setLockedStringNumState] = useState(null);
+  const [data, setData] = useState(IDLE_DATA);
+  const [isListening, setIsListening] = useState(false);
+  const [micError, setMicError] = useState(null);
+  const [playingToneKey, setPlayingToneKey] = useState(null);
+
+  const refFreqRef = useRef(refFrequency);
+  const presetIdRef = useRef(presetId);
+  const lockedStringRef = useRef(lockedStringNum);
+
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const streamRef = useRef(null);
+  const bufferRef = useRef(null);
+  const rafRef = useRef(null);
+  const startRequestIdRef = useRef(0);
+  const lastPitchTimeRef = useRef(0);
+  const stabilizerRef = useRef(new PitchStabilizer(5));
+
+  // Separate playback refs for reference tone generator
+  const toneCtxRef = useRef(null);
+  const toneOscRef = useRef(null);
+  const toneHarmonicRef = useRef(null);
+  const toneGainRef = useRef(null);
+  const toneFilterRef = useRef(null);
+  const playingMidiRef = useRef(null);
+
+  const setRefFrequency = useCallback((next) => {
+    const clamped = clampRefFrequency(next);
+    refFreqRef.current = clamped;
+    setRefFrequencyState(clamped);
+
+    if (
+      playingMidiRef.current !== null &&
+      toneCtxRef.current &&
+      toneOscRef.current &&
+      toneHarmonicRef.current
+    ) {
+      const nextHz = clamped * Math.pow(2, (playingMidiRef.current - 69) / 12);
+      const now = toneCtxRef.current.currentTime;
+      toneOscRef.current.frequency.setTargetAtTime(nextHz, now, 0.015);
+      toneHarmonicRef.current.frequency.setTargetAtTime(nextHz, now, 0.015);
+      if (toneFilterRef.current) {
+        toneFilterRef.current.frequency.setTargetAtTime(Math.min(2400, nextHz * 4), now, 0.015);
+      }
+    }
+  }, []);
+
+  const setPresetId = useCallback((nextId) => {
+    presetIdRef.current = nextId;
+    lockedStringRef.current = null;
+    setPresetIdState(nextId);
+    setLockedStringNumState(null);
+  }, []);
+
+  const setLockedStringNum = useCallback((stringNum) => {
+    const next = lockedStringRef.current === stringNum ? null : stringNum;
+    lockedStringRef.current = next;
+    setLockedStringNumState(next);
+  }, []);
+
+  const stopMicResources = useCallback(() => {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(() => {});
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
+    bufferRef.current = null;
+    stabilizerRef.current.reset();
+  }, []);
+
+  const stopTuner = useCallback(() => {
+    startRequestIdRef.current += 1;
+    stopMicResources();
+    setIsListening(false);
+    setData(IDLE_DATA);
+  }, [stopMicResources]);
+
+  const stopReferenceTone = useCallback(() => {
+    playingMidiRef.current = null;
+    if (toneGainRef.current && toneCtxRef.current) {
+      try {
+        const now = toneCtxRef.current.currentTime;
+        toneGainRef.current.gain.cancelScheduledValues(now);
+        toneGainRef.current.gain.setTargetAtTime(0, now, 0.02);
+      } catch {
+        // ignore audio node cleanup error
+      }
+    }
+    if (toneOscRef.current) {
+      try {
+        toneOscRef.current.stop(toneCtxRef.current ? toneCtxRef.current.currentTime + 0.08 : 0);
+      } catch {
+        // ignore
+      }
+      toneOscRef.current = null;
+    }
+    if (toneHarmonicRef.current) {
+      try {
+        toneHarmonicRef.current.stop(toneCtxRef.current ? toneCtxRef.current.currentTime + 0.08 : 0);
+      } catch {
+        // ignore
+      }
+      toneHarmonicRef.current = null;
+    }
+    toneFilterRef.current = null;
+    setPlayingToneKey(null);
+  }, []);
+
+  const toggleReferenceTone = useCallback(
+    async (key, frequency, midi = null) => {
+      if (!Number.isFinite(frequency) || frequency <= 0) return;
+
+      if (playingToneKey === key) {
+        stopReferenceTone();
+        return;
+      }
+
+      stopReferenceTone();
+
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+
+        if (!toneCtxRef.current || toneCtxRef.current.state === 'closed') {
+          toneCtxRef.current = new AudioCtx();
+        }
+        const ctx = toneCtxRef.current;
+        if (ctx.state === 'suspended') {
+          await ctx.resume();
+        }
+
+        const now = ctx.currentTime;
+        const masterGain = ctx.createGain();
+        masterGain.gain.setValueAtTime(0.0001, now);
+        masterGain.gain.exponentialRampToValueAtTime(0.18, now + 0.04);
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(Math.min(2400, frequency * 4), now);
+
+        const osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(frequency, now);
+
+        // Subtle fundamental reinforcement for laptop speakers on low strings
+        const oscSub = ctx.createOscillator();
+        oscSub.type = 'sine';
+        oscSub.frequency.setValueAtTime(frequency, now);
+
+        const subGain = ctx.createGain();
+        subGain.gain.setValueAtTime(0.65, now);
+
+        osc.connect(filter);
+        oscSub.connect(subGain);
+        subGain.connect(filter);
+        filter.connect(masterGain);
+        masterGain.connect(ctx.destination);
+
+        osc.start(now);
+        oscSub.start(now);
+
+        toneOscRef.current = osc;
+        toneHarmonicRef.current = oscSub;
+        toneGainRef.current = masterGain;
+        toneFilterRef.current = filter;
+        playingMidiRef.current = midi;
+        setPlayingToneKey(key);
+      } catch {
+        playingMidiRef.current = null;
+        setPlayingToneKey(null);
+      }
+    },
+    [playingToneKey, stopReferenceTone]
+  );
+
+  const startTuner = useCallback(async () => {
+    setMicError(null);
+
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      setMicError({
+        code: 'INSECURE_CONTEXT',
+        title: 'Microphone API unavailable',
+        detail: 'Microphone input requires a secure HTTPS or localhost context.',
+      });
+      return;
+    }
+
+    const requestId = ++startRequestIdRef.current;
+    stopMicResources();
+
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) {
+        throw new Error('Web Audio API is not supported in this browser.');
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false,
+          autoGainControl: false,
+          noiseSuppression: false,
+          channelCount: 1,
+        },
+      });
+
+      // If stopped or superseded while awaiting permission, release immediately
+      if (requestId !== startRequestIdRef.current) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
+
+      const ctx = new AudioCtx();
+      if (ctx.state === 'suspended') {
+        await ctx.resume();
+      }
+
+      if (requestId !== startRequestIdRef.current) {
+        stream.getTracks().forEach((t) => t.stop());
+        ctx.close().catch(() => {});
+        return;
+      }
+
+      const source = ctx.createMediaStreamSource(stream);
+
+      // Clean instrument bandpass: remove sub-bass rumble (<35Hz) and pick scratch (>1400Hz)
+      const highpass = ctx.createBiquadFilter();
+      highpass.type = 'highpass';
+      highpass.frequency.value = 35;
+
+      const lowpass = ctx.createBiquadFilter();
+      lowpass.type = 'lowpass';
+      lowpass.frequency.value = 1400;
+
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 4096;
+      analyser.smoothingTimeConstant = 0;
+
+      source.connect(highpass);
+      highpass.connect(lowpass);
+      lowpass.connect(analyser);
+
+      streamRef.current = stream;
+      audioContextRef.current = ctx;
+      analyserRef.current = analyser;
+      bufferRef.current = new Float32Array(analyser.fftSize);
+      stabilizerRef.current.reset();
+      lastPitchTimeRef.current = performance.now();
+
+      setIsListening(true);
+
+      const tick = (now) => {
+        if (requestId !== startRequestIdRef.current || !analyserRef.current || !audioContextRef.current) {
+          return;
+        }
+
+        const buffer = bufferRef.current;
+        analyserRef.current.getFloatTimeDomainData(buffer);
+
+        const { frequency, clarity, rms } = detectPitchYIN(
+          buffer,
+          audioContextRef.current.sampleRate,
+          { minFreq: 38, maxFreq: 1200, threshold: 0.15, rmsThreshold: 0.006 }
+        );
+
+        if (frequency > 0 && clarity >= 0.72) {
+          const stabilized = stabilizerRef.current.push(frequency, clarity);
+          if (stabilized > 0) {
+            lastPitchTimeRef.current = now;
+            const matched = matchPresetString(
+              stabilized,
+              presetIdRef.current,
+              refFreqRef.current,
+              lockedStringRef.current
+            );
+            setData({
+              noteName: matched.noteName,
+              octave: matched.octave,
+              fullNote: matched.fullNote,
+              cents: matched.cents,
+              frequency: stabilized,
+              targetFrequency: matched.targetFrequency,
+              clarity,
+              rms,
+              matchedStringNum: matched.matchedStringNum,
+            });
+          }
+        } else {
+          // Hold last reading briefly (250ms) across micro-dips, then clear cleanly
+          if (now - lastPitchTimeRef.current > 250) {
+            stabilizerRef.current.reset();
+            const idleMatch = matchPresetString(
+              0,
+              presetIdRef.current,
+              refFreqRef.current,
+              lockedStringRef.current
+            );
+            setData({
+              ...IDLE_DATA,
+              noteName: idleMatch.noteName,
+              octave: idleMatch.octave,
+              fullNote: idleMatch.fullNote,
+              targetFrequency: idleMatch.targetFrequency,
+              matchedStringNum: idleMatch.matchedStringNum,
+              rms,
+            });
+          } else {
+            setData((prev) => ({ ...prev, rms }));
+          }
+        }
+
+        rafRef.current = requestAnimationFrame(tick);
+      };
+
+      rafRef.current = requestAnimationFrame(tick);
+    } catch (err) {
+      if (requestId === startRequestIdRef.current) {
+        stopMicResources();
+        setIsListening(false);
+        setMicError(mapMicError(err));
+      }
+    }
+  }, [stopMicResources]);
+
+  useEffect(() => {
+    return () => {
+      startRequestIdRef.current += 1;
+      stopMicResources();
+      stopReferenceTone();
+      if (toneCtxRef.current && toneCtxRef.current.state !== 'closed') {
+        toneCtxRef.current.close().catch(() => {});
+      }
+    };
+  }, [stopMicResources, stopReferenceTone]);
+
+  return {
+    data,
+    isListening,
+    micError,
+    clearMicError: () => setMicError(null),
+    startTuner,
+    stopTuner,
+    refFrequency,
+    setRefFrequency,
+    presetId,
+    setPresetId,
+    lockedStringNum,
+    setLockedStringNum,
+    playingToneKey,
+    toggleReferenceTone,
+    stopReferenceTone,
+  };
+};

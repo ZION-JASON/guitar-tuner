@@ -1,0 +1,166 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { detectPitchYIN } from './pitchAlgorithm.js';
+import {
+  clampRefFrequency,
+  getNoteFromFrequency,
+  matchPresetString,
+  PitchStabilizer,
+} from './frequencyUtils.js';
+
+function makeSine(freq, sampleRate = 48000, size = 4096, amplitude = 0.5, dc = 0) {
+  const buf = new Float32Array(size);
+  for (let i = 0; i < size; i++) {
+    buf[i] = dc + amplitude * Math.sin((2 * Math.PI * freq * i) / sampleRate);
+  }
+  return buf;
+}
+
+function makeGuitarWaveform(freq, sampleRate = 48000, size = 4096) {
+  // Realistic plucked string: weak fundamental, strong 2nd and 3rd harmonics
+  const buf = new Float32Array(size);
+  for (let i = 0; i < size; i++) {
+    const t = i / sampleRate;
+    const decay = Math.exp(-t * 2.5);
+    buf[i] =
+      decay *
+      (0.25 * Math.sin(2 * Math.PI * freq * t) +
+        0.55 * Math.sin(2 * Math.PI * freq * 2 * t + 0.3) +
+        0.35 * Math.sin(2 * Math.PI * freq * 3 * t + 0.7) +
+        0.15 * Math.sin(2 * Math.PI * freq * 4 * t));
+  }
+  return buf;
+}
+
+function centsError(measured, expected) {
+  return Math.abs(1200 * Math.log2(measured / expected));
+}
+
+test('detectPitchYIN achieves sub-cent accuracy across standard guitar & bass range', () => {
+  const sampleRate = 48000;
+  const targets = [
+    41.2034, // E1 bass
+    73.4162, // D2 drop D
+    82.4069, // E2
+    110.0, // A2
+    146.8324, // D3
+    195.9977, // G3
+    246.9417, // B3
+    329.6276, // E4
+    440.0, // A4
+    880.0, // A5
+  ];
+
+  for (const target of targets) {
+    const buf = makeSine(target, sampleRate, 4096, 0.3, 0.05); // includes DC offset
+    const res = detectPitchYIN(buf, sampleRate);
+    assert.ok(res.frequency > 0, `Expected pitch for ${target}Hz`);
+    const err = centsError(res.frequency, target);
+    assert.ok(
+      err < 0.5,
+      `Expected < 0.5 cents error at ${target}Hz, got ${err.toFixed(3)} cents (${res.frequency.toFixed(3)}Hz)`
+    );
+    assert.ok(res.clarity > 0.95);
+  }
+});
+
+test('detectPitchYIN avoids octave errors on harmonic-dominant guitar strings', () => {
+  const sampleRate = 48000;
+  const lowNotes = [82.4069, 110.0, 146.8324, 195.9977];
+
+  for (const target of lowNotes) {
+    const buf = makeGuitarWaveform(target, sampleRate, 4096);
+    const res = detectPitchYIN(buf, sampleRate);
+    assert.ok(res.frequency > 0, `Expected detection for guitar waveform ${target}Hz`);
+    const err = centsError(res.frequency, target);
+    assert.ok(
+      err < 1.0,
+      `Octave/pitch error at ${target}Hz: detected ${res.frequency.toFixed(2)}Hz (${err.toFixed(2)} cents off)`
+    );
+  }
+});
+
+test('detectPitchYIN accurately resolves sharp and flat offsets', () => {
+  const sampleRate = 44100;
+  const e2 = 82.4069;
+  const flatFreq = e2 * Math.pow(2, -14 / 1200);
+  const sharpFreq = e2 * Math.pow(2, 19 / 1200);
+
+  const flatRes = detectPitchYIN(makeSine(flatFreq, sampleRate, 4096, 0.05), sampleRate);
+  const sharpRes = detectPitchYIN(makeSine(sharpFreq, sampleRate, 4096, 0.05), sampleRate);
+
+  const flatNote = getNoteFromFrequency(flatRes.frequency, 440);
+  const sharpNote = getNoteFromFrequency(sharpRes.frequency, 440);
+
+  assert.equal(flatNote.fullNote, 'E2');
+  assert.ok(Math.abs(flatNote.cents - -14) < 0.5, `Expected -14c, got ${flatNote.cents}`);
+
+  assert.equal(sharpNote.fullNote, 'E2');
+  assert.ok(Math.abs(sharpNote.cents - 19) < 0.5, `Expected +19c, got ${sharpNote.cents}`);
+});
+
+test('detectPitchYIN rejects silence, NaN, and unpitched noise', () => {
+  const silence = new Float32Array(4096);
+  assert.equal(detectPitchYIN(silence, 48000).frequency, -1);
+
+  const bad = new Float32Array(4096);
+  bad[10] = Number.NaN;
+  assert.equal(detectPitchYIN(bad, 48000).frequency, -1);
+
+  // Deterministic pseudo-random noise
+  const noise = new Float32Array(4096);
+  let seed = 12345;
+  for (let i = 0; i < noise.length; i++) {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    noise[i] = (seed / 0xffffffff - 0.5) * 0.4;
+  }
+  assert.equal(detectPitchYIN(noise, 48000).frequency, -1);
+});
+
+test('getNoteFromFrequency handles boundaries, negative MIDI, and custom A4 reference', () => {
+  assert.equal(getNoteFromFrequency(0).noteName, '-');
+  assert.equal(getNoteFromFrequency(-50).noteName, '-');
+  assert.equal(getNoteFromFrequency(Number.NaN).noteName, '-');
+
+  // Very low sub-audio frequency still produces valid note string without undefined
+  const sub = getNoteFromFrequency(6.0, 440);
+  assert.notEqual(sub.noteName, undefined);
+
+  // 432Hz calibration: A4 at 432Hz should yield 0 cents
+  const a432 = getNoteFromFrequency(432, 432);
+  assert.equal(a432.fullNote, 'A4');
+  assert.ok(Math.abs(a432.cents) < 0.001);
+
+  assert.equal(clampRefFrequency(300), 415);
+  assert.equal(clampRefFrequency(500), 466);
+  assert.equal(clampRefFrequency('bad'), 440);
+});
+
+test('matchPresetString snaps to nearest string or locked string accurately', () => {
+  // Drop D low D2 = 73.42Hz
+  const dropD = matchPresetString(73.42, 'drop_d', 440);
+  assert.equal(dropD.matchedStringNum, 6);
+  assert.equal(dropD.fullNote, 'D2');
+  assert.ok(Math.abs(dropD.cents) < 0.5);
+
+  // Locked string 5 (A2 = 110Hz), played way flat at 103Hz
+  const locked = matchPresetString(103, 'standard', 440, 5);
+  assert.equal(locked.matchedStringNum, 5);
+  assert.equal(locked.fullNote, 'A2');
+  assert.ok(locked.cents < -40);
+});
+
+test('PitchStabilizer filters single-frame glitches but follows deliberate note changes', () => {
+  const stabilizer = new PitchStabilizer(5);
+  assert.ok(Math.abs(stabilizer.push(82.41, 0.98) - 82.41) < 0.01);
+  assert.ok(Math.abs(stabilizer.push(82.45, 0.98) - 82.43) < 0.1);
+
+  // Single-frame octave glitch should be ignored
+  const afterGlitch = stabilizer.push(164.82, 0.95);
+  assert.ok(afterGlitch < 85, `Single glitch leaked through: ${afterGlitch}`);
+
+  // Two consecutive frames at A2 (110Hz) should switch smoothly
+  stabilizer.push(110.0, 0.98);
+  const switched = stabilizer.push(110.05, 0.98);
+  assert.ok(Math.abs(switched - 110.0) < 0.2);
+});
