@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    // This can be helpful if you want to test on your phone via local network
-    host: true 
+    host: '0.0.0.0',
+    port: 3000
   }
 })
