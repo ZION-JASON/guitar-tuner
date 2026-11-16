@@ -31,22 +31,22 @@ const StringMatrix = ({
   const hasStrings = preset.strings.length > 0;
 
   return (
-    <aside className="flex flex-col gap-6">
+    <aside className="flex flex-col gap-5 sm:gap-6">
       {/* A4 Reference Calibration Panel */}
-      <div className="bg-white border-2 border-[#111111] brutal-shadow">
-        <div className="px-5 py-3.5 border-b-2 border-[#111111] bg-[#F8F6F2] flex items-center justify-between">
-          <h2 className="font-display font-extrabold text-sm uppercase tracking-wider">
-            Concert Pitch Calibration
+      <div className="glass-panel rounded-2xl overflow-hidden">
+        <div className="px-4 py-3 sm:px-5 sm:py-3.5 border-b border-white/12 bg-white/[0.03] flex items-center justify-between gap-2">
+          <h2 className="font-display font-bold text-sm tracking-wide text-slate-100 whitespace-nowrap">
+            A4 Calibration
           </h2>
           <span
             data-testid="ref-frequency-readout"
-            className="font-mono text-sm font-bold tabular-nums text-[#111111]"
+            className="font-mono text-sm font-semibold tabular-nums text-cyan-300 whitespace-nowrap shrink-0"
           >
             A4 = {refFrequency} Hz
           </span>
         </div>
 
-        <div className="p-5 flex flex-col gap-4">
+        <div className="p-4 sm:p-5 flex flex-col gap-3 sm:gap-4">
           <div className="grid grid-cols-3 gap-2">
             {QUICK_REFS.map((freq) => {
               const active = refFrequency === freq;
@@ -55,10 +55,10 @@ const StringMatrix = ({
                   key={freq}
                   type="button"
                   onClick={() => onChangeRefFrequency(freq)}
-                  className={`py-2.5 px-3 border-2 border-[#111111] font-mono text-xs font-bold tabular-nums transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                  className={`min-h-[44px] py-2.5 px-3 rounded-xl border font-mono text-xs font-semibold tabular-nums active:scale-[0.97] transition-[transform,background-color,border-color,color] duration-200 whitespace-nowrap shrink-0 cursor-pointer ${
                     active
-                      ? 'bg-[#111111] text-white'
-                      : 'bg-[#F2EFE9] text-[#111111] hover:bg-[#E5E0D5]'
+                      ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_4px_16px_rgba(34,211,238,0.25)]'
+                      : 'bg-white/[0.06] text-slate-200 border-white/12 hover:bg-white/[0.12]'
                   }`}
                 >
                   {freq} Hz
@@ -67,25 +67,25 @@ const StringMatrix = ({
             })}
           </div>
 
-          <div className="flex items-center justify-between gap-2 border-2 border-[#111111] bg-[#F8F6F2] p-2">
+          <div className="flex items-center justify-between gap-2 glass-recessed rounded-xl p-2">
             <button
               type="button"
               onClick={() => onChangeRefFrequency(refFrequency - 1)}
               disabled={refFrequency <= MIN_REF_FREQUENCY}
               aria-label="Decrease reference frequency by 1 Hz"
-              className="px-3.5 py-2 border-2 border-[#111111] bg-white font-mono text-sm font-bold hover:bg-[#111111] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              className="min-h-[44px] min-w-[56px] px-3.5 py-2 rounded-lg border border-white/15 bg-white/[0.08] font-mono text-sm font-semibold text-slate-100 hover:bg-white/[0.16] active:scale-[0.96] disabled:opacity-35 disabled:cursor-not-allowed transition-[transform,background-color,opacity] duration-200 cursor-pointer"
             >
               -1 Hz
             </button>
-            <span className="font-mono text-xs uppercase text-[#444444] tabular-nums">
-              Range {MIN_REF_FREQUENCY}–{MAX_REF_FREQUENCY} Hz
+            <span className="font-mono text-xs text-slate-400 tabular-nums">
+              {MIN_REF_FREQUENCY}–{MAX_REF_FREQUENCY} Hz
             </span>
             <button
               type="button"
               onClick={() => onChangeRefFrequency(refFrequency + 1)}
               disabled={refFrequency >= MAX_REF_FREQUENCY}
               aria-label="Increase reference frequency by 1 Hz"
-              className="px-3.5 py-2 border-2 border-[#111111] bg-white font-mono text-sm font-bold hover:bg-[#111111] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              className="min-h-[44px] min-w-[56px] px-3.5 py-2 rounded-lg border border-white/15 bg-white/[0.08] font-mono text-sm font-semibold text-slate-100 hover:bg-white/[0.16] active:scale-[0.96] disabled:opacity-35 disabled:cursor-not-allowed transition-[transform,background-color,opacity] duration-200 cursor-pointer"
             >
               +1 Hz
             </button>
@@ -94,25 +94,23 @@ const StringMatrix = ({
       </div>
 
       {/* String Matrix & Reference Tone Generator */}
-      <div className="bg-white border-2 border-[#111111] brutal-shadow flex-1 flex flex-col">
-        <div className="px-5 py-3.5 border-b-2 border-[#111111] bg-[#F8F6F2] flex items-center justify-between gap-2">
-          <div>
-            <h2 className="font-display font-extrabold text-sm uppercase tracking-wider">
-              {hasStrings ? `${preset.label} Strings` : 'Reference Tones'}
-            </h2>
-          </div>
+      <div className="glass-panel rounded-2xl overflow-hidden flex-1 flex flex-col">
+        <div className="px-4 py-3 sm:px-5 sm:py-3.5 border-b border-white/12 bg-white/[0.03] flex items-center justify-between gap-2">
+          <h2 className="font-display font-bold text-sm tracking-wide text-slate-100">
+            {hasStrings ? `${preset.label} Strings` : 'Reference Tones'}
+          </h2>
           {playingToneKey && (
             <button
               type="button"
               onClick={onStopTone}
-              className="px-2.5 py-1 border-2 border-[#111111] bg-[#FF3B00] text-white font-mono text-xs font-bold uppercase whitespace-nowrap shrink-0 cursor-pointer"
+              className="min-h-[36px] px-3 py-1 rounded-lg border border-rose-300/40 bg-rose-500/25 text-rose-100 font-mono text-xs font-semibold hover:bg-rose-500/35 active:scale-[0.97] transition-[transform,background-color] duration-200 whitespace-nowrap shrink-0 cursor-pointer"
             >
               Mute Tone
             </button>
           )}
         </div>
 
-        <div className="divide-y-2 divide-[#111111]">
+        <div className="divide-y divide-white/10">
           {hasStrings ? (
             preset.strings.map((s) => {
               const targetHz = midiToFrequency(s.midi, refFrequency);
@@ -124,40 +122,48 @@ const StringMatrix = ({
               return (
                 <div
                   key={s.stringNum}
-                  className={`flex items-center justify-between gap-3 px-4 py-3 transition-colors ${
+                  className={`flex items-center justify-between gap-3 px-4 py-2.5 min-h-[58px] transition-colors duration-200 ${
                     isLocked
-                      ? 'bg-[#FFCC00]'
+                      ? 'bg-amber-400/15'
                       : isMatched
-                        ? 'bg-[#D6F5E3]'
-                        : 'bg-white'
+                        ? 'bg-emerald-400/12'
+                        : 'hover:bg-white/[0.04]'
                   }`}
                 >
                   <button
                     type="button"
                     onClick={() => onToggleLockString(s.stringNum)}
-                    className="flex-1 flex items-center justify-between gap-3 text-left py-1 cursor-pointer"
+                    className="flex-1 min-h-[44px] flex items-center justify-between gap-3 text-left py-1 cursor-pointer"
                     aria-pressed={isLocked}
                     aria-label={`Lock string ${s.stringNum} ${s.noteName}${s.octave}`}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="w-7 h-7 flex items-center justify-center border-2 border-[#111111] bg-[#F2EFE9] font-mono text-xs font-bold tabular-nums">
+                      <span
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center border font-mono text-xs font-semibold tabular-nums transition-colors duration-200 ${
+                          isLocked
+                            ? 'border-amber-300/50 bg-amber-400/20 text-amber-200'
+                            : isMatched
+                              ? 'border-emerald-300/50 bg-emerald-400/20 text-emerald-200'
+                              : 'border-white/15 bg-white/[0.07] text-slate-200'
+                        }`}
+                      >
                         {s.stringNum}
                       </span>
-                      <span className="font-display font-black text-lg text-[#111111]">
+                      <span className="font-display font-bold text-lg text-slate-50">
                         {s.noteName}
-                        <span className="font-mono text-xs font-semibold text-[#444444]">
+                        <span className="font-mono text-xs font-medium text-slate-400 ml-0.5">
                           {s.octave}
                         </span>
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-semibold tabular-nums text-[#333333]">
+                      <span className="font-mono text-xs font-medium tabular-nums text-slate-300">
                         {targetHz.toFixed(2)} Hz
                       </span>
                       {isLocked && (
-                        <span className="font-mono text-[10px] font-bold uppercase px-1.5 py-0.5 bg-[#111111] text-white">
-                          LOCKED
+                        <span className="font-mono text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-amber-300 text-slate-950">
+                          Locked
                         </span>
                       )}
                     </div>
@@ -172,10 +178,10 @@ const StringMatrix = ({
                         ? `Stop reference tone for ${s.noteName}${s.octave}`
                         : `Play reference tone for ${s.noteName}${s.octave}`
                     }
-                    className={`px-3 py-1.5 border-2 border-[#111111] font-mono text-xs font-bold uppercase whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                    className={`min-h-[44px] min-w-[68px] px-3 py-2 rounded-xl border font-mono text-xs font-semibold active:scale-[0.96] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color,box-shadow] duration-200 cursor-pointer ${
                       isPlaying
-                        ? 'bg-[#FF3B00] text-white'
-                        : 'bg-[#F2EFE9] text-[#111111] hover:bg-[#111111] hover:text-white'
+                        ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.35)]'
+                        : 'bg-white/[0.07] text-slate-200 border-white/15 hover:bg-white/[0.15]'
                     }`}
                   >
                     {isPlaying ? 'Stop' : 'Tone'}
@@ -191,13 +197,13 @@ const StringMatrix = ({
               return (
                 <div
                   key={item.key}
-                  className="flex items-center justify-between gap-3 px-4 py-3 bg-white"
+                  className="flex items-center justify-between gap-3 px-4 py-2.5 min-h-[58px] hover:bg-white/[0.04] transition-colors duration-200"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="font-display font-black text-lg text-[#111111]">
+                    <span className="font-display font-bold text-lg text-slate-50">
                       {item.label}
                     </span>
-                    <span className="font-mono text-xs font-semibold tabular-nums text-[#444444]">
+                    <span className="font-mono text-xs font-medium tabular-nums text-slate-300">
                       {targetHz.toFixed(2)} Hz
                     </span>
                   </div>
@@ -205,10 +211,10 @@ const StringMatrix = ({
                     type="button"
                     onClick={() => onToggleTone(toneKey, targetHz, item.midi)}
                     aria-pressed={isPlaying}
-                    className={`px-3 py-1.5 border-2 border-[#111111] font-mono text-xs font-bold uppercase whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                    className={`min-h-[44px] min-w-[68px] px-3 py-2 rounded-xl border font-mono text-xs font-semibold active:scale-[0.96] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color,box-shadow] duration-200 cursor-pointer ${
                       isPlaying
-                        ? 'bg-[#FF3B00] text-white'
-                        : 'bg-[#F2EFE9] text-[#111111] hover:bg-[#111111] hover:text-white'
+                        ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.35)]'
+                        : 'bg-white/[0.07] text-slate-200 border-white/15 hover:bg-white/[0.15]'
                     }`}
                   >
                     {isPlaying ? 'Stop' : 'Tone'}
@@ -219,9 +225,9 @@ const StringMatrix = ({
           )}
         </div>
 
-        <div className="p-4 border-t-2 border-[#111111] bg-[#F8F6F2] font-mono text-xs text-[#444444] leading-relaxed">
+        <div className="p-4 border-t border-white/12 bg-white/[0.02] font-sans text-xs text-slate-400 leading-relaxed">
           {hasStrings
-            ? 'Click any string row to lock target tracking, or press Tone to hear its exact reference pitch.'
+            ? 'Tap any string row to lock target tracking, or tap Tone to hear its calibrated reference pitch.'
             : 'Chromatic mode tracks all 12 semitones across 38 Hz–1200 Hz automatically.'}
         </div>
       </div>
