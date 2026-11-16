@@ -164,3 +164,38 @@ test('PitchStabilizer filters single-frame glitches but follows deliberate note 
   const switched = stabilizer.push(110.05, 0.98);
   assert.ok(Math.abs(switched - 110.0) < 0.2);
 });
+
+test('detectPitchYIN and matchPresetString handle sub-bass (B0/E1) and re-entrant Ukulele tuning', () => {
+  const sampleRate = 48000;
+  // Sub-bass B0 (30.8677 Hz) and D1 (36.7081 Hz) require 8192 buffer and minFreq <= 27
+  for (const target of [30.8677, 36.7081, 41.2034]) {
+    const res = detectPitchYIN(makeSine(target, sampleRate, 8192, 0.35), sampleRate, {
+      minFreq: 27,
+      maxFreq: 600,
+    });
+    assert.ok(res.frequency > 0, `Expected bass detection at ${target}Hz`);
+    const err = centsError(res.frequency, target);
+    assert.ok(err < 0.6, `Bass error ${err.toFixed(2)} cents at ${target}Hz`);
+  }
+
+  const bassB0 = matchPresetString(30.87, 'bass_5_string', 440);
+  assert.equal(bassB0.matchedStringNum, 5);
+  assert.equal(bassB0.fullNote, 'B0');
+
+  const bassE1 = matchPresetString(41.2, 'bass_standard', 440);
+  assert.equal(bassE1.matchedStringNum, 4);
+  assert.equal(bassE1.fullNote, 'E1');
+
+  // Re-entrant High-G Ukulele: 4G4=392Hz, 3C4=261.63Hz, 2E4=329.63Hz, 1A4=440Hz
+  const ukeG4 = matchPresetString(392.0, 'uke_standard', 440);
+  assert.equal(ukeG4.matchedStringNum, 4);
+  assert.equal(ukeG4.fullNote, 'G4');
+
+  const ukeC4 = matchPresetString(261.63, 'uke_standard', 440);
+  assert.equal(ukeC4.matchedStringNum, 3);
+  assert.equal(ukeC4.fullNote, 'C4');
+
+  const ukeA4 = matchPresetString(440.0, 'uke_standard', 440);
+  assert.equal(ukeA4.matchedStringNum, 1);
+  assert.equal(ukeA4.fullNote, 'A4');
+});

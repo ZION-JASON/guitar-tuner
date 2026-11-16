@@ -1,10 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTuner } from './hooks/useTuner';
-import { matchPresetString, TUNING_PRESETS } from './utils/frequencyUtils';
+import {
+  getInstrumentMeta,
+  getPresetsForInstrument,
+  INSTRUMENTS,
+  matchPresetString,
+} from './utils/frequencyUtils';
+import { learnAudio } from './utils/audioSynth';
+import {
+  buildNextNavSnapshot,
+  createInitialNavSnapshot,
+  normalizeNavSnapshot,
+} from './utils/navigationHistory';
 import TunerDisplay from './components/TunerDisplay';
 import StringMatrix from './components/StringMatrix';
+import LearnSection from './components/LearnSection';
 
 function App() {
+  const [navState, setNavState] = useState(() => createInitialNavSnapshot());
+  const navRef = useRef(navState);
+  navRef.current = navState;
+  const activeInstrument = navState.instrument || 'guitar';
+
   const {
     data,
     isListening,
@@ -21,22 +38,86 @@ function App() {
     playingToneKey,
     toggleReferenceTone,
     stopReferenceTone,
-  } = useTuner();
+  } = useTuner(activeInstrument);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    window.history.replaceState(navRef.current, '');
+
+    const handlePopState = (event) => {
+      learnAudio.stopAll();
+      stopReferenceTone();
+      const restored = normalizeNavSnapshot(event.state);
+      navRef.current = restored;
+      setNavState(restored);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [stopReferenceTone]);
+
+  const navigate = useCallback(
+    (patch, options = {}) => {
+      const nextSnap = buildNextNavSnapshot(navRef.current, patch, options);
+      if (nextSnap.view === 'tuner') {
+        learnAudio.stopAll();
+      } else {
+        stopReferenceTone();
+      }
+      navRef.current = nextSnap;
+      setNavState(nextSnap);
+
+      if (typeof window !== 'undefined') {
+        if (options.replace) {
+          window.history.replaceState(nextSnap, '');
+        } else {
+          window.history.pushState(nextSnap, '');
+        }
+      }
+    },
+    [stopReferenceTone]
+  );
+
+  const goBack = useCallback(() => {
+    learnAudio.stopAll();
+    stopReferenceTone();
+    if (typeof window !== 'undefined' && navRef.current.stepIndex > 0) {
+      window.history.back();
+    }
+  }, [stopReferenceTone]);
+
+  const activeView = navState.view;
+  const activeInstrumentMeta = getInstrumentMeta(activeInstrument);
+  const visiblePresets = getPresetsForInstrument(activeInstrument);
 
   const activePreset =
-    TUNING_PRESETS.find((p) => p.id === presetId) || TUNING_PRESETS[0];
+    visiblePresets.find((p) => p.id === presetId) ||
+    visiblePresets.find((p) => p.id === activeInstrumentMeta.defaultPresetId) ||
+    visiblePresets[0];
 
   const displayData =
     data.frequency > 0
       ? data
       : {
           ...data,
-          ...matchPresetString(0, presetId, refFrequency, lockedStringNum),
+          ...matchPresetString(0, activePreset.id, refFrequency, lockedStringNum),
         };
+
+  const switchView = (nextView) => {
+    if (nextView === activeView) return;
+    navigate({ view: nextView });
+  };
+
+  const selectInstrument = (nextInstrument) => {
+    if (nextInstrument === activeInstrument) return;
+    navigate({ instrument: nextInstrument });
+  };
 
   return (
     <div className="relative min-h-dvh bg-[#090e1a] text-slate-50 flex flex-col overflow-x-hidden">
-      {/* Ambient Animated Acoustic Mesh Orbs (for authentic frosted glass refraction) */}
+      {/* Ambient Animated Acoustic Mesh Orbs */}
       <div
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 overflow-hidden z-0"
@@ -46,39 +127,46 @@ function App() {
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[320px] h-[320px] rounded-full bg-teal-400/10 blur-[100px]" />
       </div>
 
-      {/* Compact Frosted Header */}
+      {/* 3-Zone Frosted Header */}
       <header className="relative z-20 glass-bar border-b border-white/12">
-        <div className="max-w-[1280px] mx-auto px-3.5 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between gap-4 sm:gap-8">
-          <a
-            href="#main-tuner"
-            className="font-display font-bold text-base sm:text-xl tracking-tight text-white whitespace-nowrap shrink-0"
+        <div className="max-w-[1280px] mx-auto px-3.5 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between gap-3 sm:gap-8">
+          <button
+            type="button"
+            onClick={() => switchView('tuner')}
+            className="font-display font-bold text-base sm:text-xl tracking-tight text-white whitespace-nowrap shrink-0 cursor-pointer text-left"
           >
             Chroma Glass
-          </a>
+          </button>
 
-          {/* Desktop Preset Bar */}
+          {/* Top-Level Navigation: Tuner | Learn */}
           <nav
-            aria-label="Tuning Presets"
-            className="hidden lg:flex items-center gap-1.5"
+            aria-label="Primary Navigation"
+            className="flex items-center gap-1.5 glass-recessed rounded-xl p-1"
           >
-            {TUNING_PRESETS.map((preset) => {
-              const active = preset.id === presetId;
-              return (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() => setPresetId(preset.id)}
-                  aria-pressed={active}
-                  className={`px-3 py-1.5 rounded-lg border font-mono text-xs font-semibold active:scale-[0.97] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color] duration-200 cursor-pointer ${
-                    active
-                      ? 'bg-white/18 text-white border-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]'
-                      : 'bg-white/[0.04] text-slate-300 border-white/10 hover:bg-white/[0.1] hover:text-white'
-                  }`}
-                >
-                  {preset.label}
-                </button>
-              );
-            })}
+            <button
+              type="button"
+              onClick={() => switchView('tuner')}
+              aria-pressed={activeView === 'tuner'}
+              className={`min-h-[38px] px-3.5 sm:px-4 py-1.5 rounded-lg font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
+                activeView === 'tuner'
+                  ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_12px_rgba(34,211,238,0.28)]'
+                  : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
+              }`}
+            >
+              Tuner
+            </button>
+            <button
+              type="button"
+              onClick={() => switchView('learn')}
+              aria-pressed={activeView === 'learn'}
+              className={`min-h-[38px] px-3.5 sm:px-4 py-1.5 rounded-lg font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
+                activeView === 'learn'
+                  ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_12px_rgba(34,211,238,0.28)]'
+                  : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
+              }`}
+            >
+              Learn
+            </button>
           </nav>
 
           <div className="shrink-0">
@@ -96,36 +184,74 @@ function App() {
           </div>
         </div>
 
-        {/* Mobile/Tablet Horizontal Touch Preset Bar */}
-        <nav
-          aria-label="Mobile Tuning Presets"
-          className="lg:hidden border-t border-white/10 bg-white/[0.03] px-3.5 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar"
-        >
-          {TUNING_PRESETS.map((preset) => {
-            const active = preset.id === presetId;
-            return (
-              <button
-                key={preset.id}
-                type="button"
-                onClick={() => setPresetId(preset.id)}
-                aria-pressed={active}
-                className={`min-h-[44px] px-3.5 py-2 rounded-xl border font-mono text-xs font-semibold active:scale-[0.97] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color] duration-200 cursor-pointer ${
-                  active
-                    ? 'bg-white/20 text-white border-white/30'
-                    : 'bg-white/[0.05] text-slate-300 border-white/10'
-                }`}
+        {/* Instrument & Tuning Preset Ribbon (shown in Tuner view) */}
+        {activeView === 'tuner' && (
+          <div className="border-t border-white/10 bg-white/[0.03] px-3.5 sm:px-6 py-2">
+            <div className="max-w-[1280px] mx-auto flex flex-col sm:flex-row sm:items-center gap-2">
+              <div
+                role="group"
+                aria-label="Instrument Selector"
+                className="flex items-center gap-1 glass-recessed rounded-xl p-1 shrink-0 self-start sm:self-auto"
               >
-                {preset.label}
-              </button>
-            );
-          })}
-        </nav>
+                {INSTRUMENTS.map((inst) => {
+                  const active = inst.id === activeInstrument;
+                  return (
+                    <button
+                      key={inst.id}
+                      type="button"
+                      onClick={() => selectInstrument(inst.id)}
+                      aria-pressed={active}
+                      className={`min-h-[36px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
+                        active
+                          ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_10px_rgba(34,211,238,0.28)]'
+                          : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
+                      }`}
+                    >
+                      {inst.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div
+                aria-hidden="true"
+                className="hidden sm:block h-5 w-px bg-white/15 shrink-0"
+              />
+
+              <nav
+                aria-label="Tuning Presets"
+                className="flex items-center gap-2 overflow-x-auto no-scrollbar min-w-0 flex-1"
+              >
+                {visiblePresets.map((preset) => {
+                  const active = preset.id === activePreset.id;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => setPresetId(preset.id)}
+                      aria-pressed={active}
+                      className={`min-h-[42px] sm:min-h-[36px] px-3.5 py-1.5 rounded-xl border font-mono text-xs font-semibold active:scale-[0.97] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer ${
+                        active
+                          ? 'bg-white/20 text-white border-white/30'
+                          : 'bg-white/[0.05] text-slate-300 border-white/10 hover:bg-white/[0.1]'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Main Workspace */}
       <main
-        id="main-tuner"
-        className="relative z-10 flex-1 w-full max-w-[1280px] mx-auto px-3.5 sm:px-6 pt-4 pb-24 lg:py-8 flex flex-col gap-4 sm:gap-6"
+        id="main-workspace"
+        className={`relative z-10 flex-1 w-full max-w-[1280px] mx-auto px-3.5 sm:px-6 pt-4 lg:py-8 flex flex-col gap-4 sm:gap-6 ${
+          activeView === 'tuner' ? 'pb-24' : 'pb-10'
+        }`}
       >
         {/* Accessible Microphone Error Banner */}
         {micError && (
@@ -160,61 +286,79 @@ function App() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
-          <div className="lg:col-span-8">
-            <TunerDisplay
-              data={displayData}
-              isListening={isListening}
-              onStartTuner={startTuner}
-              onStopTuner={stopTuner}
-              presetLabel={`${activePreset.label}${
-                activePreset.shortLabel ? ` · ${activePreset.shortLabel}` : ''
-              }`}
-              lockedStringNum={lockedStringNum}
-              onClearLock={() => setLockedStringNum(null)}
-            />
-          </div>
+        {activeView === 'tuner' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
+            <div className="lg:col-span-8">
+              <TunerDisplay
+                data={displayData}
+                isListening={isListening}
+                onStartTuner={startTuner}
+                onStopTuner={stopTuner}
+                presetLabel={`${activeInstrumentMeta.label.toUpperCase()} · ${activePreset.label}${
+                  activePreset.shortLabel ? ` · ${activePreset.shortLabel}` : ''
+                }`}
+                lockedStringNum={lockedStringNum}
+                onClearLock={() => setLockedStringNum(null)}
+              />
+            </div>
 
-          <div className="lg:col-span-4">
-            <StringMatrix
-              preset={activePreset}
-              refFrequency={refFrequency}
-              onChangeRefFrequency={setRefFrequency}
-              matchedStringNum={displayData.matchedStringNum}
-              lockedStringNum={lockedStringNum}
-              onToggleLockString={setLockedStringNum}
-              playingToneKey={playingToneKey}
-              onToggleTone={toggleReferenceTone}
-              onStopTone={stopReferenceTone}
-            />
+            <div className="lg:col-span-4">
+              <StringMatrix
+                instrument={activeInstrument}
+                preset={activePreset}
+                refFrequency={refFrequency}
+                onChangeRefFrequency={setRefFrequency}
+                matchedStringNum={displayData.matchedStringNum}
+                lockedStringNum={lockedStringNum}
+                onToggleLockString={setLockedStringNum}
+                playingToneKey={playingToneKey}
+                onToggleTone={toggleReferenceTone}
+                onStopTone={stopReferenceTone}
+              />
+            </div>
           </div>
-        </div>
+        ) : (
+          <LearnSection
+            instrument={activeInstrument}
+            onSelectInstrument={selectInstrument}
+            refFrequency={refFrequency}
+            learnState={navState.learn}
+            onUpdateLearn={(learnPatch, options) =>
+              navigate({ learn: learnPatch }, options)
+            }
+            canGoBack={navState.stepIndex > 0}
+            prevLabel={navState.prevLabel}
+            onGoBack={goBack}
+          />
+        )}
       </main>
 
-      {/* Mobile Sticky Bottom Frosted Thumb-Zone Control Bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 glass-bar border-t border-white/15 px-3.5 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] flex items-center gap-2.5">
-        <button
-          type="button"
-          onClick={isListening ? stopTuner : startTuner}
-          className={`flex-1 min-h-[48px] px-4 py-2.5 rounded-xl border font-display font-bold text-sm tracking-wide whitespace-nowrap cursor-pointer active:scale-[0.98] transition-[transform,background-color,border-color,box-shadow] duration-200 ${
-            isListening
-              ? 'bg-rose-500/25 text-rose-100 border-rose-300/40'
-              : 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_6px_20px_rgba(34,211,238,0.28)]'
-          }`}
-        >
-          {isListening ? 'Stop Microphone' : 'Activate Microphone'}
-        </button>
-
-        {playingToneKey && (
+      {/* Mobile Sticky Bottom Frosted Thumb-Zone Control Bar (Tuner View) */}
+      {activeView === 'tuner' && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 glass-bar border-t border-white/15 px-3.5 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] flex items-center gap-2.5">
           <button
             type="button"
-            onClick={stopReferenceTone}
-            className="min-h-[48px] px-4 py-2.5 rounded-xl border border-amber-300/45 bg-amber-400/20 text-amber-100 font-mono text-xs font-semibold active:scale-[0.97] whitespace-nowrap shrink-0 cursor-pointer transition-[transform,background-color] duration-200"
+            onClick={isListening ? stopTuner : startTuner}
+            className={`flex-1 min-h-[48px] px-4 py-2.5 rounded-xl border font-display font-bold text-sm tracking-wide whitespace-nowrap cursor-pointer active:scale-[0.98] transition-[transform,background-color,border-color,box-shadow] duration-200 ${
+              isListening
+                ? 'bg-rose-500/25 text-rose-100 border-rose-300/40'
+                : 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_6px_20px_rgba(34,211,238,0.28)]'
+            }`}
           >
-            Mute Tone
+            {isListening ? 'Stop Microphone' : 'Activate Microphone'}
           </button>
-        )}
-      </div>
+
+          {playingToneKey && (
+            <button
+              type="button"
+              onClick={stopReferenceTone}
+              className="min-h-[48px] px-4 py-2.5 rounded-xl border border-amber-300/45 bg-amber-400/20 text-amber-100 font-mono text-xs font-semibold active:scale-[0.97] whitespace-nowrap shrink-0 cursor-pointer transition-[transform,background-color] duration-200"
+            >
+              Mute Tone
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -3,8 +3,11 @@ import { detectPitchYIN } from '../utils/pitchAlgorithm';
 import {
   clampRefFrequency,
   DEFAULT_REF_FREQUENCY,
+  getDefaultPresetIdForInstrument,
+  getInstrumentMeta,
   matchPresetString,
   PitchStabilizer,
+  TUNING_PRESETS,
 } from '../utils/frequencyUtils';
 
 const IDLE_DATA = {
@@ -49,15 +52,19 @@ function mapMicError(err) {
   };
 }
 
-export const useTuner = () => {
+export const useTuner = (instrument = 'guitar') => {
   const [refFrequency, setRefFrequencyState] = useState(DEFAULT_REF_FREQUENCY);
-  const [presetId, setPresetIdState] = useState('standard');
+  const [presetId, setPresetIdState] = useState(() =>
+    getDefaultPresetIdForInstrument(instrument)
+  );
   const [lockedStringNum, setLockedStringNumState] = useState(null);
   const [data, setData] = useState(IDLE_DATA);
   const [isListening, setIsListening] = useState(false);
   const [micError, setMicError] = useState(null);
   const [playingToneKey, setPlayingToneKey] = useState(null);
 
+  const instrumentRef = useRef(instrument);
+  instrumentRef.current = instrument;
   const refFreqRef = useRef(refFrequency);
   const presetIdRef = useRef(presetId);
   const lockedStringRef = useRef(lockedStringNum);
@@ -285,17 +292,17 @@ export const useTuner = () => {
 
       const source = ctx.createMediaStreamSource(stream);
 
-      // Clean instrument bandpass: remove sub-bass rumble (<35Hz) and pick scratch (>1400Hz)
+      // Clean instrument bandpass: preserve 5-string Bass B0 (30.87Hz) while cutting sub-24Hz rumble and >1400Hz pick scratch
       const highpass = ctx.createBiquadFilter();
       highpass.type = 'highpass';
-      highpass.frequency.value = 35;
+      highpass.frequency.value = 24;
 
       const lowpass = ctx.createBiquadFilter();
       lowpass.type = 'lowpass';
       lowpass.frequency.value = 1400;
 
       const analyser = ctx.createAnalyser();
-      analyser.fftSize = 4096;
+      analyser.fftSize = 8192;
       analyser.smoothingTimeConstant = 0;
 
       source.connect(highpass);
@@ -318,11 +325,17 @@ export const useTuner = () => {
 
         const buffer = bufferRef.current;
         analyserRef.current.getFloatTimeDomainData(buffer);
+        const instMeta = getInstrumentMeta(instrumentRef.current);
 
         const { frequency, clarity, rms } = detectPitchYIN(
           buffer,
           audioContextRef.current.sampleRate,
-          { minFreq: 38, maxFreq: 1200, threshold: 0.15, rmsThreshold: 0.006 }
+          {
+            minFreq: instMeta.minFreq,
+            maxFreq: instMeta.maxFreq,
+            threshold: 0.15,
+            rmsThreshold: 0.006,
+          }
         );
 
         if (frequency > 0 && clarity >= 0.72) {
@@ -383,6 +396,22 @@ export const useTuner = () => {
       }
     }
   }, [stopMicResources]);
+
+  useEffect(() => {
+    const currentPreset = TUNING_PRESETS.find((p) => p.id === presetIdRef.current);
+    if (
+      currentPreset &&
+      currentPreset.instrument !== 'all' &&
+      currentPreset.instrument !== instrument
+    ) {
+      const nextPresetId = getDefaultPresetIdForInstrument(instrument);
+      presetIdRef.current = nextPresetId;
+      lockedStringRef.current = null;
+      setPresetIdState(nextPresetId);
+      setLockedStringNumState(null);
+      stopReferenceTone();
+    }
+  }, [instrument, stopReferenceTone]);
 
   useEffect(() => {
     return () => {

@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  getInstrumentMeta,
   MAX_REF_FREQUENCY,
   MIN_REF_FREQUENCY,
   midiToFrequency,
@@ -7,17 +8,35 @@ import {
 
 const QUICK_REFS = [432, 440, 442];
 
-const CHROMATIC_GUIDE = [
-  { key: 'E2', label: 'E2', midi: 40 },
-  { key: 'A2', label: 'A2', midi: 45 },
-  { key: 'D3', label: 'D3', midi: 50 },
-  { key: 'G3', label: 'G3', midi: 55 },
-  { key: 'B3', label: 'B3', midi: 59 },
-  { key: 'E4', label: 'E4', midi: 64 },
-  { key: 'A4', label: 'A4', midi: 69 },
-];
+const CHROMATIC_GUIDES = {
+  guitar: [
+    { key: 'E2', label: 'E2', midi: 40 },
+    { key: 'A2', label: 'A2', midi: 45 },
+    { key: 'D3', label: 'D3', midi: 50 },
+    { key: 'G3', label: 'G3', midi: 55 },
+    { key: 'B3', label: 'B3', midi: 59 },
+    { key: 'E4', label: 'E4', midi: 64 },
+    { key: 'A4', label: 'A4', midi: 69 },
+  ],
+  bass: [
+    { key: 'B0', label: 'B0', midi: 23 },
+    { key: 'E1', label: 'E1', midi: 28 },
+    { key: 'A1', label: 'A1', midi: 33 },
+    { key: 'D2', label: 'D2', midi: 38 },
+    { key: 'G2', label: 'G2', midi: 43 },
+    { key: 'C3', label: 'C3', midi: 48 },
+  ],
+  ukulele: [
+    { key: 'G3', label: 'G3', midi: 55 },
+    { key: 'C4', label: 'C4', midi: 60 },
+    { key: 'E4', label: 'E4', midi: 64 },
+    { key: 'G4', label: 'G4', midi: 67 },
+    { key: 'A4', label: 'A4', midi: 69 },
+  ],
+};
 
 const StringMatrix = ({
+  instrument = 'guitar',
   preset,
   refFrequency,
   onChangeRefFrequency,
@@ -29,6 +48,8 @@ const StringMatrix = ({
   onStopTone,
 }) => {
   const hasStrings = preset.strings.length > 0;
+  const instMeta = getInstrumentMeta(instrument);
+  const chromaticList = CHROMATIC_GUIDES[instMeta.id] || CHROMATIC_GUIDES.guitar;
 
   return (
     <aside className="flex flex-col gap-5 sm:gap-6">
@@ -190,9 +211,9 @@ const StringMatrix = ({
               );
             })
           ) : (
-            CHROMATIC_GUIDE.map((item) => {
+            chromaticList.map((item) => {
               const targetHz = midiToFrequency(item.midi, refFrequency);
-              const toneKey = `chromatic-${item.key}`;
+              const toneKey = `chromatic-${instMeta.id}-${item.key}`;
               const isPlaying = playingToneKey === toneKey;
               return (
                 <div
@@ -228,7 +249,7 @@ const StringMatrix = ({
         <div className="p-4 border-t border-white/12 bg-white/[0.02] font-sans text-xs text-slate-400 leading-relaxed">
           {hasStrings
             ? 'Tap any string row to lock target tracking, or tap Tone to hear its calibrated reference pitch.'
-            : 'Chromatic mode tracks all 12 semitones across 38 Hz–1200 Hz automatically.'}
+            : `Chromatic mode (${instMeta.label}) tracks all 12 semitones across ${instMeta.minFreq} Hz–${instMeta.maxFreq} Hz automatically.`}
         </div>
       </div>
     </aside>

@@ -63,15 +63,52 @@ export function getNoteFromFrequency(frequency, ref = DEFAULT_REF_FREQUENCY) {
   };
 }
 
+export const INSTRUMENTS = [
+  {
+    id: 'guitar',
+    label: 'Guitar',
+    shortLabel: '6-String · EADGBE',
+    stringCount: 6,
+    defaultPresetId: 'standard',
+    minFreq: 38,
+    maxFreq: 1200,
+  },
+  {
+    id: 'bass',
+    label: 'Bass',
+    shortLabel: '4/5-String · EADG',
+    stringCount: 4,
+    defaultPresetId: 'bass_standard',
+    minFreq: 27,
+    maxFreq: 600,
+  },
+  {
+    id: 'ukulele',
+    label: 'Ukulele',
+    shortLabel: '4-String · GCEA',
+    stringCount: 4,
+    defaultPresetId: 'uke_standard',
+    minFreq: 140,
+    maxFreq: 1200,
+  },
+];
+
+export function getInstrumentMeta(instrumentId) {
+  return INSTRUMENTS.find((inst) => inst.id === instrumentId) || INSTRUMENTS[0];
+}
+
 export const TUNING_PRESETS = [
   {
     id: 'chromatic',
+    instrument: 'all',
     label: 'CHROMATIC',
     shortLabel: 'AUTO',
     strings: [],
   },
+  // Guitar Presets
   {
     id: 'standard',
+    instrument: 'guitar',
     label: 'STANDARD',
     shortLabel: 'EADGBE',
     strings: [
@@ -85,6 +122,7 @@ export const TUNING_PRESETS = [
   },
   {
     id: 'drop_d',
+    instrument: 'guitar',
     label: 'DROP D',
     shortLabel: 'DADGBE',
     strings: [
@@ -98,6 +136,7 @@ export const TUNING_PRESETS = [
   },
   {
     id: 'eb_standard',
+    instrument: 'guitar',
     label: 'Eb STANDARD',
     shortLabel: 'HALF DOWN',
     strings: [
@@ -111,6 +150,7 @@ export const TUNING_PRESETS = [
   },
   {
     id: 'dadgad',
+    instrument: 'guitar',
     label: 'DADGAD',
     shortLabel: 'MODAL D',
     strings: [
@@ -124,6 +164,7 @@ export const TUNING_PRESETS = [
   },
   {
     id: 'open_g',
+    instrument: 'guitar',
     label: 'OPEN G',
     shortLabel: 'DGDGBD',
     strings: [
@@ -135,7 +176,116 @@ export const TUNING_PRESETS = [
       { stringNum: 1, noteName: 'D', octave: 4, midi: 62 },
     ],
   },
+  // Bass Presets
+  {
+    id: 'bass_standard',
+    instrument: 'bass',
+    label: '4-STRING STD',
+    shortLabel: 'EADG',
+    strings: [
+      { stringNum: 4, noteName: 'E', octave: 1, midi: 28 },
+      { stringNum: 3, noteName: 'A', octave: 1, midi: 33 },
+      { stringNum: 2, noteName: 'D', octave: 2, midi: 38 },
+      { stringNum: 1, noteName: 'G', octave: 2, midi: 43 },
+    ],
+  },
+  {
+    id: 'bass_drop_d',
+    instrument: 'bass',
+    label: 'BASS DROP D',
+    shortLabel: 'DADG',
+    strings: [
+      { stringNum: 4, noteName: 'D', octave: 1, midi: 26 },
+      { stringNum: 3, noteName: 'A', octave: 1, midi: 33 },
+      { stringNum: 2, noteName: 'D', octave: 2, midi: 38 },
+      { stringNum: 1, noteName: 'G', octave: 2, midi: 43 },
+    ],
+  },
+  {
+    id: 'bass_5_string',
+    instrument: 'bass',
+    label: '5-STRING STD',
+    shortLabel: 'BEADG',
+    strings: [
+      { stringNum: 5, noteName: 'B', octave: 0, midi: 23 },
+      { stringNum: 4, noteName: 'E', octave: 1, midi: 28 },
+      { stringNum: 3, noteName: 'A', octave: 1, midi: 33 },
+      { stringNum: 2, noteName: 'D', octave: 2, midi: 38 },
+      { stringNum: 1, noteName: 'G', octave: 2, midi: 43 },
+    ],
+  },
+  {
+    id: 'bass_half_down',
+    instrument: 'bass',
+    label: 'BASS Eb STD',
+    shortLabel: 'Eb Ab Db Gb',
+    strings: [
+      { stringNum: 4, noteName: 'D#', octave: 1, midi: 27 },
+      { stringNum: 3, noteName: 'G#', octave: 1, midi: 32 },
+      { stringNum: 2, noteName: 'C#', octave: 2, midi: 37 },
+      { stringNum: 1, noteName: 'F#', octave: 2, midi: 42 },
+    ],
+  },
+  // Ukulele Presets
+  {
+    id: 'uke_standard',
+    instrument: 'ukulele',
+    label: 'HIGH-G (GCEA)',
+    shortLabel: 'RE-ENTRANT',
+    strings: [
+      { stringNum: 4, noteName: 'G', octave: 4, midi: 67 },
+      { stringNum: 3, noteName: 'C', octave: 4, midi: 60 },
+      { stringNum: 2, noteName: 'E', octave: 4, midi: 64 },
+      { stringNum: 1, noteName: 'A', octave: 4, midi: 69 },
+    ],
+  },
+  {
+    id: 'uke_low_g',
+    instrument: 'ukulele',
+    label: 'LOW-G (GCEA)',
+    shortLabel: 'LINEAR GCEA',
+    strings: [
+      { stringNum: 4, noteName: 'G', octave: 3, midi: 55 },
+      { stringNum: 3, noteName: 'C', octave: 4, midi: 60 },
+      { stringNum: 2, noteName: 'E', octave: 4, midi: 64 },
+      { stringNum: 1, noteName: 'A', octave: 4, midi: 69 },
+    ],
+  },
+  {
+    id: 'uke_baritone',
+    instrument: 'ukulele',
+    label: 'BARITONE',
+    shortLabel: 'DGBE',
+    strings: [
+      { stringNum: 4, noteName: 'D', octave: 3, midi: 50 },
+      { stringNum: 3, noteName: 'G', octave: 3, midi: 55 },
+      { stringNum: 2, noteName: 'B', octave: 3, midi: 59 },
+      { stringNum: 1, noteName: 'E', octave: 4, midi: 64 },
+    ],
+  },
+  {
+    id: 'uke_d_tuning',
+    instrument: 'ukulele',
+    label: 'D-TUNING',
+    shortLabel: 'ADF#B',
+    strings: [
+      { stringNum: 4, noteName: 'A', octave: 4, midi: 69 },
+      { stringNum: 3, noteName: 'D', octave: 4, midi: 62 },
+      { stringNum: 2, noteName: 'F#', octave: 4, midi: 66 },
+      { stringNum: 1, noteName: 'B', octave: 4, midi: 71 },
+    ],
+  },
 ];
+
+export function getPresetsForInstrument(instrumentId) {
+  return TUNING_PRESETS.filter(
+    (p) => p.instrument === 'all' || p.instrument === instrumentId
+  );
+}
+
+export function getDefaultPresetIdForInstrument(instrumentId) {
+  return getInstrumentMeta(instrumentId).defaultPresetId;
+}
 
 export function matchPresetString(
   frequency,
