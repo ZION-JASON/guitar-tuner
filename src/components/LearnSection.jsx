@@ -127,13 +127,14 @@ const ChordFamilyModal = ({
       () => {
         setPlayingId(null);
         setActiveStepIdx(null);
-      }
+      },
+      instrument
     );
   };
 
   const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/75 backdrop-blur-md"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-slate-950/75 backdrop-blur-md"
       role="dialog"
       aria-modal="true"
       aria-labelledby="chord-family-modal-title"
@@ -144,7 +145,11 @@ const ChordFamilyModal = ({
         }
       }}
     >
-      <div className="glass-panel rounded-2xl border border-cyan-300/35 shadow-[0_24px_64px_rgba(2,6,23,0.75)] w-full max-w-4xl max-h-[90dvh] overflow-y-auto p-4 sm:p-6 flex flex-col gap-5">
+      <div className="glass-panel rounded-t-3xl sm:rounded-2xl border border-cyan-300/35 shadow-[0_24px_64px_rgba(2,6,23,0.75)] w-full max-w-4xl max-h-[88dvh] sm:max-h-[90dvh] overflow-y-auto p-4 sm:p-6 flex flex-col gap-4 sm:gap-5">
+        <div
+          aria-hidden="true"
+          className="w-10 h-1 rounded-full bg-white/25 mx-auto sm:hidden shrink-0"
+        />
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -214,7 +219,8 @@ const ChordFamilyModal = ({
                       if (fc.voicings[0]) {
                         learnAudio.playChordStrum(
                           fc.voicings[0].midiNotes,
-                          refFrequency
+                          refFrequency,
+                          instrument
                         );
                       }
                     }}
@@ -297,7 +303,8 @@ const ChordFamilyModal = ({
                             if (stepChord.voicings[0]) {
                               learnAudio.playChordStrum(
                                 stepChord.voicings[0].midiNotes,
-                                refFrequency
+                                refFrequency,
+                                instrument
                               );
                             }
                           }}
@@ -416,7 +423,7 @@ const SpotlightChordPanel = ({
               type="button"
               onClick={() => {
                 if (activeVoicing) {
-                  learnAudio.playChordStrum(activeVoicing.midiNotes, refFrequency);
+                  learnAudio.playChordStrum(activeVoicing.midiNotes, refFrequency, instrument);
                 }
               }}
               className="min-h-[42px] px-4 py-2 rounded-xl border bg-cyan-400 text-slate-950 border-cyan-300 font-mono text-xs font-semibold shadow-[0_4px_16px_rgba(34,211,238,0.28)] active:scale-[0.96] transition-transform cursor-pointer"
@@ -427,7 +434,14 @@ const SpotlightChordPanel = ({
               type="button"
               onClick={() => {
                 if (activeVoicing) {
-                  learnAudio.playSequence(activeVoicing.midiNotes, refFrequency, 190);
+                  learnAudio.playSequence(
+                    activeVoicing.midiNotes,
+                    refFrequency,
+                    190,
+                    null,
+                    null,
+                    instrument
+                  );
                 }
               }}
               className="min-h-[42px] px-3.5 py-2 rounded-xl border bg-white/[0.08] text-slate-100 border-white/15 hover:bg-white/[0.16] font-mono text-xs font-semibold active:scale-[0.96] transition-colors cursor-pointer"
@@ -475,11 +489,11 @@ const SpotlightChordPanel = ({
           <div className="flex flex-wrap items-center gap-1.5">
             {chordData.voicings.map((v, idx) => (
               <button
-                key={v.label}
+                key={`${v.label}-${idx}`}
                 type="button"
                 onClick={() => {
                   setVoicingIdx(idx);
-                  learnAudio.playChordStrum(v.midiNotes, refFrequency);
+                  learnAudio.playChordStrum(v.midiNotes, refFrequency, instrument);
                 }}
                 aria-pressed={idx === safeIdx}
                 className={`min-h-[38px] px-3 py-1.5 rounded-xl border font-mono text-xs font-medium transition-colors cursor-pointer ${
@@ -538,31 +552,31 @@ const ChordCard = ({
   const isStrumming = activeStrumId === cardId;
 
   return (
-    <article className="glass-panel rounded-2xl p-4 flex flex-col justify-between gap-3 transition-[border-color,transform] duration-200 hover:border-white/25">
-      <div className="flex items-start justify-between gap-2">
+    <article className="glass-panel rounded-2xl p-2.5 sm:p-4 flex flex-col justify-between gap-2 sm:gap-3 transition-[border-color,transform] duration-200 hover:border-white/25">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="flex items-baseline gap-2">
-            <h3 className="font-display font-bold text-xl text-white">
+          <div className="flex items-baseline gap-1.5 sm:gap-2">
+            <h3 className="font-display font-bold text-lg sm:text-xl text-white truncate">
               {chordData.symbol}
             </h3>
-            <span className="font-mono text-xs text-slate-400 truncate">
+            <span className="font-mono text-[11px] sm:text-xs text-slate-400 truncate">
               {chordData.quality.name}
             </span>
           </div>
-          <div className="mt-1 flex items-center gap-2 font-mono text-xs text-cyan-300">
-            <span>{chordData.notes.join(' · ')}</span>
-            <span className="text-slate-500">/</span>
-            <span className="text-slate-400">
+          <div className="mt-0.5 sm:mt-1 flex items-center gap-1.5 sm:gap-2 font-mono text-[11px] sm:text-xs text-cyan-300 truncate">
+            <span className="truncate">{chordData.notes.join(' · ')}</span>
+            <span className="text-slate-500 hidden sm:inline">/</span>
+            <span className="text-slate-400 hidden sm:inline">
               {chordData.quality.degrees.join('–')}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="grid grid-cols-2 sm:flex items-center gap-1.5 shrink-0 w-full sm:w-auto">
           <button
             type="button"
             onClick={() => onShowFamily(chordData)}
-            className="min-h-[38px] px-2.5 py-1.5 rounded-xl border border-cyan-300/30 bg-cyan-400/10 hover:bg-cyan-400/20 text-cyan-200 font-mono text-[11px] font-semibold active:scale-[0.96] transition-colors whitespace-nowrap cursor-pointer"
+            className="min-h-[40px] sm:min-h-[38px] px-2 sm:px-2.5 py-1.5 rounded-xl border border-cyan-300/30 bg-cyan-400/10 hover:bg-cyan-400/20 text-cyan-200 font-mono text-[11px] font-semibold active:scale-[0.96] transition-colors whitespace-nowrap cursor-pointer"
             aria-label={`Show chord family and progressions for ${chordData.symbol}`}
           >
             Family
@@ -574,7 +588,7 @@ const ChordCard = ({
                 onStrum(cardId, activeVoicing.midiNotes);
               }
             }}
-            className={`min-h-[38px] px-3 py-1.5 rounded-xl border font-mono text-xs font-semibold active:scale-[0.96] transition-[transform,background-color,border-color,color] duration-200 whitespace-nowrap cursor-pointer ${
+            className={`min-h-[40px] sm:min-h-[38px] px-2 sm:px-3 py-1.5 rounded-xl border font-mono text-[11px] sm:text-xs font-semibold active:scale-[0.96] transition-[transform,background-color,border-color,color] duration-200 whitespace-nowrap cursor-pointer ${
               isStrumming
                 ? 'bg-cyan-400 text-slate-950 border-cyan-300'
                 : 'bg-white/[0.08] text-slate-100 border-white/15 hover:bg-white/[0.16]'
@@ -586,7 +600,7 @@ const ChordCard = ({
         </div>
       </div>
 
-      <div className="glass-recessed rounded-xl py-3 px-2">
+      <div className="glass-recessed rounded-xl py-2 px-1 sm:py-3 sm:px-2">
         <ChordDiagramSVG
           voicing={activeVoicing}
           rootPc={chordData.rootPc}
@@ -599,7 +613,7 @@ const ChordCard = ({
 
       {/* Voicing Switcher */}
       <div className="flex flex-col gap-1.5">
-        <div className="flex items-center justify-between font-mono text-[11px] text-slate-300">
+        <div className="flex items-center justify-between font-mono text-[10px] sm:text-[11px] text-slate-300">
           <span className="truncate">{activeVoicing?.label}</span>
           <span className="text-slate-400 shrink-0 tabular-nums">
             {safeIdx + 1}/{chordData.voicings.length}
@@ -607,14 +621,14 @@ const ChordCard = ({
         </div>
 
         {chordData.voicings.length > 1 && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1 sm:gap-1.5">
             {chordData.voicings.map((v, idx) => (
               <button
-                key={v.label}
+                key={`${v.label}-${idx}`}
                 type="button"
                 onClick={() => {
                   setVoicingIdx(idx);
-                  learnAudio.playChordStrum(v.midiNotes, refFrequency);
+                  learnAudio.playChordStrum(v.midiNotes, refFrequency, instrument);
                 }}
                 aria-pressed={idx === safeIdx}
                 className={`min-h-[34px] px-2.5 py-1 rounded-lg border font-mono text-[11px] font-medium transition-colors cursor-pointer ${
@@ -725,7 +739,7 @@ const LearnSection = ({
     setPlayingScalePc(null);
     setActiveProgStep(null);
     setActiveStrumId(cardId);
-    learnAudio.playChordStrum(midiNotes, refFrequency);
+    learnAudio.playChordStrum(midiNotes, refFrequency, instrument);
   };
 
   const handlePlayScale = () => {
@@ -747,7 +761,8 @@ const LearnSection = ({
       () => {
         setIsPlayingScale(false);
         setPlayingScalePc(null);
-      }
+      },
+      instrument
     );
   };
 
@@ -764,7 +779,8 @@ const LearnSection = ({
       refFrequency,
       900,
       (idx) => setActiveProgStep(idx),
-      () => setActiveProgStep(null)
+      () => setActiveProgStep(null),
+      instrument
     );
   };
 
@@ -775,11 +791,11 @@ const LearnSection = ({
   };
 
   return (
-    <div className="flex flex-col gap-5 sm:gap-6">
+    <div className="flex flex-col gap-4 sm:gap-6">
       {/* Dynamic Root Note & Sub-Module Toolbar */}
       <section
         aria-label="Learn Root Note and Section Selector"
-        className="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col gap-4"
+        className="glass-panel rounded-2xl p-3.5 sm:p-5 flex flex-col gap-3 sm:gap-4"
       >
         {canGoBack && prevLabel && (
           <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-white/10">
@@ -798,21 +814,21 @@ const LearnSection = ({
           </div>
         )}
 
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-3">
           <div>
-            <h1 className="font-display font-bold text-xl sm:text-2xl text-white">
+            <h1 className="font-display font-bold text-lg sm:text-2xl text-white">
               Interactive Theory &amp; {instrumentMeta.label} Fretboard Lab
             </h1>
-            <p className="mt-0.5 font-sans text-xs sm:text-sm text-slate-300">
+            <p className="hidden sm:block mt-0.5 font-sans text-xs sm:text-sm text-slate-300">
               Switch between Guitar, Bass, and Ukulele or pick any root note to transpose all chord diagrams, scale shapes, and progressions.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 shrink-0 w-full lg:w-auto">
             <div
               role="group"
               aria-label="Learn Instrument Selector"
-              className="flex items-center gap-1 glass-recessed rounded-xl p-1 shrink-0"
+              className="grid grid-cols-3 sm:flex items-center gap-1 glass-recessed rounded-xl p-1 shrink-0"
             >
               {INSTRUMENTS.map((inst) => {
                 const active = instrument === inst.id;
@@ -842,7 +858,7 @@ const LearnSection = ({
             <div
               role="tablist"
               aria-label="Learn Sections"
-              className="flex flex-wrap items-center gap-1.5 glass-recessed rounded-xl p-1 shrink-0"
+              className="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-1 sm:gap-1.5 glass-recessed rounded-xl p-1 shrink-0"
             >
               {LEARN_TABS.map((tab) => {
                 const active = activeTab === tab.id;
@@ -858,13 +874,20 @@ const LearnSection = ({
                         onUpdateLearn({ tab: tab.id, familyModalTarget: null });
                       }
                     }}
-                    className={`min-h-[40px] px-3.5 py-2 rounded-lg font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
+                    className={`min-h-[40px] px-2 sm:px-3.5 py-2 rounded-lg font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
                       active
                         ? 'bg-cyan-400 text-slate-950 shadow-[0_4px_14px_rgba(34,211,238,0.28)]'
                         : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
                     }`}
                   >
-                    {tab.label}
+                    {tab.id === 'progressions' ? (
+                      <>
+                        <span className="sm:hidden">Progressions</span>
+                        <span className="hidden sm:inline">{tab.label}</span>
+                      </>
+                    ) : (
+                      tab.label
+                    )}
                   </button>
                 );
               })}
@@ -873,17 +896,17 @@ const LearnSection = ({
         </div>
 
         {/* All 12 Chromatic Root Notes */}
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between font-mono text-xs text-slate-300">
-            <span>Root Note</span>
-            <span className="text-cyan-300 font-semibold">
-              Active Key: {selectedRootName} · {instrumentMeta.shortLabel} (A4 = {refFrequency} Hz)
+        <div className="flex flex-col gap-1.5 sm:gap-2">
+          <div className="flex items-center justify-between gap-2 font-mono text-[11px] sm:text-xs text-slate-300">
+            <span className="shrink-0">Root Note</span>
+            <span className="text-cyan-300 font-semibold truncate text-right">
+              {selectedRootName} · {instrumentMeta.shortLabel} ({refFrequency} Hz)
             </span>
           </div>
           <div
             role="group"
             aria-label="Root Note Selector"
-            className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 gap-1.5"
+            className="flex overflow-x-auto no-scrollbar sm:grid sm:grid-cols-6 lg:grid-cols-12 gap-1.5 pb-0.5 sm:pb-0"
           >
             {CHROMATIC_NOTES.map((note) => {
               const active = rootPc === note.index;
@@ -893,7 +916,7 @@ const LearnSection = ({
                   type="button"
                   onClick={() => handleSelectRoot(note.index)}
                   aria-pressed={active}
-                  className={`min-h-[44px] px-2 py-2 rounded-xl border font-mono text-xs font-semibold active:scale-[0.96] transition-transform duration-100 whitespace-nowrap cursor-pointer ${
+                  className={`min-h-[44px] min-w-[56px] sm:min-w-0 shrink-0 px-2.5 sm:px-2 py-2 rounded-xl border font-mono text-xs font-semibold active:scale-[0.96] transition-transform duration-100 whitespace-nowrap cursor-pointer ${
                     active
                       ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_4px_16px_rgba(34,211,238,0.3)]'
                       : 'bg-white/[0.06] text-slate-200 border-white/12 hover:bg-white/[0.14]'
@@ -1059,7 +1082,7 @@ const LearnSection = ({
                     <h3 className="font-mono text-xs uppercase tracking-wider text-slate-300 px-1">
                       Related & Matching Diagrams ({chordSearchResults.matches.length - 1})
                     </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4">
                       {chordSearchResults.matches.slice(1).map((chordData) => (
                         <ChordCard
                           key={`search-${chordData.rootPc}-${chordData.quality.id}`}
@@ -1138,7 +1161,7 @@ const LearnSection = ({
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4">
                 {filteredChords.map((chordData) => (
                   <ChordCard
                     key={`${chordData.rootPc}-${chordData.quality.id}`}
@@ -1268,7 +1291,11 @@ const LearnSection = ({
                     onClick={() =>
                       learnAudio.playPluckedNote(
                         instrumentConfig.scaleOctaveBase + rootPc + n.semitones,
-                        refFrequency
+                        refFrequency,
+                        0,
+                        null,
+                        0.55,
+                        instrument
                       )
                     }
                     className={`min-h-[54px] p-2 rounded-xl border flex flex-col items-center justify-center gap-0.5 active:scale-[0.96] transition-[transform,background-color,border-color,box-shadow] duration-150 cursor-pointer ${
@@ -1292,11 +1319,16 @@ const LearnSection = ({
           </div>
 
           {/* Interactive 15-Fret Fretboard */}
-          <div className="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <span className="font-mono text-xs font-semibold text-slate-300">
-                Interactive Fretboard · Tap any highlighted fret to hear pitch ({boxWindow.label})
-              </span>
+          <div className="glass-panel rounded-2xl p-3.5 sm:p-5 flex flex-col gap-3 sm:gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-xs font-semibold text-slate-300">
+                  Interactive Fretboard · {boxWindow.label}
+                </span>
+                <span className="md:hidden font-mono text-[11px] text-cyan-300 shrink-0">
+                  Swipe ↔
+                </span>
+              </div>
 
               <div className="flex items-center gap-1.5 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar">
                 {BOX_FILTERS.map((box) => {
@@ -1381,7 +1413,14 @@ const LearnSection = ({
                               <button
                                 type="button"
                                 onClick={() =>
-                                  learnAudio.playPluckedNote(cell.midi, refFrequency)
+                                  learnAudio.playPluckedNote(
+                                    cell.midi,
+                                    refFrequency,
+                                    0,
+                                    null,
+                                    0.55,
+                                    instrument
+                                  )
                                 }
                                 aria-label={`${row.label} fret ${cell.fret} ${cell.noteName}`}
                                 className={`relative z-10 w-8 h-8 rounded-full font-mono text-[11px] font-bold flex items-center justify-center active:scale-90 transition-[transform,opacity,background-color,box-shadow] duration-150 cursor-pointer ${
@@ -1434,7 +1473,8 @@ const LearnSection = ({
                         if (voiced.voicings[0]) {
                           learnAudio.playChordStrum(
                             voiced.voicings[0].midiNotes,
-                            refFrequency
+                            refFrequency,
+                            instrument
                           );
                         }
                       }}
@@ -1545,11 +1585,11 @@ const LearnSection = ({
             </div>
 
             <div
-              className={`grid grid-cols-1 sm:grid-cols-2 ${
+              className={`grid grid-cols-2 ${
                 activeProgression.chords.length === 3
                   ? 'lg:grid-cols-3'
                   : 'lg:grid-cols-4'
-              } gap-4`}
+              } gap-2.5 sm:gap-4`}
             >
               {activeProgression.chords.map((chord, idx) => {
                 const isActiveStep = activeProgStep === idx;
@@ -1562,11 +1602,12 @@ const LearnSection = ({
                       if (firstVoicing) {
                         learnAudio.playChordStrum(
                           firstVoicing.midiNotes,
-                          refFrequency
+                          refFrequency,
+                          instrument
                         );
                       }
                     }}
-                    className={`p-4 rounded-2xl border text-left flex flex-col gap-3 active:scale-[0.98] transition-[transform,background-color,border-color,box-shadow] duration-200 cursor-pointer ${
+                    className={`p-2.5 sm:p-4 rounded-2xl border text-left flex flex-col gap-2 sm:gap-3 active:scale-[0.98] transition-[transform,background-color,border-color,box-shadow] duration-200 cursor-pointer ${
                       isActiveStep
                         ? 'bg-cyan-400/15 border-cyan-300/60 shadow-[0_0_24px_rgba(34,211,238,0.25)]'
                         : 'glass-recessed border-white/12 hover:bg-white/[0.08]'
@@ -1642,7 +1683,8 @@ const LearnSection = ({
                           if (fc.voicings[0]) {
                             learnAudio.playChordStrum(
                               fc.voicings[0].midiNotes,
-                              refFrequency
+                              refFrequency,
+                              instrument
                             );
                           }
                         }}
@@ -1693,7 +1735,10 @@ const LearnSection = ({
                       learnAudio.playSequence(
                         [rootMidi, rootMidi + iv.semitones],
                         refFrequency,
-                        320
+                        320,
+                        null,
+                        null,
+                        instrument
                       )
                     }
                     className="min-h-[68px] p-3 rounded-xl glass-recessed hover:bg-white/[0.1] border border-white/12 flex flex-col items-start justify-between gap-1 text-left active:scale-[0.97] transition-[transform,background-color] duration-150 cursor-pointer"

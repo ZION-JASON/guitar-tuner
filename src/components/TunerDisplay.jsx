@@ -85,10 +85,10 @@ const TunerDisplay = ({
       </div>
 
       {/* Central Note & Meter Stage */}
-      <div className="px-4 py-5 sm:px-8 sm:py-9 flex flex-col items-center gap-5 sm:gap-7">
+      <div className="px-3.5 py-4 sm:px-8 sm:py-9 flex flex-col items-center gap-4 sm:gap-7">
         {/* Frosted Note + Cents Stage */}
         <div
-          className={`relative w-full flex flex-row items-center justify-between gap-4 glass-recessed rounded-2xl px-5 py-5 sm:p-8 overflow-hidden transition-[border-color,box-shadow] duration-300 ${
+          className={`relative w-full flex flex-row items-center justify-between gap-4 glass-recessed rounded-2xl px-4 py-3.5 sm:p-8 overflow-hidden transition-[border-color,box-shadow] duration-300 ${
             inTune
               ? 'border-emerald-400/50 shadow-[0_0_40px_rgba(52,211,153,0.16)]'
               : ''
@@ -107,7 +107,7 @@ const TunerDisplay = ({
           <div className="relative flex items-baseline gap-1.5 sm:gap-2">
             <span
               data-testid="detected-note"
-              className={`font-display font-extrabold leading-none tracking-tight text-6xl sm:text-8xl select-none tabular-nums transition-colors duration-200 ${
+              className={`font-display font-extrabold leading-none tracking-tight text-5xl sm:text-8xl select-none tabular-nums transition-colors duration-200 ${
                 inTune
                   ? 'text-emerald-300 drop-shadow-[0_0_24px_rgba(52,211,153,0.45)]'
                   : hasSignal
@@ -124,7 +124,7 @@ const TunerDisplay = ({
             )}
           </div>
 
-          <div className="relative flex flex-col items-end gap-1.5 sm:gap-2">
+          <div className="relative flex flex-col items-end gap-1 sm:gap-2">
             <div className="flex items-center gap-2">
               {matchedStringNum !== null && (
                 <span className="px-2 py-0.5 rounded-md border border-white/15 bg-white/10 font-mono text-[11px] sm:text-xs font-semibold text-slate-200 whitespace-nowrap">
@@ -137,7 +137,7 @@ const TunerDisplay = ({
             </div>
             <div
               data-testid="cents-readout"
-              className={`font-mono font-bold text-3xl sm:text-5xl tabular-nums whitespace-nowrap transition-colors duration-200 ${
+              className={`font-mono font-bold text-2xl sm:text-5xl tabular-nums whitespace-nowrap transition-colors duration-200 ${
                 inTune
                   ? 'text-emerald-300'
                   : isFlat
@@ -156,7 +156,7 @@ const TunerDisplay = ({
 
         {/* Precision Linear Cents Ruler (-50c to +50c) */}
         <div className="w-full">
-          <div className="flex items-center justify-between gap-2 mb-2 font-mono text-[11px] sm:text-xs font-medium text-slate-300">
+          <div className="flex items-center justify-between gap-2 mb-1.5 sm:mb-2 font-mono text-[11px] sm:text-xs font-medium text-slate-300">
             <span className="whitespace-nowrap">-50¢ Flat</span>
             <span
               className={`whitespace-nowrap transition-colors duration-200 ${
@@ -168,7 +168,7 @@ const TunerDisplay = ({
             <span className="whitespace-nowrap">+50¢ Sharp</span>
           </div>
 
-          <div className="relative h-16 sm:h-20 glass-recessed rounded-xl overflow-hidden select-none">
+          <div className="relative h-14 sm:h-20 glass-recessed rounded-xl overflow-hidden select-none">
             {/* In-tune center zone (±3 cents = 6% total width) */}
             <div
               className={`absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-[6%] border-x transition-[background-color,border-color,box-shadow] duration-200 ${
@@ -279,31 +279,31 @@ const TunerDisplay = ({
       </div>
 
       {/* 4-Cell Tabular Metric Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 border-t border-white/12 bg-white/[0.03]">
-        <div className="p-3.5 sm:p-4 border-b sm:border-b-0 border-r border-white/12">
-          <div className="font-mono text-[11px] sm:text-xs text-slate-400">
-            Detected Pitch
+      <div className="grid grid-cols-4 border-t border-white/12 bg-white/[0.03]">
+        <div className="p-2.5 sm:p-4 border-r border-white/12 min-w-0">
+          <div className="font-mono text-[10px] sm:text-xs text-slate-400 truncate">
+            Detected
           </div>
-          <div className="mt-1 font-mono text-lg sm:text-xl font-semibold tabular-nums text-slate-50">
+          <div className="mt-0.5 sm:mt-1 font-mono text-xs sm:text-xl font-semibold tabular-nums text-slate-50 whitespace-nowrap truncate">
             {hasSignal ? `${frequency.toFixed(2)} Hz` : '0.00 Hz'}
           </div>
         </div>
 
-        <div className="p-3.5 sm:p-4 border-b sm:border-b-0 sm:border-r border-white/12">
-          <div className="font-mono text-[11px] sm:text-xs text-slate-400">
-            Target Pitch
+        <div className="p-2.5 sm:p-4 border-r border-white/12 min-w-0">
+          <div className="font-mono text-[10px] sm:text-xs text-slate-400 truncate">
+            Target
           </div>
-          <div className="mt-1 font-mono text-lg sm:text-xl font-semibold tabular-nums text-slate-50">
+          <div className="mt-0.5 sm:mt-1 font-mono text-xs sm:text-xl font-semibold tabular-nums text-slate-50 whitespace-nowrap truncate">
             {targetFrequency > 0 ? `${targetFrequency.toFixed(2)} Hz` : '--'}
           </div>
         </div>
 
-        <div className="p-3.5 sm:p-4 border-r border-white/12">
-          <div className="font-mono text-[11px] sm:text-xs text-slate-400">
+        <div className="p-2.5 sm:p-4 border-r border-white/12 min-w-0">
+          <div className="font-mono text-[10px] sm:text-xs text-slate-400 truncate">
             Stability
           </div>
           <div
-            className={`mt-1 font-mono text-lg sm:text-xl font-semibold tabular-nums ${
+            className={`mt-0.5 sm:mt-1 font-mono text-xs sm:text-xl font-semibold tabular-nums truncate ${
               inTune ? 'text-emerald-300' : 'text-slate-50'
             }`}
           >
@@ -311,11 +311,11 @@ const TunerDisplay = ({
           </div>
         </div>
 
-        <div className="p-3.5 sm:p-4">
-          <div className="font-mono text-[11px] sm:text-xs text-slate-400">
-            YIN Clarity
+        <div className="p-2.5 sm:p-4 min-w-0">
+          <div className="font-mono text-[10px] sm:text-xs text-slate-400 truncate">
+            Clarity
           </div>
-          <div className="mt-1 font-mono text-lg sm:text-xl font-semibold tabular-nums text-slate-50">
+          <div className="mt-0.5 sm:mt-1 font-mono text-xs sm:text-xl font-semibold tabular-nums text-slate-50 whitespace-nowrap truncate">
             {clarityPercent}%
           </div>
         </div>

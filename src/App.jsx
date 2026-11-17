@@ -127,9 +127,9 @@ function App() {
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[320px] h-[320px] rounded-full bg-teal-400/10 blur-[100px]" />
       </div>
 
-      {/* 3-Zone Frosted Header */}
+      {/* 3-Zone Single-Row Frosted Header */}
       <header className="relative z-20 glass-bar border-b border-white/12">
-        <div className="max-w-[1280px] mx-auto px-3.5 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between gap-3 sm:gap-8">
+        <div className="max-w-[1280px] mx-auto px-3.5 sm:px-6 py-2 sm:py-3.5 flex items-center justify-between gap-3 sm:gap-8">
           <button
             type="button"
             onClick={() => switchView('tuner')}
@@ -179,80 +179,80 @@ function App() {
                   : 'bg-white/[0.08] text-slate-100 border-white/15 hover:bg-white/[0.16]'
               }`}
             >
-              {isListening ? 'Mic Active · Stop' : 'Mic Standby'}
+              <span className="sm:hidden">{isListening ? 'Mic On' : 'Mic Off'}</span>
+              <span className="hidden sm:inline">
+                {isListening ? 'Mic Active · Stop' : 'Mic Standby'}
+              </span>
             </button>
           </div>
         </div>
-
-        {/* Instrument & Tuning Preset Ribbon (shown in Tuner view) */}
-        {activeView === 'tuner' && (
-          <div className="border-t border-white/10 bg-white/[0.03] px-3.5 sm:px-6 py-2">
-            <div className="max-w-[1280px] mx-auto flex flex-col sm:flex-row sm:items-center gap-2">
-              <div
-                role="group"
-                aria-label="Instrument Selector"
-                className="flex items-center gap-1 glass-recessed rounded-xl p-1 shrink-0 self-start sm:self-auto"
-              >
-                {INSTRUMENTS.map((inst) => {
-                  const active = inst.id === activeInstrument;
-                  return (
-                    <button
-                      key={inst.id}
-                      type="button"
-                      onClick={() => selectInstrument(inst.id)}
-                      aria-pressed={active}
-                      className={`min-h-[36px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
-                        active
-                          ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_10px_rgba(34,211,238,0.28)]'
-                          : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
-                      }`}
-                    >
-                      {inst.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div
-                aria-hidden="true"
-                className="hidden sm:block h-5 w-px bg-white/15 shrink-0"
-              />
-
-              <nav
-                aria-label="Tuning Presets"
-                className="flex items-center gap-2 overflow-x-auto no-scrollbar min-w-0 flex-1"
-              >
-                {visiblePresets.map((preset) => {
-                  const active = preset.id === activePreset.id;
-                  return (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      onClick={() => setPresetId(preset.id)}
-                      aria-pressed={active}
-                      className={`min-h-[42px] sm:min-h-[36px] px-3.5 py-1.5 rounded-xl border font-mono text-xs font-semibold active:scale-[0.97] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer ${
-                        active
-                          ? 'bg-white/20 text-white border-white/30'
-                          : 'bg-white/[0.05] text-slate-300 border-white/10 hover:bg-white/[0.1]'
-                      }`}
-                    >
-                      {preset.label}
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
-          </div>
-        )}
       </header>
 
       {/* Main Workspace */}
       <main
         id="main-workspace"
-        className={`relative z-10 flex-1 w-full max-w-[1280px] mx-auto px-3.5 sm:px-6 pt-4 lg:py-8 flex flex-col gap-4 sm:gap-6 ${
-          activeView === 'tuner' ? 'pb-24' : 'pb-10'
+        className={`relative z-10 flex-1 w-full max-w-[1280px] mx-auto px-3.5 sm:px-6 pt-3 lg:py-8 flex flex-col gap-3.5 sm:gap-6 ${
+          activeView === 'tuner' ? 'pb-22 lg:pb-10' : 'pb-10'
         }`}
       >
+        {/* Instrument & Tuning Preset Workspace Bar (Tuner View) */}
+        {activeView === 'tuner' && (
+          <div className="glass-panel rounded-2xl p-2 sm:px-4 sm:py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
+            <div
+              role="group"
+              aria-label="Instrument Selector"
+              className="grid grid-cols-3 sm:flex items-center gap-1 glass-recessed rounded-xl p-1 shrink-0"
+            >
+              {INSTRUMENTS.map((inst) => {
+                const active = inst.id === activeInstrument;
+                return (
+                  <button
+                    key={inst.id}
+                    type="button"
+                    onClick={() => selectInstrument(inst.id)}
+                    aria-pressed={active}
+                    className={`min-h-[40px] sm:min-h-[36px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
+                      active
+                        ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_10px_rgba(34,211,238,0.28)]'
+                        : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
+                    }`}
+                  >
+                    {inst.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div
+              aria-hidden="true"
+              className="hidden sm:block h-5 w-px bg-white/15 shrink-0"
+            />
+
+            <nav
+              aria-label="Tuning Presets"
+              className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar min-w-0 flex-1"
+            >
+              {visiblePresets.map((preset) => {
+                const active = preset.id === activePreset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => setPresetId(preset.id)}
+                    aria-pressed={active}
+                    className={`min-h-[40px] sm:min-h-[36px] px-3 sm:px-3.5 py-1.5 rounded-xl border font-mono text-xs font-semibold active:scale-[0.97] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer ${
+                      active
+                        ? 'bg-white/20 text-white border-white/30'
+                        : 'bg-white/[0.05] text-slate-300 border-white/10 hover:bg-white/[0.1]'
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        )}
         {/* Accessible Microphone Error Banner */}
         {micError && (
           <div

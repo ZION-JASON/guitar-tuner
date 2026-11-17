@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { detectPitchYIN } from './pitchAlgorithm.js';
+import { synthesizePluckedStringSamples } from './audioSynth.js';
 import {
   clampRefFrequency,
   getNoteFromFrequency,
@@ -198,4 +199,56 @@ test('detectPitchYIN and matchPresetString handle sub-bass (B0/E1) and re-entran
   const ukeA4 = matchPresetString(440.0, 'uke_standard', 440);
   assert.equal(ukeA4.matchedStringNum, 1);
   assert.equal(ukeA4.fullNote, 'A4');
+});
+
+test('synthesizePluckedStringSamples produces pitch-accurate acoustic waveforms for Guitar, Bass, and Ukulele', () => {
+  const sampleRate = 48000;
+  const cases = [
+    { instrument: 'guitar', freq: 82.4069 }, // E2
+    { instrument: 'guitar', freq: 195.9977 }, // G3
+    { instrument: 'guitar', freq: 329.6276 }, // E4
+    { instrument: 'bass', freq: 41.2034 }, // E1
+    { instrument: 'bass', freq: 97.9989 }, // G2
+    { instrument: 'ukulele', freq: 261.6256 }, // C4
+    { instrument: 'ukulele', freq: 391.9954 }, // G4
+    { instrument: 'ukulele', freq: 440.0 }, // A4
+  ];
+
+  for (const c of cases) {
+    const samples = synthesizePluckedStringSamples({
+      freq: c.freq,
+      durationSec: 1.4,
+      sampleRate,
+      instrument: c.instrument,
+    });
+    assert.ok(samples.length >= sampleRate);
+
+    // Measure settled sustain window (around 0.15s..0.32s after transient pick burst)
+    const slice = samples.slice(7200, 7200 + 8192);
+    const res = detectPitchYIN(slice, sampleRate, {
+      minFreq: 27,
+      maxFreq: 1000,
+    });
+    assert.ok(
+      res.frequency > 0,
+      `Expected pitched sustain for ${c.instrument} ${c.freq}Hz`
+    );
+    const err = centsError(res.frequency, c.freq);
+    assert.ok(
+      err < 2.5,
+      `Synth pitch error ${err.toFixed(2)} cents for ${c.instrument} at ${c.freq}Hz (got ${res.frequency.toFixed(2)}Hz)`
+    );
+
+    // Verify natural acoustic decay (tail quieter than attack)
+    let earlyEnergy = 0;
+    let lateEnergy = 0;
+    for (let i = 1000; i < 5000; i++) earlyEnergy += samples[i] * samples[i];
+    for (let i = samples.length - 6000; i < samples.length - 2000; i++) {
+      lateEnergy += samples[i] * samples[i];
+    }
+    assert.ok(
+      lateEnergy < earlyEnergy,
+      `Expected natural acoustic decay for ${c.instrument} ${c.freq}Hz`
+    );
+  }
 });

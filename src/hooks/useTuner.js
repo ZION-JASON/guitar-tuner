@@ -1,11 +1,16 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { detectPitchYIN } from '../utils/pitchAlgorithm';
 import {
+  createInstrumentBodyChain,
+  createPluckedAudioBuffer,
+} from '../utils/audioSynth';
+import {
   clampRefFrequency,
   DEFAULT_REF_FREQUENCY,
   getDefaultPresetIdForInstrument,
   getInstrumentMeta,
   matchPresetString,
+  midiToFrequency,
   PitchStabilizer,
   TUNING_PRESETS,
 } from '../utils/frequencyUtils';
@@ -78,34 +83,91 @@ export const useTuner = (instrument = 'guitar') => {
   const lastPitchTimeRef = useRef(0);
   const stabilizerRef = useRef(new PitchStabilizer(5));
 
-  // Separate playback refs for reference tone generator
+  // Separate playback refs for realistic plucked reference tone generator
   const toneCtxRef = useRef(null);
-  const toneOscRef = useRef(null);
-  const toneHarmonicRef = useRef(null);
+  const toneSourceRef = useRef(null);
   const toneGainRef = useRef(null);
-  const toneFilterRef = useRef(null);
+  const toneTimerRef = useRef(null);
   const playingMidiRef = useRef(null);
+  const playingFreqRef = useRef(null);
 
-  const setRefFrequency = useCallback((next) => {
-    const clamped = clampRefFrequency(next);
-    refFreqRef.current = clamped;
-    setRefFrequencyState(clamped);
+  const triggerReferencePluck = useCallback((freq, instrumentId) => {
+    const ctx = toneCtxRef.current;
+    if (!ctx || ctx.state === 'closed' || !Number.isFinite(freq) || freq <= 0) return;
 
-    if (
-      playingMidiRef.current !== null &&
-      toneCtxRef.current &&
-      toneOscRef.current &&
-      toneHarmonicRef.current
-    ) {
-      const nextHz = clamped * Math.pow(2, (playingMidiRef.current - 69) / 12);
-      const now = toneCtxRef.current.currentTime;
-      toneOscRef.current.frequency.setTargetAtTime(nextHz, now, 0.015);
-      toneHarmonicRef.current.frequency.setTargetAtTime(nextHz, now, 0.015);
-      if (toneFilterRef.current) {
-        toneFilterRef.current.frequency.setTargetAtTime(Math.min(2400, nextHz * 4), now, 0.015);
+    const now = ctx.currentTime;
+    if (toneGainRef.current && toneSourceRef.current) {
+      try {
+        toneGainRef.current.gain.cancelScheduledValues(now);
+        toneGainRef.current.gain.setTargetAtTime(0.0001, now, 0.018);
+        toneSourceRef.current.stop(now + 0.06);
+      } catch {
+        // ignore stopped source
       }
     }
+
+    const durationSec = instrumentId === 'ukulele' ? 1.85 : 2.5;
+    const buffer = createPluckedAudioBuffer(ctx, freq, durationSec, instrumentId);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+
+    const body = createInstrumentBodyChain(ctx, instrumentId);
+    const masterGain = ctx.createGain();
+    masterGain.gain.setValueAtTime(0.65, now);
+
+    source.connect(body.input);
+    body.output.connect(masterGain);
+    masterGain.connect(ctx.destination);
+
+    source.start(now);
+    source.stop(now + durationSec + 0.05);
+
+    toneSourceRef.current = source;
+    toneGainRef.current = masterGain;
   }, []);
+
+  const stopReferenceTone = useCallback(() => {
+    playingMidiRef.current = null;
+    playingFreqRef.current = null;
+    if (toneTimerRef.current !== null) {
+      clearInterval(toneTimerRef.current);
+      toneTimerRef.current = null;
+    }
+    if (toneGainRef.current && toneCtxRef.current) {
+      try {
+        const now = toneCtxRef.current.currentTime;
+        toneGainRef.current.gain.cancelScheduledValues(now);
+        toneGainRef.current.gain.setTargetAtTime(0.0001, now, 0.02);
+      } catch {
+        // ignore audio node cleanup error
+      }
+    }
+    if (toneSourceRef.current) {
+      try {
+        toneSourceRef.current.stop(toneCtxRef.current ? toneCtxRef.current.currentTime + 0.07 : 0);
+      } catch {
+        // ignore
+      }
+      toneSourceRef.current = null;
+    }
+    toneGainRef.current = null;
+    setPlayingToneKey(null);
+  }, []);
+
+  const setRefFrequency = useCallback(
+    (next) => {
+      const clamped = clampRefFrequency(next);
+      refFreqRef.current = clamped;
+      setRefFrequencyState(clamped);
+
+      if (playingMidiRef.current !== null && toneCtxRef.current) {
+        const nextHz = midiToFrequency(playingMidiRef.current, clamped);
+        playingFreqRef.current = nextHz;
+        triggerReferencePluck(nextHz, instrumentRef.current);
+      }
+    },
+    [triggerReferencePluck]
+  );
 
   const setPresetId = useCallback((nextId) => {
     presetIdRef.current = nextId;
@@ -145,37 +207,6 @@ export const useTuner = (instrument = 'guitar') => {
     setData(IDLE_DATA);
   }, [stopMicResources]);
 
-  const stopReferenceTone = useCallback(() => {
-    playingMidiRef.current = null;
-    if (toneGainRef.current && toneCtxRef.current) {
-      try {
-        const now = toneCtxRef.current.currentTime;
-        toneGainRef.current.gain.cancelScheduledValues(now);
-        toneGainRef.current.gain.setTargetAtTime(0, now, 0.02);
-      } catch {
-        // ignore audio node cleanup error
-      }
-    }
-    if (toneOscRef.current) {
-      try {
-        toneOscRef.current.stop(toneCtxRef.current ? toneCtxRef.current.currentTime + 0.08 : 0);
-      } catch {
-        // ignore
-      }
-      toneOscRef.current = null;
-    }
-    if (toneHarmonicRef.current) {
-      try {
-        toneHarmonicRef.current.stop(toneCtxRef.current ? toneCtxRef.current.currentTime + 0.08 : 0);
-      } catch {
-        // ignore
-      }
-      toneHarmonicRef.current = null;
-    }
-    toneFilterRef.current = null;
-    setPlayingToneKey(null);
-  }, []);
-
   const toggleReferenceTone = useCallback(
     async (key, frequency, midi = null) => {
       if (!Number.isFinite(frequency) || frequency <= 0) return;
@@ -199,48 +230,26 @@ export const useTuner = (instrument = 'guitar') => {
           await ctx.resume();
         }
 
-        const now = ctx.currentTime;
-        const masterGain = ctx.createGain();
-        masterGain.gain.setValueAtTime(0.0001, now);
-        masterGain.gain.exponentialRampToValueAtTime(0.18, now + 0.04);
-
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(Math.min(2400, frequency * 4), now);
-
-        const osc = ctx.createOscillator();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(frequency, now);
-
-        // Subtle fundamental reinforcement for laptop speakers on low strings
-        const oscSub = ctx.createOscillator();
-        oscSub.type = 'sine';
-        oscSub.frequency.setValueAtTime(frequency, now);
-
-        const subGain = ctx.createGain();
-        subGain.gain.setValueAtTime(0.65, now);
-
-        osc.connect(filter);
-        oscSub.connect(subGain);
-        subGain.connect(filter);
-        filter.connect(masterGain);
-        masterGain.connect(ctx.destination);
-
-        osc.start(now);
-        oscSub.start(now);
-
-        toneOscRef.current = osc;
-        toneHarmonicRef.current = oscSub;
-        toneGainRef.current = masterGain;
-        toneFilterRef.current = filter;
         playingMidiRef.current = midi;
+        playingFreqRef.current = frequency;
         setPlayingToneKey(key);
+
+        triggerReferencePluck(frequency, instrumentRef.current);
+
+        // Naturally re-pluck every 2.2s so musicians can tune hands-free by ear
+        toneTimerRef.current = setInterval(() => {
+          const activeHz = playingFreqRef.current;
+          if (activeHz && activeHz > 0) {
+            triggerReferencePluck(activeHz, instrumentRef.current);
+          }
+        }, 2200);
       } catch {
         playingMidiRef.current = null;
+        playingFreqRef.current = null;
         setPlayingToneKey(null);
       }
     },
-    [playingToneKey, stopReferenceTone]
+    [playingToneKey, stopReferenceTone, triggerReferencePluck]
   );
 
   const startTuner = useCallback(async () => {

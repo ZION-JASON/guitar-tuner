@@ -52,69 +52,8 @@ const StringMatrix = ({
   const chromaticList = CHROMATIC_GUIDES[instMeta.id] || CHROMATIC_GUIDES.guitar;
 
   return (
-    <aside className="flex flex-col gap-5 sm:gap-6">
-      {/* A4 Reference Calibration Panel */}
-      <div className="glass-panel rounded-2xl overflow-hidden">
-        <div className="px-4 py-3 sm:px-5 sm:py-3.5 border-b border-white/12 bg-white/[0.03] flex items-center justify-between gap-2">
-          <h2 className="font-display font-bold text-sm tracking-wide text-slate-100 whitespace-nowrap">
-            A4 Calibration
-          </h2>
-          <span
-            data-testid="ref-frequency-readout"
-            className="font-mono text-sm font-semibold tabular-nums text-cyan-300 whitespace-nowrap shrink-0"
-          >
-            A4 = {refFrequency} Hz
-          </span>
-        </div>
-
-        <div className="p-4 sm:p-5 flex flex-col gap-3 sm:gap-4">
-          <div className="grid grid-cols-3 gap-2">
-            {QUICK_REFS.map((freq) => {
-              const active = refFrequency === freq;
-              return (
-                <button
-                  key={freq}
-                  type="button"
-                  onClick={() => onChangeRefFrequency(freq)}
-                  className={`min-h-[44px] py-2.5 px-3 rounded-xl border font-mono text-xs font-semibold tabular-nums active:scale-[0.97] transition-[transform,background-color,border-color,color] duration-200 whitespace-nowrap shrink-0 cursor-pointer ${
-                    active
-                      ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_4px_16px_rgba(34,211,238,0.25)]'
-                      : 'bg-white/[0.06] text-slate-200 border-white/12 hover:bg-white/[0.12]'
-                  }`}
-                >
-                  {freq} Hz
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex items-center justify-between gap-2 glass-recessed rounded-xl p-2">
-            <button
-              type="button"
-              onClick={() => onChangeRefFrequency(refFrequency - 1)}
-              disabled={refFrequency <= MIN_REF_FREQUENCY}
-              aria-label="Decrease reference frequency by 1 Hz"
-              className="min-h-[44px] min-w-[56px] px-3.5 py-2 rounded-lg border border-white/15 bg-white/[0.08] font-mono text-sm font-semibold text-slate-100 hover:bg-white/[0.16] active:scale-[0.96] disabled:opacity-35 disabled:cursor-not-allowed transition-[transform,background-color,opacity] duration-200 cursor-pointer"
-            >
-              -1 Hz
-            </button>
-            <span className="font-mono text-xs text-slate-400 tabular-nums">
-              {MIN_REF_FREQUENCY}–{MAX_REF_FREQUENCY} Hz
-            </span>
-            <button
-              type="button"
-              onClick={() => onChangeRefFrequency(refFrequency + 1)}
-              disabled={refFrequency >= MAX_REF_FREQUENCY}
-              aria-label="Increase reference frequency by 1 Hz"
-              className="min-h-[44px] min-w-[56px] px-3.5 py-2 rounded-lg border border-white/15 bg-white/[0.08] font-mono text-sm font-semibold text-slate-100 hover:bg-white/[0.16] active:scale-[0.96] disabled:opacity-35 disabled:cursor-not-allowed transition-[transform,background-color,opacity] duration-200 cursor-pointer"
-            >
-              +1 Hz
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* String Matrix & Reference Tone Generator */}
+    <aside className="flex flex-col gap-4 sm:gap-6">
+      {/* String Matrix & Realistic Plucked Reference Generator */}
       <div className="glass-panel rounded-2xl overflow-hidden flex-1 flex flex-col">
         <div className="px-4 py-3 sm:px-5 sm:py-3.5 border-b border-white/12 bg-white/[0.03] flex items-center justify-between gap-2">
           <h2 className="font-display font-bold text-sm tracking-wide text-slate-100">
@@ -131,7 +70,7 @@ const StringMatrix = ({
           )}
         </div>
 
-        <div className="divide-y divide-white/10">
+        <div className="grid grid-cols-2 sm:grid-cols-1 gap-2 p-2.5 sm:p-0 sm:gap-0 sm:divide-y sm:divide-white/10">
           {hasStrings ? (
             preset.strings.map((s) => {
               const targetHz = midiToFrequency(s.midi, refFrequency);
@@ -143,24 +82,24 @@ const StringMatrix = ({
               return (
                 <div
                   key={s.stringNum}
-                  className={`flex items-center justify-between gap-3 px-4 py-2.5 min-h-[58px] transition-colors duration-200 ${
+                  className={`flex items-center justify-between gap-2 sm:gap-3 px-2.5 py-2 sm:px-4 sm:py-2.5 min-h-[56px] sm:min-h-[58px] rounded-xl sm:rounded-none border sm:border-0 transition-colors duration-200 ${
                     isLocked
-                      ? 'bg-amber-400/15'
+                      ? 'bg-amber-400/15 border-amber-300/35'
                       : isMatched
-                        ? 'bg-emerald-400/12'
-                        : 'hover:bg-white/[0.04]'
+                        ? 'bg-emerald-400/12 border-emerald-300/35'
+                        : 'bg-white/[0.03] sm:bg-transparent border-white/10 hover:bg-white/[0.04]'
                   }`}
                 >
                   <button
                     type="button"
                     onClick={() => onToggleLockString(s.stringNum)}
-                    className="flex-1 min-h-[44px] flex items-center justify-between gap-3 text-left py-1 cursor-pointer"
+                    className="flex-1 min-w-0 min-h-[44px] flex items-center justify-between gap-2 sm:gap-3 text-left py-0.5 sm:py-1 cursor-pointer"
                     aria-pressed={isLocked}
                     aria-label={`Lock string ${s.stringNum} ${s.noteName}${s.octave}`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                       <span
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center border font-mono text-xs font-semibold tabular-nums transition-colors duration-200 ${
+                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center border font-mono text-xs font-semibold tabular-nums shrink-0 transition-colors duration-200 ${
                           isLocked
                             ? 'border-amber-300/50 bg-amber-400/20 text-amber-200'
                             : isMatched
@@ -170,15 +109,20 @@ const StringMatrix = ({
                       >
                         {s.stringNum}
                       </span>
-                      <span className="font-display font-bold text-lg text-slate-50">
-                        {s.noteName}
-                        <span className="font-mono text-xs font-medium text-slate-400 ml-0.5">
-                          {s.octave}
+                      <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-1 min-w-0">
+                        <span className="font-display font-bold text-base sm:text-lg text-slate-50 leading-tight">
+                          {s.noteName}
+                          <span className="font-mono text-[11px] sm:text-xs font-medium text-slate-400 ml-0.5">
+                            {s.octave}
+                          </span>
                         </span>
-                      </span>
+                        <span className="sm:hidden font-mono text-[10px] tabular-nums text-slate-400 leading-tight">
+                          {targetHz.toFixed(1)} Hz
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="hidden sm:flex items-center gap-2">
                       <span className="font-mono text-xs font-medium tabular-nums text-slate-300">
                         {targetHz.toFixed(2)} Hz
                       </span>
@@ -199,7 +143,7 @@ const StringMatrix = ({
                         ? `Stop reference tone for ${s.noteName}${s.octave}`
                         : `Play reference tone for ${s.noteName}${s.octave}`
                     }
-                    className={`min-h-[44px] min-w-[68px] px-3 py-2 rounded-xl border font-mono text-xs font-semibold active:scale-[0.96] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color,box-shadow] duration-200 cursor-pointer ${
+                    className={`min-h-[42px] sm:min-h-[44px] min-w-[52px] sm:min-w-[68px] px-2.5 sm:px-3 py-2 rounded-xl border font-mono text-[11px] sm:text-xs font-semibold active:scale-[0.96] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color,box-shadow] duration-200 cursor-pointer ${
                       isPlaying
                         ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.35)]'
                         : 'bg-white/[0.07] text-slate-200 border-white/15 hover:bg-white/[0.15]'
@@ -218,21 +162,21 @@ const StringMatrix = ({
               return (
                 <div
                   key={item.key}
-                  className="flex items-center justify-between gap-3 px-4 py-2.5 min-h-[58px] hover:bg-white/[0.04] transition-colors duration-200"
+                  className="flex items-center justify-between gap-2 sm:gap-3 px-2.5 py-2 sm:px-4 sm:py-2.5 min-h-[54px] sm:min-h-[58px] rounded-xl sm:rounded-none border sm:border-0 border-white/10 bg-white/[0.03] sm:bg-transparent hover:bg-white/[0.04] transition-colors duration-200"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="font-display font-bold text-lg text-slate-50">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3 min-w-0">
+                    <span className="font-display font-bold text-base sm:text-lg text-slate-50 leading-tight">
                       {item.label}
                     </span>
-                    <span className="font-mono text-xs font-medium tabular-nums text-slate-300">
-                      {targetHz.toFixed(2)} Hz
+                    <span className="font-mono text-[11px] sm:text-xs font-medium tabular-nums text-slate-300">
+                      {targetHz.toFixed(1)} Hz
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => onToggleTone(toneKey, targetHz, item.midi)}
                     aria-pressed={isPlaying}
-                    className={`min-h-[44px] min-w-[68px] px-3 py-2 rounded-xl border font-mono text-xs font-semibold active:scale-[0.96] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color,box-shadow] duration-200 cursor-pointer ${
+                    className={`min-h-[42px] sm:min-h-[44px] min-w-[52px] sm:min-w-[68px] px-2.5 sm:px-3 py-2 rounded-xl border font-mono text-[11px] sm:text-xs font-semibold active:scale-[0.96] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color,box-shadow] duration-200 cursor-pointer ${
                       isPlaying
                         ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.35)]'
                         : 'bg-white/[0.07] text-slate-200 border-white/15 hover:bg-white/[0.15]'
@@ -246,10 +190,71 @@ const StringMatrix = ({
           )}
         </div>
 
-        <div className="p-4 border-t border-white/12 bg-white/[0.02] font-sans text-xs text-slate-400 leading-relaxed">
+        <div className="px-4 py-3 sm:p-4 border-t border-white/12 bg-white/[0.02] font-sans text-xs text-slate-400 leading-relaxed">
           {hasStrings
-            ? 'Tap any string row to lock target tracking, or tap Tone to hear its calibrated reference pitch.'
+            ? 'Tap any string to lock tracking, or tap Tone to pluck its calibrated reference pitch.'
             : `Chromatic mode (${instMeta.label}) tracks all 12 semitones across ${instMeta.minFreq} Hz–${instMeta.maxFreq} Hz automatically.`}
+        </div>
+      </div>
+
+      {/* A4 Reference Calibration Panel */}
+      <div className="glass-panel rounded-2xl overflow-hidden">
+        <div className="px-4 py-2.5 sm:px-5 sm:py-3.5 border-b border-white/12 bg-white/[0.03] flex items-center justify-between gap-2">
+          <h2 className="font-display font-bold text-sm tracking-wide text-slate-100 whitespace-nowrap">
+            A4 Calibration
+          </h2>
+          <span
+            data-testid="ref-frequency-readout"
+            className="font-mono text-sm font-semibold tabular-nums text-cyan-300 whitespace-nowrap shrink-0"
+          >
+            A4 = {refFrequency} Hz
+          </span>
+        </div>
+
+        <div className="p-3.5 sm:p-5 flex flex-col gap-2.5 sm:gap-4">
+          <div className="grid grid-cols-3 gap-2">
+            {QUICK_REFS.map((freq) => {
+              const active = refFrequency === freq;
+              return (
+                <button
+                  key={freq}
+                  type="button"
+                  onClick={() => onChangeRefFrequency(freq)}
+                  className={`min-h-[42px] sm:min-h-[44px] py-2 px-3 rounded-xl border font-mono text-xs font-semibold tabular-nums active:scale-[0.97] transition-[transform,background-color,border-color,color] duration-200 whitespace-nowrap shrink-0 cursor-pointer ${
+                    active
+                      ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_4px_16px_rgba(34,211,238,0.25)]'
+                      : 'bg-white/[0.06] text-slate-200 border-white/12 hover:bg-white/[0.12]'
+                  }`}
+                >
+                  {freq} Hz
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-between gap-2 glass-recessed rounded-xl p-1.5 sm:p-2">
+            <button
+              type="button"
+              onClick={() => onChangeRefFrequency(refFrequency - 1)}
+              disabled={refFrequency <= MIN_REF_FREQUENCY}
+              aria-label="Decrease reference frequency by 1 Hz"
+              className="min-h-[42px] sm:min-h-[44px] min-w-[56px] px-3.5 py-2 rounded-lg border border-white/15 bg-white/[0.08] font-mono text-sm font-semibold text-slate-100 hover:bg-white/[0.16] active:scale-[0.96] disabled:opacity-35 disabled:cursor-not-allowed transition-[transform,background-color,opacity] duration-200 cursor-pointer"
+            >
+              -1 Hz
+            </button>
+            <span className="font-mono text-xs text-slate-400 tabular-nums">
+              {MIN_REF_FREQUENCY}–{MAX_REF_FREQUENCY} Hz
+            </span>
+            <button
+              type="button"
+              onClick={() => onChangeRefFrequency(refFrequency + 1)}
+              disabled={refFrequency >= MAX_REF_FREQUENCY}
+              aria-label="Increase reference frequency by 1 Hz"
+              className="min-h-[42px] sm:min-h-[44px] min-w-[56px] px-3.5 py-2 rounded-lg border border-white/15 bg-white/[0.08] font-mono text-sm font-semibold text-slate-100 hover:bg-white/[0.16] active:scale-[0.96] disabled:opacity-35 disabled:cursor-not-allowed transition-[transform,background-color,opacity] duration-200 cursor-pointer"
+            >
+              +1 Hz
+            </button>
+          </div>
         </div>
       </div>
     </aside>
