@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { detectPitchYIN } from './pitchAlgorithm.js';
-import { synthesizePluckedStringSamples } from './audioSynth.js';
+import {
+  LearnAudioEngine,
+  synthesizePluckedStringSamples,
+} from './audioSynth.js';
 import {
   clampRefFrequency,
   getNoteFromFrequency,
@@ -250,5 +253,143 @@ test('synthesizePluckedStringSamples produces pitch-accurate acoustic waveforms 
       lateEnergy < earlyEnergy,
       `Expected natural acoustic decay for ${c.instrument} ${c.freq}Hz`
     );
+  }
+});
+
+test('LearnAudioEngine unlocks suspended/interrupted mobile AudioContext and awaits resume before strumming', async () => {
+  const startedSources = [];
+  let createdCtx = null;
+
+  class MockAudioContext {
+    constructor() {
+      this.sampleRate = 48000;
+      this.state = 'suspended';
+      this.currentTime = 0;
+      this.destination = { kind: 'dest' };
+      createdCtx = this;
+    }
+    createDynamicsCompressor() {
+      return {
+        threshold: { value: 0 },
+        knee: { value: 0 },
+        ratio: { value: 0 },
+        attack: { value: 0 },
+        release: { value: 0 },
+        connect() {},
+      };
+    }
+    createGain() {
+      return {
+        gain: { value: 1, setValueAtTime() {}, cancelScheduledValues() {}, setTargetAtTime() {} },
+        connect() {},
+        disconnect() {},
+      };
+    }
+    createBiquadFilter() {
+      return {
+        type: 'peaking',
+        frequency: { value: 0 },
+        Q: { value: 0 },
+        gain: { value: 0 },
+        connect() {},
+        disconnect() {},
+      };
+    }
+    createBuffer(channels, length, sampleRate) {
+      const data = new Float32Array(length);
+      return {
+        length,
+        sampleRate,
+        getChannelData: () => data,
+      };
+    }
+    createBufferSource() {
+      const src = {
+        buffer: null,
+        onended: null,
+        connect() {},
+        disconnect() {},
+        start(when) {
+          startedSources.push({ length: src.buffer?.length || 0, when, state: createdCtx.state });
+        },
+        stop() {},
+      };
+      return src;
+    }
+    async resume() {
+      await Promise.resolve();
+      this.state = 'running';
+      this.currentTime = 0.25;
+    }
+    async close() {
+      this.state = 'closed';
+    }
+  }
+
+  const prevWindow = globalThis.window;
+  const prevAudioSession = globalThis.navigator?.audioSession;
+  const mockAudioSession = { type: 'auto' };
+
+  globalThis.window = {
+    AudioContext: MockAudioContext,
+    addEventListener() {},
+    removeEventListener() {},
+  };
+  if (globalThis.navigator) {
+    try {
+      Object.defineProperty(globalThis.navigator, 'audioSession', {
+        configurable: true,
+        writable: true,
+        value: mockAudioSession,
+      });
+    } catch {
+      // ignore if navigator.audioSession is non-configurable in this Node runtime
+    }
+  }
+
+  try {
+    const engine = new LearnAudioEngine();
+    // 1. Tap Strum while iOS AudioContext starts 'suspended'
+    engine.playChordStrum([40, 45, 50, 55, 59, 64], 440, 'guitar');
+
+    // Silent 1-sample unlock buffer should fire synchronously on tap
+    assert.equal(startedSources.length, 1);
+    assert.equal(startedSources[0].length, 1);
+
+    // Wait for ctx.resume() promise to settle
+    await new Promise((r) => setTimeout(r, 10));
+
+    // Now all 6 guitar strings should be scheduled AFTER ctx.state === 'running'
+    const chordPlucks = startedSources.filter((s) => s.length > 1);
+    assert.equal(chordPlucks.length, 6);
+    assert.ok(chordPlucks.every((s) => s.state === 'running' && s.when >= 0.25));
+
+    // Verify navigator.audioSession switched to 'playback' (bypasses iPhone silent switch)
+    if (globalThis.navigator?.audioSession === mockAudioSession) {
+      assert.equal(mockAudioSession.type, 'playback');
+    }
+
+    // 2. Simulate iOS 'interrupted' state and ensure it still resumes & plays
+    startedSources.length = 0;
+    createdCtx.state = 'interrupted';
+    engine.playChordStrum([55, 60, 64, 67], 440, 'ukulele');
+    await new Promise((r) => setTimeout(r, 10));
+
+    const ukePlucks = startedSources.filter((s) => s.length > 1);
+    assert.equal(ukePlucks.length, 4);
+    assert.ok(ukePlucks.every((s) => s.state === 'running'));
+  } finally {
+    globalThis.window = prevWindow;
+    if (globalThis.navigator && prevAudioSession !== undefined) {
+      try {
+        Object.defineProperty(globalThis.navigator, 'audioSession', {
+          configurable: true,
+          writable: true,
+          value: prevAudioSession,
+        });
+      } catch {
+        // ignore
+      }
+    }
   }
 });

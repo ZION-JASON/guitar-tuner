@@ -163,6 +163,32 @@ export function synthesizePluckedStringSamples({
   return out;
 }
 
+export function setMobileAudioSession(type = 'playback') {
+  if (typeof navigator !== 'undefined' && navigator.audioSession) {
+    try {
+      if (navigator.audioSession.type !== type) {
+        navigator.audioSession.type = type;
+      }
+    } catch {
+      // Ignore unsupported audioSession types on older browsers
+    }
+  }
+}
+
+export function playSilentUnlockBuffer(ctx) {
+  if (!ctx || ctx.state === 'closed') return;
+  try {
+    const silentBuffer = ctx.createBuffer(1, 1, ctx.sampleRate || 44100);
+    const src = ctx.createBufferSource();
+    src.buffer = silentBuffer;
+    src.connect(ctx.destination);
+    src.start(0);
+    src.stop(0.001);
+  } catch {
+    // Ignore unlock failures on restricted contexts
+  }
+}
+
 export function createPluckedAudioBuffer(ctx, freq, durationSec, instrument = 'guitar', seed = 1337) {
   const samples = synthesizePluckedStringSamples({
     freq,
@@ -172,7 +198,11 @@ export function createPluckedAudioBuffer(ctx, freq, durationSec, instrument = 'g
     seed,
   });
   const buffer = ctx.createBuffer(1, samples.length, ctx.sampleRate);
-  buffer.copyToChannel(samples, 0);
+  if (typeof buffer.getChannelData === 'function') {
+    buffer.getChannelData(0).set(samples);
+  } else if (typeof buffer.copyToChannel === 'function') {
+    buffer.copyToChannel(samples, 0);
+  }
   return buffer;
 }
 
@@ -208,34 +238,110 @@ export function createInstrumentBodyChain(ctx, instrument = 'guitar') {
   return { input: lowBody, output: airCut };
 }
 
-class LearnAudioEngine {
+export class LearnAudioEngine {
   constructor() {
     this.ctx = null;
     this.compressor = null;
+    this.masterGain = null;
     this.activeNodes = new Set();
     this.timers = new Set();
     this.bufferCache = new Map();
+    this.playGen = 0;
+    this._unlocked = false;
+    this._gestureListenersBound = false;
+
+    this._bindGlobalUnlock();
   }
 
-  _ensureContext() {
+  _bindGlobalUnlock() {
+    if (this._gestureListenersBound || typeof window === 'undefined') return;
+    this._gestureListenersBound = true;
+
+    const handleFirstGesture = () => {
+      const { ctx, resumePromise } = this._unlockContextSync();
+      if (ctx && ctx.state === 'running') {
+        cleanup();
+      } else if (resumePromise) {
+        resumePromise
+          .then(() => {
+            if (this.ctx && this.ctx.state === 'running') {
+              cleanup();
+            }
+          })
+          .catch(() => {});
+      }
+    };
+
+    const cleanup = () => {
+      window.removeEventListener('touchstart', handleFirstGesture, true);
+      window.removeEventListener('pointerdown', handleFirstGesture, true);
+      window.removeEventListener('keydown', handleFirstGesture, true);
+    };
+
+    window.addEventListener('touchstart', handleFirstGesture, { capture: true, passive: true });
+    window.addEventListener('pointerdown', handleFirstGesture, { capture: true, passive: true });
+    window.addEventListener('keydown', handleFirstGesture, { capture: true, passive: true });
+  }
+
+  _unlockContextSync() {
+    if (typeof window === 'undefined') return { ctx: null, resumePromise: null };
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return null;
+    if (!AudioCtx) return { ctx: null, resumePromise: null };
+
+    // Bypass iOS Silent/Ring switch and earpiece routing for Learn & Strum playback
+    setMobileAudioSession('playback');
+
     if (!this.ctx || this.ctx.state === 'closed') {
       this.ctx = new AudioCtx();
       this.bufferCache.clear();
+      this._unlocked = false;
+
       const comp = this.ctx.createDynamicsCompressor();
-      comp.threshold.value = -16;
+      comp.threshold.value = -14;
       comp.knee.value = 14;
       comp.ratio.value = 4;
       comp.attack.value = 0.004;
       comp.release.value = 0.16;
-      comp.connect(this.ctx.destination);
+
+      const master = this.ctx.createGain();
+      master.gain.value = 1.35;
+
+      comp.connect(master);
+      master.connect(this.ctx.destination);
       this.compressor = comp;
+      this.masterGain = master;
     }
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume().catch(() => {});
+
+    const ctx = this.ctx;
+    if (!this._unlocked || ctx.state !== 'running') {
+      playSilentUnlockBuffer(ctx);
+      this._unlocked = true;
     }
-    return this.ctx;
+
+    let resumePromise = null;
+    if (ctx.state !== 'running' && typeof ctx.resume === 'function') {
+      resumePromise = ctx.resume().catch(() => {});
+    }
+
+    return { ctx, resumePromise };
+  }
+
+  _withReadyContext(gen, callback) {
+    const { ctx, resumePromise } = this._unlockContextSync();
+    if (!ctx) return;
+
+    if (ctx.state === 'running' || !resumePromise) {
+      if (gen === this.playGen) {
+        callback(ctx);
+      }
+      return;
+    }
+
+    resumePromise.then(() => {
+      if (gen !== this.playGen || !this.ctx || this.ctx.state === 'closed') return;
+      if (this.ctx.state !== 'running') return;
+      callback(this.ctx);
+    });
   }
 
   _getCachedBuffer(ctx, freq, durationSec, instrument) {
@@ -252,36 +358,16 @@ class LearnAudioEngine {
     return buf;
   }
 
-  stopAll() {
-    this.timers.forEach((id) => clearTimeout(id));
-    this.timers.clear();
-
-    this.activeNodes.forEach(({ source, gain }) => {
-      try {
-        if (this.ctx) {
-          const now = this.ctx.currentTime;
-          gain.gain.cancelScheduledValues(now);
-          gain.gain.setTargetAtTime(0.0001, now, 0.015);
-        }
-        const stopAt = this.ctx ? this.ctx.currentTime + 0.05 : 0;
-        source.stop(stopAt);
-      } catch {
-        // ignore already-stopped nodes
-      }
-    });
-    this.activeNodes.clear();
-  }
-
-  playPluckedFreq(
+  _schedulePluckedFreq(
+    ctx,
     freq,
     { instrument = 'guitar', delaySec = 0, durationSec = null, volume = 0.55 } = {}
   ) {
-    const ctx = this._ensureContext();
-    if (!ctx || !Number.isFinite(freq) || freq <= 0) return;
+    if (!ctx || ctx.state === 'closed' || !Number.isFinite(freq) || freq <= 0) return;
 
     const profile = getInstrumentTimbre(instrument);
     const dur = durationSec ?? profile.defaultNoteDuration;
-    const startTime = ctx.currentTime + delaySec;
+    const startTime = ctx.currentTime + Math.max(0, delaySec);
 
     const buffer = this._getCachedBuffer(ctx, freq, dur, instrument);
     const source = ctx.createBufferSource();
@@ -312,6 +398,38 @@ class LearnAudioEngine {
     source.stop(startTime + dur + 0.02);
   }
 
+  stopAll() {
+    this.playGen += 1;
+    this.timers.forEach((id) => clearTimeout(id));
+    this.timers.clear();
+
+    this.activeNodes.forEach(({ source, gain }) => {
+      try {
+        if (this.ctx) {
+          const now = this.ctx.currentTime;
+          gain.gain.cancelScheduledValues(now);
+          gain.gain.setTargetAtTime(0.0001, now, 0.015);
+        }
+        const stopAt = this.ctx ? this.ctx.currentTime + 0.05 : 0;
+        source.stop(stopAt);
+      } catch {
+        // ignore already-stopped nodes
+      }
+    });
+    this.activeNodes.clear();
+  }
+
+  playPluckedFreq(
+    freq,
+    { instrument = 'guitar', delaySec = 0, durationSec = null, volume = 0.55 } = {}
+  ) {
+    if (!Number.isFinite(freq) || freq <= 0) return;
+    const gen = this.playGen;
+    this._withReadyContext(gen, (ctx) => {
+      this._schedulePluckedFreq(ctx, freq, { instrument, delaySec, durationSec, volume });
+    });
+  }
+
   playPluckedNote(
     midi,
     refFrequency = 440,
@@ -330,22 +448,26 @@ class LearnAudioEngine {
     this.stopAll();
     if (!Array.isArray(midiNotes) || midiNotes.length === 0) return;
 
+    const gen = this.playGen;
     const profile = getInstrumentTimbre(instrument);
-    const perNoteVol = Math.min(0.46, 1.35 / midiNotes.length);
+    const perNoteVol = Math.min(0.48, 1.4 / midiNotes.length);
 
-    midiNotes.forEach((midi, idx) => {
-      // Natural slightly expressive downstroke timing
-      const jitter = ((idx % 2 === 0 ? 1 : -1) * 0.002);
-      const delaySec = Math.max(0, idx * profile.strumStepSec + jitter);
-      const accent = idx === 0 ? 1.08 : idx === midiNotes.length - 1 ? 0.96 : 0.9;
-      this.playPluckedNote(
-        midi,
-        refFrequency,
-        delaySec,
-        profile.defaultChordDuration,
-        perNoteVol * accent,
-        instrument
-      );
+    this._withReadyContext(gen, (ctx) => {
+      midiNotes.forEach((midi, idx) => {
+        if (!Number.isFinite(midi)) return;
+        const freq = midiToFrequency(midi, refFrequency);
+        if (!Number.isFinite(freq) || freq <= 0) return;
+        // Natural slightly expressive downstroke timing
+        const jitter = (idx % 2 === 0 ? 1 : -1) * 0.002;
+        const delaySec = Math.max(0, idx * profile.strumStepSec + jitter);
+        const accent = idx === 0 ? 1.08 : idx === midiNotes.length - 1 ? 0.96 : 0.9;
+        this._schedulePluckedFreq(ctx, freq, {
+          instrument,
+          delaySec,
+          durationSec: profile.defaultChordDuration,
+          volume: perNoteVol * accent,
+        });
+      });
     });
   }
 
@@ -360,25 +482,38 @@ class LearnAudioEngine {
     this.stopAll();
     if (!Array.isArray(midiNotes) || midiNotes.length === 0) return;
 
-    midiNotes.forEach((midi, idx) => {
-      const delayMs = idx * stepMs;
-      this.playPluckedNote(midi, refFrequency, delayMs / 1000, 0.95, 0.54, instrument);
-      if (onStep) {
-        const tId = setTimeout(() => {
-          this.timers.delete(tId);
-          onStep(idx, midi);
-        }, delayMs);
-        this.timers.add(tId);
+    const gen = this.playGen;
+    this._withReadyContext(gen, (ctx) => {
+      midiNotes.forEach((midi, idx) => {
+        const delayMs = idx * stepMs;
+        if (Number.isFinite(midi)) {
+          const freq = midiToFrequency(midi, refFrequency);
+          if (Number.isFinite(freq) && freq > 0) {
+            this._schedulePluckedFreq(ctx, freq, {
+              instrument,
+              delaySec: delayMs / 1000,
+              durationSec: 0.95,
+              volume: 0.54,
+            });
+          }
+        }
+        if (onStep) {
+          const tId = setTimeout(() => {
+            this.timers.delete(tId);
+            if (gen === this.playGen) onStep(idx, midi);
+          }, delayMs);
+          this.timers.add(tId);
+        }
+      });
+
+      if (onComplete) {
+        const endId = setTimeout(() => {
+          this.timers.delete(endId);
+          if (gen === this.playGen) onComplete();
+        }, midiNotes.length * stepMs + 150);
+        this.timers.add(endId);
       }
     });
-
-    if (onComplete) {
-      const endId = setTimeout(() => {
-        this.timers.delete(endId);
-        onComplete();
-      }, midiNotes.length * stepMs + 150);
-      this.timers.add(endId);
-    }
   }
 
   playProgression(
@@ -392,33 +527,46 @@ class LearnAudioEngine {
     this.stopAll();
     if (!Array.isArray(chords) || chords.length === 0) return;
 
+    const gen = this.playGen;
     const profile = getInstrumentTimbre(instrument);
-    chords.forEach((chord, cIdx) => {
-      const midiNotes = chord?.voicings?.[0]?.midiNotes || [];
-      const baseDelayMs = cIdx * stepMs;
-      const perNoteVol = Math.min(0.42, 1.2 / Math.max(1, midiNotes.length));
 
-      midiNotes.forEach((midi, nIdx) => {
-        const delaySec = (baseDelayMs + nIdx * Math.round(profile.strumStepSec * 1000)) / 1000;
-        this.playPluckedNote(midi, refFrequency, delaySec, 1.15, perNoteVol, instrument);
+    this._withReadyContext(gen, (ctx) => {
+      chords.forEach((chord, cIdx) => {
+        const midiNotes = chord?.voicings?.[0]?.midiNotes || [];
+        const baseDelayMs = cIdx * stepMs;
+        const perNoteVol = Math.min(0.45, 1.3 / Math.max(1, midiNotes.length));
+
+        midiNotes.forEach((midi, nIdx) => {
+          if (!Number.isFinite(midi)) return;
+          const freq = midiToFrequency(midi, refFrequency);
+          if (!Number.isFinite(freq) || freq <= 0) return;
+          const delaySec =
+            (baseDelayMs + nIdx * Math.round(profile.strumStepSec * 1000)) / 1000;
+          this._schedulePluckedFreq(ctx, freq, {
+            instrument,
+            delaySec,
+            durationSec: 1.15,
+            volume: perNoteVol,
+          });
+        });
+
+        if (onStep) {
+          const tId = setTimeout(() => {
+            this.timers.delete(tId);
+            if (gen === this.playGen) onStep(cIdx);
+          }, baseDelayMs);
+          this.timers.add(tId);
+        }
       });
 
-      if (onStep) {
-        const tId = setTimeout(() => {
-          this.timers.delete(tId);
-          onStep(cIdx);
-        }, baseDelayMs);
-        this.timers.add(tId);
+      if (onComplete) {
+        const endId = setTimeout(() => {
+          this.timers.delete(endId);
+          if (gen === this.playGen) onComplete();
+        }, chords.length * stepMs + 180);
+        this.timers.add(endId);
       }
     });
-
-    if (onComplete) {
-      const endId = setTimeout(() => {
-        this.timers.delete(endId);
-        onComplete();
-      }, chords.length * stepMs + 180);
-      this.timers.add(endId);
-    }
   }
 
   dispose() {

@@ -3,6 +3,8 @@ import { detectPitchYIN } from '../utils/pitchAlgorithm';
 import {
   createInstrumentBodyChain,
   createPluckedAudioBuffer,
+  playSilentUnlockBuffer,
+  setMobileAudioSession,
 } from '../utils/audioSynth';
 import {
   clampRefFrequency,
@@ -203,6 +205,7 @@ export const useTuner = (instrument = 'guitar') => {
   const stopTuner = useCallback(() => {
     startRequestIdRef.current += 1;
     stopMicResources();
+    setMobileAudioSession('playback');
     setIsListening(false);
     setData(IDLE_DATA);
   }, [stopMicResources]);
@@ -222,11 +225,14 @@ export const useTuner = (instrument = 'guitar') => {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (!AudioCtx) return;
 
+        setMobileAudioSession('playback');
+
         if (!toneCtxRef.current || toneCtxRef.current.state === 'closed') {
           toneCtxRef.current = new AudioCtx();
         }
         const ctx = toneCtxRef.current;
-        if (ctx.state === 'suspended') {
+        if (ctx.state !== 'running') {
+          playSilentUnlockBuffer(ctx);
           await ctx.resume();
         }
 
@@ -273,6 +279,8 @@ export const useTuner = (instrument = 'guitar') => {
         throw new Error('Web Audio API is not supported in this browser.');
       }
 
+      setMobileAudioSession('play-and-record');
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: false,
@@ -289,7 +297,7 @@ export const useTuner = (instrument = 'guitar') => {
       }
 
       const ctx = new AudioCtx();
-      if (ctx.state === 'suspended') {
+      if (ctx.state !== 'running') {
         await ctx.resume();
       }
 
