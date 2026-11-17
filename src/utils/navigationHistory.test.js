@@ -83,14 +83,22 @@ test('normalizeNavSnapshot safely handles invalid or malformed popstate payloads
   const fromMalformed = normalizeNavSnapshot({
     view: 'unknown',
     instrument: 'banjo',
-    learn: { tab: 'invalid', rootPc: -5 },
+    learn: { tab: 'invalid', rootPc: -5, chordPlayMode: 'invalid' },
     stepIndex: -2,
     prevLabel: 42,
   });
   assert.equal(fromMalformed.view, 'tuner');
   assert.equal(fromMalformed.instrument, 'guitar');
   assert.equal(fromMalformed.learn.tab, 'chords');
+  assert.equal(fromMalformed.learn.chordPlayMode, 'strum');
   assert.equal(fromMalformed.learn.rootPc, 7);
   assert.equal(fromMalformed.stepIndex, 0);
   assert.equal(fromMalformed.prevLabel, null);
+
+  const withArpeggio = normalizeNavSnapshot({
+    view: 'learn',
+    instrument: 'bass',
+    learn: { chordPlayMode: 'arpeggio' },
+  });
+  assert.equal(withArpeggio.learn.chordPlayMode, 'arpeggio');
 });

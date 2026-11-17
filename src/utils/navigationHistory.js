@@ -15,6 +15,7 @@ export const DEFAULT_LEARN_STATE = {
   chordQuery: '',
   chordCategory: 'All',
   chordLabelMode: 'fingers',
+  chordPlayMode: 'strum',
   scaleId: 'major',
   scaleLabelMode: 'notes',
   boxFilter: 'all',
@@ -43,6 +44,9 @@ export function normalizeNavSnapshot(raw) {
   const validInstrument = VALID_INSTRUMENTS.includes(raw.instrument)
     ? raw.instrument
     : 'guitar';
+  const validPlayMode = ['strum', 'arpeggio'].includes(learnRaw.chordPlayMode)
+    ? learnRaw.chordPlayMode
+    : 'strum';
   const rootPc =
     typeof learnRaw.rootPc === 'number' && Number.isFinite(learnRaw.rootPc)
       ? ((Math.round(learnRaw.rootPc) % 12) + 12) % 12
@@ -56,6 +60,7 @@ export function normalizeNavSnapshot(raw) {
       ...learnRaw,
       tab: validTab,
       rootPc,
+      chordPlayMode: validPlayMode,
       chordQuery: typeof learnRaw.chordQuery === 'string' ? learnRaw.chordQuery : '',
       familyModalTarget:
         learnRaw.familyModalTarget &&

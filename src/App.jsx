@@ -297,6 +297,7 @@ function App() {
                 presetLabel={`${activeInstrumentMeta.label.toUpperCase()} · ${activePreset.label}${
                   activePreset.shortLabel ? ` · ${activePreset.shortLabel}` : ''
                 }`}
+                refFrequency={refFrequency}
                 lockedStringNum={lockedStringNum}
                 onClearLock={() => setLockedStringNum(null)}
               />

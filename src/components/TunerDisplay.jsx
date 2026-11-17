@@ -9,6 +9,7 @@ const TunerDisplay = ({
   onStartTuner,
   onStopTuner,
   presetLabel,
+  refFrequency = 440,
   lockedStringNum,
   onClearLock,
 }) => {
@@ -64,6 +65,15 @@ const TunerDisplay = ({
         <div className="flex flex-wrap items-center gap-2.5 min-w-0">
           <span className="font-mono text-xs font-medium tracking-wider text-slate-300 truncate">
             {presetLabel}
+          </span>
+          <span
+            className={`font-mono text-xs tabular-nums whitespace-nowrap ${
+              refFrequency !== 440
+                ? 'text-amber-300 font-semibold'
+                : 'text-slate-400'
+            }`}
+          >
+            · A4 = {refFrequency} Hz
           </span>
           {lockedStringNum !== null && (
             <button

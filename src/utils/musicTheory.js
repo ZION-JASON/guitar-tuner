@@ -71,102 +71,109 @@ export function shouldPreferFlats(rootPc) {
   return [1, 3, 5, 6, 8, 10].includes(((rootPc % 12) + 12) % 12);
 }
 
+// All 25 chord qualities are supported across Guitar, Bass Guitar, and Ukulele.
+export const BASS_EXCLUDED_QUALITY_IDS = new Set();
+
+export function isChordQualitySupportedForInstrument(qualityId, instrumentId = 'guitar') {
+  if (instrumentId === 'bass') {
+    return !BASS_EXCLUDED_QUALITY_IDS.has(qualityId);
+  }
+  return true;
+}
+
+export function mapQualityForInstrument(qualityId, instrumentId = 'guitar') {
+  if (instrumentId === 'bass' && BASS_EXCLUDED_QUALITY_IDS.has(qualityId)) {
+    return '5';
+  }
+  return qualityId;
+}
+
+export function getChordQualitiesForInstrument(instrumentId = 'guitar') {
+  if (instrumentId === 'bass') {
+    return CHORD_QUALITIES.filter((q) => !BASS_EXCLUDED_QUALITY_IDS.has(q.id));
+  }
+  return CHORD_QUALITIES;
+}
+
+// Ordered to prioritize Major chords first, followed by core 7th/Power/Minor chords,
+// with suspended, extended, and altered complex chords placed at the bottom.
 export const CHORD_QUALITIES = [
   {
     id: 'major',
     name: 'Major',
     symbol: '',
     category: 'Triads',
+    tier: 'core',
     intervals: [0, 4, 7],
     degrees: ['1', '3', '5'],
     description: 'Bright, stable foundational triad.',
-  },
-  {
-    id: 'minor',
-    name: 'Minor',
-    symbol: 'm',
-    category: 'Triads',
-    intervals: [0, 3, 7],
-    degrees: ['1', 'b3', '5'],
-    description: 'Melancholic triad with a lowered third.',
-  },
-  {
-    id: '5',
-    name: 'Power (5)',
-    symbol: '5',
-    category: 'Triads',
-    intervals: [0, 7],
-    degrees: ['1', '5'],
-    description: 'Neutral root-fifth dyad ideal for rock & riffs.',
-  },
-  {
-    id: 'sus2',
-    name: 'Sus2',
-    symbol: 'sus2',
-    category: 'Suspended',
-    intervals: [0, 2, 7],
-    degrees: ['1', '2', '5'],
-    description: 'Open, airy voicing replacing the 3rd with the 2nd.',
-  },
-  {
-    id: 'sus4',
-    name: 'Sus4',
-    symbol: 'sus4',
-    category: 'Suspended',
-    intervals: [0, 5, 7],
-    degrees: ['1', '4', '5'],
-    description: 'Tense suspended voicing resolving naturally to major.',
-  },
-  {
-    id: '7',
-    name: 'Dominant 7th',
-    symbol: '7',
-    category: 'Sevenths',
-    intervals: [0, 4, 7, 10],
-    degrees: ['1', '3', '5', 'b7'],
-    description: 'Bluesy, tension-rich V7 chord driving resolution.',
   },
   {
     id: 'maj7',
     name: 'Major 7th',
     symbol: 'maj7',
     category: 'Sevenths',
+    tier: 'core',
     intervals: [0, 4, 7, 11],
     degrees: ['1', '3', '5', '7'],
     description: 'Lush, warm jazz/neo-soul tonic chord.',
-  },
-  {
-    id: 'm7',
-    name: 'Minor 7th',
-    symbol: 'm7',
-    category: 'Sevenths',
-    intervals: [0, 3, 7, 10],
-    degrees: ['1', 'b3', '5', 'b7'],
-    description: 'Smooth minor seventh used across jazz, funk, and R&B.',
-  },
-  {
-    id: '7sus4',
-    name: '7sus4',
-    symbol: '7sus4',
-    category: 'Suspended',
-    intervals: [0, 5, 7, 10],
-    degrees: ['1', '4', '5', 'b7'],
-    description: 'Floating dominant suspension common in soul and fusion.',
   },
   {
     id: '6',
     name: 'Major 6th',
     symbol: '6',
     category: 'Extended',
+    tier: 'core',
     intervals: [0, 4, 7, 9],
     degrees: ['1', '3', '5', '6'],
     description: 'Vintage swing and acoustic major color chord.',
+  },
+  {
+    id: '7',
+    name: 'Dominant 7th',
+    symbol: '7',
+    category: 'Sevenths',
+    tier: 'core',
+    intervals: [0, 4, 7, 10],
+    degrees: ['1', '3', '5', 'b7'],
+    description: 'Bluesy, tension-rich V7 chord driving resolution.',
+  },
+  {
+    id: '5',
+    name: 'Power (5)',
+    symbol: '5',
+    category: 'Triads',
+    tier: 'core',
+    intervals: [0, 7],
+    degrees: ['1', '5'],
+    description: 'Neutral root-fifth dyad ideal for rock & riffs.',
+  },
+  {
+    id: 'minor',
+    name: 'Minor',
+    symbol: 'm',
+    category: 'Triads',
+    tier: 'core',
+    intervals: [0, 3, 7],
+    degrees: ['1', 'b3', '5'],
+    description: 'Melancholic triad with a lowered third.',
+  },
+  {
+    id: 'm7',
+    name: 'Minor 7th',
+    symbol: 'm7',
+    category: 'Sevenths',
+    tier: 'core',
+    intervals: [0, 3, 7, 10],
+    degrees: ['1', 'b3', '5', 'b7'],
+    description: 'Smooth minor seventh used across jazz, funk, and R&B.',
   },
   {
     id: 'm6',
     name: 'Minor 6th',
     symbol: 'm6',
     category: 'Extended',
+    tier: 'core',
     intervals: [0, 3, 7, 9],
     degrees: ['1', 'b3', '5', '6'],
     description: 'Dorian-flavored minor chord with a bright major 6th.',
@@ -176,78 +183,67 @@ export const CHORD_QUALITIES = [
     name: 'Add9',
     symbol: 'add9',
     category: 'Extended',
+    tier: 'complex',
     intervals: [0, 4, 7, 2],
     degrees: ['1', '3', '5', '9'],
     description: 'Shimmering triad with an added ninth and no seventh.',
-  },
-  {
-    id: 'm9',
-    name: 'Minor 9th',
-    symbol: 'm9',
-    category: 'Extended',
-    intervals: [0, 3, 7, 10, 2],
-    degrees: ['1', 'b3', '5', 'b7', '9'],
-    description: 'Rich neo-soul and jazz minor extended voicing.',
   },
   {
     id: 'maj9',
     name: 'Major 9th',
     symbol: 'maj9',
     category: 'Extended',
+    tier: 'complex',
     intervals: [0, 4, 7, 11, 2],
     degrees: ['1', '3', '5', '7', '9'],
     description: 'Expressive open major ninth chord.',
   },
   {
-    id: 'dim',
-    name: 'Diminished',
-    symbol: 'dim',
-    category: 'Altered / Dim',
-    intervals: [0, 3, 6],
-    degrees: ['1', 'b3', 'b5'],
-    description: 'Tight, tense diminished triad with stacked minor thirds.',
+    id: '6_9',
+    name: 'Major 6/9',
+    symbol: '6/9',
+    category: 'Extended',
+    tier: 'complex',
+    intervals: [0, 4, 7, 9, 2],
+    degrees: ['1', '3', '5', '6', '9'],
+    description: 'Smooth bossa nova and jazz tonic triad with 6th and 9th.',
   },
   {
-    id: 'm7b5',
-    name: 'Half-Dim (m7b5)',
-    symbol: 'm7b5',
-    category: 'Altered / Dim',
-    intervals: [0, 3, 6, 10],
-    degrees: ['1', 'b3', 'b5', 'b7'],
-    description: 'Essential ii chord in minor ii-V-i progressions.',
+    id: 'sus2',
+    name: 'Sus2',
+    symbol: 'sus2',
+    category: 'Suspended',
+    tier: 'complex',
+    intervals: [0, 2, 7],
+    degrees: ['1', '2', '5'],
+    description: 'Open, airy voicing replacing the 3rd with the 2nd.',
   },
   {
-    id: 'dim7',
-    name: 'Diminished 7th',
-    symbol: 'dim7',
-    category: 'Altered / Dim',
-    intervals: [0, 3, 6, 9],
-    degrees: ['1', 'b3', 'b5', 'bb7'],
-    description: 'Symmetrical passing chord every 3 frets.',
+    id: 'sus4',
+    name: 'Sus4',
+    symbol: 'sus4',
+    category: 'Suspended',
+    tier: 'complex',
+    intervals: [0, 5, 7],
+    degrees: ['1', '4', '5'],
+    description: 'Tense suspended voicing resolving naturally to major.',
   },
   {
-    id: 'aug',
-    name: 'Augmented',
-    symbol: 'aug',
-    category: 'Altered / Dim',
-    intervals: [0, 4, 8],
-    degrees: ['1', '3', '#5'],
-    description: 'Symmetrical raised-fifth chord creating suspense.',
-  },
-  {
-    id: 'm_maj7',
-    name: 'Minor Maj7',
-    symbol: 'm(maj7)',
-    category: 'Altered / Dim',
-    intervals: [0, 3, 7, 11],
-    degrees: ['1', 'b3', '5', '7'],
-    description: 'Cinematic James Bond minor chord with a natural 7th.',
+    id: '7sus4',
+    name: '7sus4',
+    symbol: '7sus4',
+    category: 'Suspended',
+    tier: 'complex',
+    intervals: [0, 5, 7, 10],
+    degrees: ['1', '4', '5', 'b7'],
+    description: 'Floating dominant suspension common in soul and fusion.',
   },
   {
     id: '9',
     name: 'Dominant 9th',
     symbol: '9',
     category: 'Extended',
+    tier: 'complex',
     intervals: [0, 4, 7, 10, 2],
     degrees: ['1', '3', '5', 'b7', '9'],
     description: 'Funk, blues, and R&B dominant voicing with a warm 9th.',
@@ -257,33 +253,87 @@ export const CHORD_QUALITIES = [
     name: 'Dominant 13th',
     symbol: '13',
     category: 'Extended',
+    tier: 'complex',
     intervals: [0, 4, 7, 10, 9],
     degrees: ['1', '3', '5', 'b7', '13'],
     description: 'Lush jazz dominant voicing adding the natural 13th on top.',
+  },
+  {
+    id: 'm9',
+    name: 'Minor 9th',
+    symbol: 'm9',
+    category: 'Extended',
+    tier: 'complex',
+    intervals: [0, 3, 7, 10, 2],
+    degrees: ['1', 'b3', '5', 'b7', '9'],
+    description: 'Rich neo-soul and jazz minor extended voicing.',
   },
   {
     id: 'm11',
     name: 'Minor 11th',
     symbol: 'm11',
     category: 'Extended',
+    tier: 'complex',
     intervals: [0, 3, 7, 10, 5],
     degrees: ['1', 'b3', '5', 'b7', '11'],
     description: 'Open, modal minor voicing with a suspended 11th color.',
   },
   {
-    id: '6_9',
-    name: 'Major 6/9',
-    symbol: '6/9',
-    category: 'Extended',
-    intervals: [0, 4, 7, 9, 2],
-    degrees: ['1', '3', '5', '6', '9'],
-    description: 'Smooth bossa nova and jazz tonic triad with 6th and 9th.',
+    id: 'm_maj7',
+    name: 'Minor Maj7',
+    symbol: 'm(maj7)',
+    category: 'Altered / Dim',
+    tier: 'complex',
+    intervals: [0, 3, 7, 11],
+    degrees: ['1', 'b3', '5', '7'],
+    description: 'Cinematic James Bond minor chord with a natural 7th.',
+  },
+  {
+    id: 'dim',
+    name: 'Diminished',
+    symbol: 'dim',
+    category: 'Altered / Dim',
+    tier: 'complex',
+    intervals: [0, 3, 6],
+    degrees: ['1', 'b3', 'b5'],
+    description: 'Tight, tense diminished triad with stacked minor thirds.',
+  },
+  {
+    id: 'dim7',
+    name: 'Diminished 7th',
+    symbol: 'dim7',
+    category: 'Altered / Dim',
+    tier: 'complex',
+    intervals: [0, 3, 6, 9],
+    degrees: ['1', 'b3', 'b5', 'bb7'],
+    description: 'Symmetrical passing chord every 3 frets.',
+  },
+  {
+    id: 'm7b5',
+    name: 'Half-Dim (m7b5)',
+    symbol: 'm7b5',
+    category: 'Altered / Dim',
+    tier: 'complex',
+    intervals: [0, 3, 6, 10],
+    degrees: ['1', 'b3', 'b5', 'b7'],
+    description: 'Essential ii chord in minor ii-V-i progressions.',
+  },
+  {
+    id: 'aug',
+    name: 'Augmented',
+    symbol: 'aug',
+    category: 'Altered / Dim',
+    tier: 'complex',
+    intervals: [0, 4, 8],
+    degrees: ['1', '3', '#5'],
+    description: 'Symmetrical raised-fifth chord creating suspense.',
   },
   {
     id: '7sharp9',
     name: 'Dom 7#9 (Hendrix)',
     symbol: '7#9',
     category: 'Altered / Dim',
+    tier: 'complex',
     intervals: [0, 4, 7, 10, 3],
     degrees: ['1', '3', '5', 'b7', '#9'],
     description: 'Iconic rock & blues altered chord blending M3 and #9.',
@@ -293,6 +343,7 @@ export const CHORD_QUALITIES = [
     name: 'Dom 7b9',
     symbol: '7b9',
     category: 'Altered / Dim',
+    tier: 'complex',
     intervals: [0, 4, 7, 10, 1],
     degrees: ['1', '3', '5', 'b7', 'b9'],
     description: 'Dramatic jazz altered dominant resolving to minor or major.',
@@ -495,23 +546,211 @@ const UKE_OPEN_VOICINGS = {
   '9:dim7': [{ label: 'Adim7 Open', frets: [2, 3, 2, 3], fingers: [1, 3, 2, 4] }],
 };
 
-// Curated Bass 4-string chord/triad voicings (E1-A1-D2-G2)
+// Curated Bass 4-string chord voicings (E1-A1-D2-G2)
+// Idiomatic bass voicings: 10th Shells (mute A, root on E, 3rd/b3 on G), upper-register triads,
+// Root-5th-Octave Power shapes, and Dom7/Maj7/m7/m6 shells respecting the Low-Interval Limit.
 const BASS_OPEN_VOICINGS = {
-  '0:major': [{ label: 'C Shell (A-Root)', frets: [-1, 3, 2, 0], fingers: [0, 2, 1, 0] }],
-  '2:major': [{ label: 'D Triad (D-Root)', frets: [-1, -1, 0, 2], fingers: [0, 0, 0, 1] }],
-  '4:major': [{ label: 'Open E Chord', frets: [0, 2, 2, 1], fingers: [0, 2, 3, 1] }],
-  '5:major': [{ label: 'F Shell (E-Root)', frets: [1, 3, 3, 2], fingers: [1, 3, 4, 2] }],
-  '7:major': [{ label: 'Open G Chord', frets: [3, 2, 0, 0], fingers: [2, 1, 0, 0] }],
-  '9:major': [{ label: 'Open A Triad', frets: [-1, 0, 2, 2], fingers: [0, 0, 1, 2] }],
-  '4:minor': [{ label: 'Open Em Chord', frets: [0, 2, 2, 0], fingers: [0, 1, 2, 0] }],
-  '7:minor': [{ label: 'Gm Shell', frets: [3, 5, 5, 3], fingers: [1, 3, 4, 1] }],
-  '9:minor': [{ label: 'Open Am Triad', frets: [-1, 0, 2, 2], fingers: [0, 0, 1, 2] }],
-  '2:minor': [{ label: 'Open Dm Shell', frets: [-1, 5, 3, 2], fingers: [0, 4, 2, 1] }],
-  '0:maj7': [{ label: 'Cmaj7 Shell', frets: [-1, 3, 2, 4], fingers: [0, 2, 1, 4] }],
-  '0:m7': [{ label: 'Cm7 Shell', frets: [-1, 3, 1, 3], fingers: [0, 2, 1, 3] }],
-  '7:7': [{ label: 'G7 Shell', frets: [3, -1, 3, 4], fingers: [1, 0, 2, 3] }],
-  '4:5': [{ label: 'Open E5 Power', frets: [0, 2, 2, -1], fingers: [0, 1, 2, 0] }],
-  '9:5': [{ label: 'Open A5 Power', frets: [-1, 0, 2, 2], fingers: [0, 0, 1, 2] }],
+  // All 12 Major roots default to 1 simple Root Note (easy low-neck frets 0-4);
+  // connecting bass shapes (Root + 5th, Root + Octave, 10th Shell, Upper Triad) live in variations.
+  '0:major': [
+    { label: 'Root Note (C)', frets: [-1, 3, -1, -1], fingers: [0, 3, 0, 0] },
+    { label: 'Root + 5th', frets: [-1, 3, 5, -1], fingers: [0, 1, 3, 0] },
+    { label: 'Root + Octave', frets: [-1, 3, -1, 5], fingers: [0, 1, 0, 3] },
+    { label: '10th Shell (A-Root)', frets: [-1, 3, 2, 0], fingers: [0, 3, 2, 0] },
+    { label: '10th Shell (E-Root)', frets: [8, -1, 10, 9], fingers: [1, 0, 3, 2] },
+  ],
+  '1:major': [
+    { label: 'Root Note (C#/Db)', frets: [-1, 4, -1, -1], fingers: [0, 4, 0, 0] },
+    { label: 'Root + 5th', frets: [-1, 4, 6, -1], fingers: [0, 1, 3, 0] },
+    { label: 'Root + Octave', frets: [-1, 4, -1, 6], fingers: [0, 1, 0, 3] },
+  ],
+  '2:major': [
+    { label: 'Root Note (Open D)', frets: [-1, -1, 0, -1], fingers: [0, 0, 0, 0] },
+    { label: 'Root + 5th', frets: [-1, -1, 0, 2], fingers: [0, 0, 0, 2] },
+    { label: 'Root + Octave', frets: [-1, 5, -1, 7], fingers: [0, 1, 0, 3] },
+    { label: 'Upper Triad (A-Root)', frets: [-1, 5, 4, 2], fingers: [0, 4, 3, 1] },
+    { label: '10th Shell (E-Root)', frets: [10, -1, 12, 11], fingers: [1, 0, 3, 2] },
+  ],
+  '3:major': [
+    { label: 'Root Note (Eb/D#)', frets: [-1, -1, 1, -1], fingers: [0, 0, 1, 0] },
+    { label: 'Root + 5th', frets: [-1, -1, 1, 3], fingers: [0, 0, 1, 3] },
+    { label: 'Root + Octave', frets: [-1, 6, -1, 8], fingers: [0, 1, 0, 3] },
+  ],
+  '4:major': [
+    { label: 'Root Note (Open E)', frets: [0, -1, -1, -1], fingers: [0, 0, 0, 0] },
+    { label: 'Root + 5th', frets: [0, 2, -1, -1], fingers: [0, 1, 0, 0] },
+    { label: 'Root + Octave', frets: [0, -1, 2, -1], fingers: [0, 0, 2, 0] },
+    { label: '10th Shell (Open E)', frets: [0, -1, 2, 1], fingers: [0, 0, 2, 1] },
+    { label: 'Upper Triad (A-Root)', frets: [-1, 7, 6, 4], fingers: [0, 4, 3, 1] },
+  ],
+  '5:major': [
+    { label: 'Root Note (F)', frets: [1, -1, -1, -1], fingers: [1, 0, 0, 0] },
+    { label: 'Root + 5th', frets: [1, 3, -1, -1], fingers: [1, 3, 0, 0] },
+    { label: 'Root + Octave', frets: [1, -1, 3, -1], fingers: [1, 0, 3, 0] },
+    { label: '10th Shell (E-Root)', frets: [1, -1, 3, 2], fingers: [1, 0, 3, 2] },
+    { label: 'Upper Triad (A-Root)', frets: [-1, 8, 7, 5], fingers: [0, 4, 3, 1] },
+  ],
+  '6:major': [
+    { label: 'Root Note (F#/Gb)', frets: [2, -1, -1, -1], fingers: [1, 0, 0, 0] },
+    { label: 'Root + 5th', frets: [2, 4, -1, -1], fingers: [1, 3, 0, 0] },
+    { label: 'Root + Octave', frets: [2, -1, 4, -1], fingers: [1, 0, 3, 0] },
+  ],
+  '7:major': [
+    { label: 'Root Note (G)', frets: [3, -1, -1, -1], fingers: [2, 0, 0, 0] },
+    { label: 'Root + 5th', frets: [3, 5, -1, -1], fingers: [1, 3, 0, 0] },
+    { label: 'Root + Octave', frets: [3, -1, 5, -1], fingers: [1, 0, 3, 0] },
+    { label: '10th Shell (E-Root)', frets: [3, -1, 5, 4], fingers: [1, 0, 3, 2] },
+    { label: 'Upper Triad (A-Root)', frets: [-1, 10, 9, 7], fingers: [0, 4, 3, 1] },
+  ],
+  '8:major': [
+    { label: 'Root Note (G#/Ab)', frets: [4, -1, -1, -1], fingers: [2, 0, 0, 0] },
+    { label: 'Root + 5th', frets: [4, 6, -1, -1], fingers: [1, 3, 0, 0] },
+    { label: 'Root + Octave', frets: [4, -1, 6, -1], fingers: [1, 0, 3, 0] },
+  ],
+  '9:major': [
+    { label: 'Root Note (Open A)', frets: [-1, 0, -1, -1], fingers: [0, 0, 0, 0] },
+    { label: 'Root + 5th', frets: [-1, 0, 2, -1], fingers: [0, 0, 1, 0] },
+    { label: 'Root + Octave', frets: [-1, 0, -1, 2], fingers: [0, 0, 0, 2] },
+    { label: '10th Shell (E-Root)', frets: [5, -1, 7, 6], fingers: [1, 0, 3, 2] },
+    { label: 'Upper Triad (A-Root)', frets: [-1, 12, 11, 9], fingers: [0, 4, 3, 1] },
+  ],
+  '10:major': [
+    { label: 'Root Note (Bb/A#)', frets: [-1, 1, -1, -1], fingers: [0, 1, 0, 0] },
+    { label: 'Root + 5th', frets: [-1, 1, 3, -1], fingers: [0, 1, 3, 0] },
+    { label: 'Root + Octave', frets: [-1, 1, -1, 3], fingers: [0, 1, 0, 3] },
+  ],
+  '11:major': [
+    { label: 'Root Note (B)', frets: [-1, 2, -1, -1], fingers: [0, 1, 0, 0] },
+    { label: 'Root + 5th', frets: [-1, 2, 4, -1], fingers: [0, 1, 3, 0] },
+    { label: 'Root + Octave', frets: [-1, 2, -1, 4], fingers: [0, 1, 0, 3] },
+    { label: '10th Shell (E-Root)', frets: [7, -1, 9, 8], fingers: [1, 0, 3, 2] },
+  ],
+  '0:minor': [
+    { label: 'Cm Upper Triad (A-Root)', frets: [-1, 3, 1, 0], fingers: [0, 3, 1, 0] },
+    { label: 'Cm 10th Shell (E-Root)', frets: [8, -1, 10, 8], fingers: [1, 0, 3, 1] },
+  ],
+  '2:minor': [
+    { label: 'Dm Upper Triad (A-Root)', frets: [-1, 5, 3, 2], fingers: [0, 4, 2, 1] },
+    { label: 'Dm 10th Shell (E-Root)', frets: [10, -1, 12, 10], fingers: [1, 0, 3, 1] },
+  ],
+  '4:minor': [
+    { label: 'Open Em 10th Shell', frets: [0, -1, 2, 0], fingers: [0, 0, 1, 0] },
+    { label: 'Em Upper Triad (A-Root)', frets: [-1, 7, 5, 4], fingers: [0, 4, 2, 1] },
+  ],
+  '5:minor': [
+    { label: 'Fm 10th Shell (E-Root)', frets: [1, -1, 3, 1], fingers: [1, 0, 3, 1] },
+    { label: 'Fm Upper Triad (A-Root)', frets: [-1, 8, 6, 5], fingers: [0, 4, 2, 1] },
+  ],
+  '7:minor': [
+    { label: 'Gm 10th Shell (E-Root)', frets: [3, -1, 5, 3], fingers: [1, 0, 3, 1] },
+    { label: 'Gm Upper Triad (A-Root)', frets: [-1, 10, 8, 7], fingers: [0, 4, 2, 1] },
+  ],
+  '9:minor': [
+    { label: 'Am 10th Shell (E-Root)', frets: [5, -1, 7, 5], fingers: [1, 0, 3, 1] },
+    { label: 'Am Upper Triad (A-Root)', frets: [-1, 12, 10, 9], fingers: [0, 4, 2, 1] },
+  ],
+  '11:minor': [
+    { label: 'Bm 10th Shell (E-Root)', frets: [7, -1, 9, 7], fingers: [1, 0, 3, 1] },
+  ],
+  '0:maj7': [
+    { label: 'Cmaj7 Shell (A-Root)', frets: [-1, 3, 2, 4], fingers: [0, 2, 1, 3] },
+    { label: 'Cmaj7 Shell (E-Root)', frets: [8, -1, 9, 9], fingers: [1, 0, 2, 3] },
+  ],
+  '7:7': [
+    { label: 'G7 Shell (E-Root)', frets: [3, -1, 3, 4], fingers: [1, 0, 2, 3] },
+  ],
+  '0:7': [
+    { label: 'C7 Shell (A-Root)', frets: [-1, 3, 2, 3], fingers: [0, 3, 1, 2] },
+    { label: 'C7 Shell (E-Root)', frets: [8, -1, 8, 9], fingers: [1, 0, 2, 3] },
+  ],
+  '4:m7': [
+    { label: 'Open Em7 Shell', frets: [0, -1, 0, 0], fingers: [0, 0, 0, 0] },
+  ],
+  '9:m7': [
+    { label: 'Am7 Shell (E-Root)', frets: [5, -1, 5, 5], fingers: [1, 0, 2, 3] },
+  ],
+  '2:m7': [
+    { label: 'Dm7 Shell (A-Root)', frets: [-1, 5, 3, 5], fingers: [0, 3, 1, 4] },
+  ],
+  '0:m7': [
+    { label: 'Cm7 Shell (A-Root)', frets: [-1, 3, 1, 3], fingers: [0, 3, 1, 4] },
+  ],
+  '4:5': [
+    { label: 'Open E5 Dyad (R+5)', frets: [0, 2, -1, -1], fingers: [0, 1, 0, 0] },
+    { label: 'Open E5 Power (R-5-8)', frets: [0, 2, 2, -1], fingers: [0, 1, 2, 0] },
+    { label: 'E5 Dyad (A-Root)', frets: [-1, 7, 9, -1], fingers: [0, 1, 3, 0] },
+  ],
+  '9:5': [
+    { label: 'Open A5 Dyad (R+5)', frets: [-1, 0, 2, -1], fingers: [0, 0, 1, 0] },
+    { label: 'Open A5 Power (R-5-8)', frets: [-1, 0, 2, 2], fingers: [0, 0, 1, 2] },
+    { label: 'A5 Power (E-Root)', frets: [5, 7, 7, -1], fingers: [1, 3, 4, 0] },
+  ],
+  '2:5': [
+    { label: 'Open D5 Dyad (R+5)', frets: [-1, -1, 0, 2], fingers: [0, 0, 0, 1] },
+    { label: 'D5 Power (A-Root)', frets: [-1, 5, 7, 7], fingers: [0, 1, 3, 4] },
+  ],
+  '7:5': [
+    { label: 'G5 Dyad (R+5)', frets: [3, 5, -1, -1], fingers: [1, 3, 0, 0] },
+    { label: 'G5 Power (R-5-8)', frets: [3, 5, 5, -1], fingers: [1, 3, 4, 0] },
+    { label: 'Open G5 Shell', frets: [3, -1, 0, 0], fingers: [1, 0, 0, 0] },
+  ],
+  '0:5': [
+    { label: 'C5 Dyad (R+5)', frets: [-1, 3, 5, -1], fingers: [0, 1, 3, 0] },
+    { label: 'C5 Power (A-Root)', frets: [-1, 3, 5, 5], fingers: [0, 1, 3, 4] },
+    { label: 'C5 Power (E-Root)', frets: [8, 10, 10, -1], fingers: [1, 3, 4, 0] },
+  ],
+};
+
+// Movable 4-string Bass shell shapes (R-8-10th, R-5-8 Power, R-b7-10th, R-M7-10th)
+const BASS_MOVABLE_SHAPES = {
+  major: [
+    { label: '10th Shell (E-Root)', rootString: 4, offsets: [0, null, 2, 1], fingers: [1, 0, 3, 2], minRootFret: 0 },
+    { label: 'Upper Triad (A-Root)', rootString: 3, offsets: [null, 0, -1, -3], fingers: [0, 4, 3, 1], minRootFret: 3 },
+  ],
+  minor: [
+    { label: 'Minor 10th Shell (E-Root)', rootString: 4, offsets: [0, null, 2, 0], fingers: [1, 0, 3, 1], minRootFret: 0 },
+    { label: 'Minor Upper Triad (A-Root)', rootString: 3, offsets: [null, 0, -2, -3], fingers: [0, 4, 2, 1], minRootFret: 3 },
+  ],
+  '5': [
+    { label: 'R-5-8 Power (E-Root)', rootString: 4, offsets: [0, 2, 2, null], fingers: [1, 3, 4, 0], minRootFret: 0 },
+    { label: 'R-5-8 Power (A-Root)', rootString: 3, offsets: [null, 0, 2, 2], fingers: [0, 1, 3, 4], minRootFret: 0 },
+  ],
+  '7': [
+    { label: 'Dom7 Shell (E-Root)', rootString: 4, offsets: [0, null, 0, 1], fingers: [1, 0, 2, 3], minRootFret: 1 },
+    { label: 'Dom7 Shell (A-Root)', rootString: 3, offsets: [null, 0, -1, 0], fingers: [0, 3, 1, 2], minRootFret: 3 },
+  ],
+  maj7: [
+    { label: 'Maj7 Shell (E-Root)', rootString: 4, offsets: [0, null, 1, 1], fingers: [1, 0, 2, 3], minRootFret: 1 },
+    { label: 'Maj7 Shell (A-Root)', rootString: 3, offsets: [null, 0, -1, 1], fingers: [0, 2, 1, 4], minRootFret: 3 },
+  ],
+  m7: [
+    { label: 'Min7 Shell (E-Root)', rootString: 4, offsets: [0, null, 0, 0], fingers: [1, 0, 2, 3], minRootFret: 0 },
+    { label: 'Min7 Shell (A-Root)', rootString: 3, offsets: [null, 0, -2, 0], fingers: [0, 3, 1, 4], minRootFret: 3 },
+  ],
+  m6: [
+    { label: 'Min6 Shell (E-Root)', rootString: 4, offsets: [0, null, -1, 0], fingers: [2, 0, 1, 3], minRootFret: 1 },
+    { label: 'Min6 Shell (A-Root)', rootString: 3, offsets: [null, 0, -2, -1], fingers: [0, 3, 1, 2], minRootFret: 3 },
+  ],
+  m_maj7: [
+    { label: 'm(maj7) Shell (E-Root)', rootString: 4, offsets: [0, null, 1, 0], fingers: [1, 0, 3, 2], minRootFret: 0 },
+    { label: 'm(maj7) Shell (A-Root)', rootString: 3, offsets: [null, 0, -2, 1], fingers: [0, 3, 1, 4], minRootFret: 3 },
+  ],
+  sus4: [
+    { label: 'Sus4 Shell (E-Root)', rootString: 4, offsets: [0, null, 2, 2], fingers: [1, 0, 3, 4], minRootFret: 0 },
+    { label: 'Sus4 Shell (A-Root)', rootString: 3, offsets: [null, 0, 0, 2], fingers: [0, 1, 1, 3], minRootFret: 3 },
+  ],
+  sus2: [
+    { label: 'Sus2 Shell (E-Root)', rootString: 4, offsets: [0, 2, null, -1], fingers: [2, 4, 0, 1], minRootFret: 1 },
+    { label: 'Sus2 Triad (A-Root)', rootString: 3, offsets: [null, 0, 2, -3], fingers: [0, 2, 4, 1], minRootFret: 3 },
+  ],
+  '7sus4': [
+    { label: '7sus4 Shell (E-Root)', rootString: 4, offsets: [0, null, 0, 2], fingers: [1, 0, 2, 4], minRootFret: 1 },
+    { label: '7sus4 Shell (A-Root)', rootString: 3, offsets: [null, 0, 0, 0], fingers: [0, 1, 1, 1], minRootFret: 3 },
+  ],
+  '6': [
+    { label: 'Maj6 Shell (E-Root)', rootString: 4, offsets: [0, null, -1, 1], fingers: [2, 0, 1, 3], minRootFret: 2 },
+    { label: 'Maj6 Shell (A-Root)', rootString: 3, offsets: [null, 0, -1, -1], fingers: [0, 2, 1, 1], minRootFret: 3 },
+  ],
 };
 
 function computeWindow(frets) {
@@ -667,6 +906,23 @@ function solveFourStringVoicings(safeRoot, quality, openMidi, instrumentId, maxR
               const coveredPcs = new Set(sounding.map((item) => item.pc));
               if (!coveredPcs.has(safeRoot)) continue;
 
+              // Defining interval (3rd / sus2 / sus4 / 5) must be present so chords never collapse to power chords
+              if (thirdOrSusPc !== null && !coveredPcs.has(thirdOrSusPc)) continue;
+
+              // Bass Guitar Low-Interval Limit: forbid tight intervals (< 7 semitones) below C2 (MIDI 36)
+              if (instrumentId === 'bass') {
+                const sortedMidi = sounding.map((item) => item.midi).sort((a, b) => a - b);
+                let violatesLowLimit = false;
+                for (let idx = 0; idx < sortedMidi.length - 1; idx++) {
+                  if (sortedMidi[idx] < 36 && sortedMidi[idx + 1] - sortedMidi[idx] < 7) {
+                    violatesLowLimit = true;
+                    break;
+                  }
+                }
+                if (violatesLowLimit) continue;
+                if (seventhOrSixthPc !== null && !coveredPcs.has(seventhOrSixthPc)) continue;
+              }
+
               const minDistinctReq = Math.min(expectedPcs.size, Math.min(4, sounding.length));
               const strictDistinct =
                 expectedPcs.size <= 4 ? expectedPcs.size : 4;
@@ -689,8 +945,9 @@ function solveFourStringVoicings(safeRoot, quality, openMidi, instrumentId, maxR
               if (seventhOrSixthPc !== null && coveredPcs.has(seventhOrSixthPc)) score += 30;
               if (extPc !== null && coveredPcs.has(extPc)) score += 45;
               if (sounding.length >= minSoundingNotes) score += 40;
-              if (!frets.includes(-1)) score += 25;
-              if (hasSandwichedMute) score -= 22;
+              if (instrumentId !== 'bass' && !frets.includes(-1)) score += 25;
+              if (instrumentId === 'bass' && sounding.length === 3) score += 20;
+              if (hasSandwichedMute && instrumentId !== 'bass') score -= 22;
 
               // Prefer lowest note being the root (especially important on Bass!)
               const lowestMidi = sounding.reduce(
@@ -698,7 +955,7 @@ function solveFourStringVoicings(safeRoot, quality, openMidi, instrumentId, maxR
                 sounding[0]
               );
               if (lowestMidi.pc === safeRoot) {
-                score += instrumentId === 'bass' ? 65 : 22;
+                score += instrumentId === 'bass' ? 85 : 22;
               }
 
               // Prefer low fret positions & compact finger stretches
@@ -712,9 +969,13 @@ function solveFourStringVoicings(safeRoot, quality, openMidi, instrumentId, maxR
 
               const { startFret } = computeWindow(frets);
               const labelPrefix =
-                startFret === 1 && frets.includes(0)
-                  ? 'Open Position'
-                  : `Position (Fr ${startFret})`;
+                instrumentId === 'bass'
+                  ? startFret === 1 && frets.includes(0)
+                    ? 'Open Shell'
+                    : `Shell (Fr ${startFret})`
+                  : startFret === 1 && frets.includes(0)
+                    ? 'Open Position'
+                    : `Position (Fr ${startFret})`;
 
               candidates.push({
                 score,
@@ -829,19 +1090,63 @@ export function getChordVoicings(
   } else {
     const openMap = config.id === 'ukulele' ? UKE_OPEN_VOICINGS : BASS_OPEN_VOICINGS;
     const expectedPcs = new Set(quality.intervals.map((semi) => (safeRoot + semi) % 12));
+    const requiredThirdPc =
+      quality.intervals.length >= 2 ? (safeRoot + quality.intervals[1]) % 12 : null;
 
     if (openMap[openKey]) {
+      const allowCuratedMajorBassSimplification =
+        config.id === 'bass' && quality.id === 'major';
       for (const v of openMap[openKey]) {
         const midiNotes = v.frets
           .map((f, idx) => (f >= 0 ? config.openMidi[idx] + f : null))
           .filter((m) => m !== null);
+        const pcs = new Set(midiNotes.map((m) => ((m % 12) + 12) % 12));
         const allValid = midiNotes.every((m) => expectedPcs.has(((m % 12) + 12) % 12));
-        if (!allValid) continue;
+        const hasRequired = allowCuratedMajorBassSimplification
+          ? pcs.has(safeRoot)
+          : pcs.has(safeRoot) && (requiredThirdPc === null || pcs.has(requiredThirdPc));
+        if (!allValid || !hasRequired) continue;
         const { startFret } = computeWindow(v.frets);
         voicings.push({
           label: v.label,
           frets: v.frets,
           fingers: v.fingers,
+          barre: null,
+          startFret,
+          midiNotes,
+          openMidi: config.openMidi,
+        });
+      }
+    }
+
+    if (config.id === 'bass') {
+      const bassTemplates = BASS_MOVABLE_SHAPES[quality.id] || [];
+      for (const tpl of bassTemplates) {
+        const rootFret = getRootFretForString(
+          safeRoot,
+          tpl.rootString,
+          tpl.minRootFret || 0,
+          config.openMidi
+        );
+        const frets = tpl.offsets.map((off) => (off === null ? -1 : rootFret + off));
+        if (frets.some((f) => f < -1 || f > 15)) continue;
+        const key = frets.join(',');
+        if (voicings.some((v) => v.frets.join(',') === key)) continue;
+
+        const midiNotes = frets
+          .map((f, idx) => (f >= 0 ? config.openMidi[idx] + f : null))
+          .filter((m) => m !== null);
+        const pcs = new Set(midiNotes.map((m) => ((m % 12) + 12) % 12));
+        const allValid = midiNotes.every((m) => expectedPcs.has(((m % 12) + 12) % 12));
+        const hasRequired =
+          pcs.has(safeRoot) && (requiredThirdPc === null || pcs.has(requiredThirdPc));
+        if (!allValid || !hasRequired) continue;
+
+        const { startFret } = computeWindow(frets);
+        voicings.push({
+          label: `${tpl.label} (Fr ${rootFret})`,
+          frets,
+          fingers: tpl.fingers,
           barre: null,
           startFret,
           midiNotes,
@@ -1022,7 +1327,8 @@ export function getScaleDetails(rootPc, scaleId, instrumentId = 'guitar') {
   const diatonicChords = scale.diatonicQualities
     ? scale.intervals.map((semi, idx) => {
         const chordRootPc = (safeRoot + semi) % 12;
-        const qualityId = scale.diatonicQualities[idx];
+        const rawQualityId = scale.diatonicQualities[idx];
+        const qualityId = mapQualityForInstrument(rawQualityId, config.id);
         const q = CHORD_QUALITIES.find((item) => item.id === qualityId);
         const chordRootName = getNoteName(chordRootPc, preferFlats);
         return {
@@ -1260,7 +1566,8 @@ export function buildProgression(rootPc, templateId, instrumentId = 'guitar') {
     rootName: getNoteName(safeRoot, preferFlats),
     chords: tpl.steps.map((step) => {
       const chordRoot = (safeRoot + step.offset) % 12;
-      const voiced = getChordVoicings(chordRoot, step.qualityId, null, instrumentId);
+      const effectiveQuality = mapQualityForInstrument(step.qualityId, instrumentId);
+      const voiced = getChordVoicings(chordRoot, effectiveQuality, null, instrumentId);
       return {
         roman: step.roman,
         ...voiced,
@@ -1287,10 +1594,11 @@ export function getKeyChordFamily(rootPc, instrumentId = 'guitar') {
     rootName: getNoteName(safeRoot, preferFlats),
     chords: specs.map((spec) => {
       const chordRoot = (safeRoot + spec.offset) % 12;
+      const effectiveQuality = mapQualityForInstrument(spec.qualityId, instrumentId);
       return {
         roman: spec.roman,
         role: spec.role,
-        ...getChordVoicings(chordRoot, spec.qualityId, preferFlats, instrumentId),
+        ...getChordVoicings(chordRoot, effectiveQuality, preferFlats, instrumentId),
       };
     }),
   };
@@ -1469,11 +1777,28 @@ export function searchChords(rawQuery, fallbackRootPc = 0, instrumentId = 'guita
       exactChord: null,
       matches: [],
       hasRootInQuery: false,
+      excludedReason: null,
+      suggestedPowerSymbol: null,
+      suggestedRootPc: null,
     };
   }
 
+  const supportedQualities = getChordQualitiesForInstrument(instrumentId);
   const parsed = parseChordQuery(query);
   if (parsed && parsed.qualityId) {
+    if (!isChordQualitySupportedForInstrument(parsed.qualityId, instrumentId)) {
+      const rootName = getNoteName(parsed.rootPc, parsed.preferFlats);
+      return {
+        query,
+        exactChord: null,
+        matches: [],
+        hasRootInQuery: true,
+        excludedReason: 'bass_no_minor',
+        suggestedPowerSymbol: `${rootName}5`,
+        suggestedRootPc: parsed.rootPc,
+      };
+    }
+
     const exactChord = getChordVoicings(
       parsed.rootPc,
       parsed.qualityId,
@@ -1481,7 +1806,7 @@ export function searchChords(rawQuery, fallbackRootPc = 0, instrumentId = 'guita
       instrumentId
     );
     const suffixLower = parsed.rawSuffix.toLowerCase();
-    const otherQualities = CHORD_QUALITIES.filter(
+    const otherQualities = supportedQualities.filter(
       (q) => q.id !== parsed.qualityId
     )
       .map((q) => {
@@ -1505,6 +1830,9 @@ export function searchChords(rawQuery, fallbackRootPc = 0, instrumentId = 'guita
       exactChord,
       matches: [exactChord, ...otherQualities],
       hasRootInQuery: true,
+      excludedReason: null,
+      suggestedPowerSymbol: null,
+      suggestedRootPc: null,
     };
   }
 
@@ -1513,8 +1841,26 @@ export function searchChords(rawQuery, fallbackRootPc = 0, instrumentId = 'guita
   const targetFlats = parsed ? parsed.preferFlats : shouldPreferFlats(targetRootPc);
   const searchTerm = (parsed ? parsed.rawSuffix : query).toLowerCase();
   const compactTerm = searchTerm.replace(/\s+/g, '');
+  const resolvedKeywordQuality = resolveQualityId(compactTerm);
 
-  const scored = CHORD_QUALITIES.map((q) => {
+  if (
+    instrumentId === 'bass' &&
+    (BASS_EXCLUDED_QUALITY_IDS.has(resolvedKeywordQuality) ||
+      compactTerm === 'minor')
+  ) {
+    const rootName = getNoteName(targetRootPc, targetFlats);
+    return {
+      query,
+      exactChord: null,
+      matches: [],
+      hasRootInQuery: Boolean(parsed),
+      excludedReason: 'bass_no_minor',
+      suggestedPowerSymbol: `${rootName}5`,
+      suggestedRootPc: targetRootPc,
+    };
+  }
+
+  const scored = supportedQualities.map((q) => {
     const coreHay = `${q.symbol} ${q.name} ${q.category}`.toLowerCase();
     const fullHay = `${coreHay} ${q.description}`.toLowerCase();
     const symLower = q.symbol.toLowerCase();
@@ -1543,6 +1889,9 @@ export function searchChords(rawQuery, fallbackRootPc = 0, instrumentId = 'guita
     exactChord: matches[0] || null,
     matches,
     hasRootInQuery: Boolean(parsed),
+    excludedReason: null,
+    suggestedPowerSymbol: null,
+    suggestedRootPc: null,
   };
 }
 
@@ -1574,7 +1923,12 @@ function makeCustomProgression(id, name, numeralLabel, description, stepList, in
     description,
     chords: stepList.map((s) => ({
       roman: s.roman,
-      ...getChordVoicings(s.rootPc, s.qualityId, s.preferFlats ?? null, instrumentId),
+      ...getChordVoicings(
+        s.rootPc,
+        mapQualityForInstrument(s.qualityId, instrumentId),
+        s.preferFlats ?? null,
+        instrumentId
+      ),
     })),
   };
 }
@@ -1586,7 +1940,8 @@ export function getChordFamilyContext(
   instrumentId = 'guitar'
 ) {
   const safeRoot = ((rootPc % 12) + 12) % 12;
-  const chord = getChordVoicings(safeRoot, qualityId, preferFlatsOverride, instrumentId);
+  const effectiveQualityId = mapQualityForInstrument(qualityId, instrumentId);
+  const chord = getChordVoicings(safeRoot, effectiveQualityId, preferFlatsOverride, instrumentId);
   const preferFlats = chord.preferFlats;
 
   const isMinor = MINOR_FAMILY_QUALITIES.has(chord.quality.id);
@@ -1623,7 +1978,12 @@ export function getChordFamilyContext(
       roman: spec.roman,
       role: spec.role,
       isSelected,
-      ...getChordVoicings(chordRoot, spec.qualityId, parentFlats, instrumentId),
+      ...getChordVoicings(
+        chordRoot,
+        mapQualityForInstrument(spec.qualityId, instrumentId),
+        parentFlats,
+        instrumentId
+      ),
     };
   });
 

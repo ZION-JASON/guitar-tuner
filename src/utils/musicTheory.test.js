@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {
   CHROMATIC_NOTES,
   CHORD_QUALITIES,
+  BASS_EXCLUDED_QUALITY_IDS,
   SCALE_DEFINITIONS,
+  getChordQualitiesForInstrument,
   getChordVoicings,
   getScaleDetails,
   getFretboardMatrix,
@@ -143,9 +145,14 @@ test('getChordFamilyContext derives chord family and playable progressions for a
 });
 
 test('all 12 roots x 25 chord qualities produce valid 4-string voicings for Ukulele and Bass', () => {
+  const bassQualities = getChordQualitiesForInstrument('bass');
+  assert.equal(bassQualities.length, 25);
+  assert.equal(BASS_EXCLUDED_QUALITY_IDS.size, 0);
+
   for (const instrumentId of ['ukulele', 'bass']) {
+    const qualities = getChordQualitiesForInstrument(instrumentId);
     for (const root of CHROMATIC_NOTES) {
-      for (const quality of CHORD_QUALITIES) {
+      for (const quality of qualities) {
         const chord = getChordVoicings(root.index, quality.id, null, instrumentId);
         assert.equal(chord.instrumentId, instrumentId);
         assert.ok(
@@ -156,13 +163,17 @@ test('all 12 roots x 25 chord qualities produce valid 4-string voicings for Ukul
         const expectedPcs = new Set(
           quality.intervals.map((semi) => (root.index + semi) % 12)
         );
+        const definingPc =
+          quality.intervals.length >= 2 ? (root.index + quality.intervals[1]) % 12 : null;
 
         for (const v of chord.voicings) {
           assert.equal(v.frets.length, 4);
           assert.equal(v.fingers.length, 4);
           assert.equal(v.openMidi.length, 4);
+          const minNotes =
+            instrumentId === 'bass' && quality.id === 'major' ? 1 : 2;
           assert.ok(
-            v.midiNotes.length >= 2,
+            v.midiNotes.length >= minNotes,
             `Too few played notes in ${instrumentId} ${chord.symbol} ${v.label}`
           );
           for (const f of v.frets) {
@@ -171,12 +182,31 @@ test('all 12 roots x 25 chord qualities produce valid 4-string voicings for Ukul
               `Fret out of bounds (${f}) for ${instrumentId} ${chord.symbol} ${v.label}`
             );
           }
+          const playedPcs = new Set();
           for (const midi of v.midiNotes) {
             const pc = ((midi % 12) + 12) % 12;
+            playedPcs.add(pc);
             assert.ok(
               expectedPcs.has(pc),
               `Wrong note pc=${pc} in ${instrumentId} ${chord.symbol} (${v.label})`
             );
+          }
+          if (instrumentId === 'bass' && quality.id !== 'major' && definingPc !== null) {
+            assert.ok(
+              playedPcs.has(definingPc),
+              `Bass ${chord.symbol} (${v.label}) missing defining interval pc=${definingPc}`
+            );
+          }
+          if (instrumentId === 'bass' && quality.id !== '5' && v.midiNotes.length >= 2) {
+            const sorted = [...v.midiNotes].sort((a, b) => a - b);
+            for (let i = 0; i < sorted.length - 1; i++) {
+              if (sorted[i] < 36) {
+                assert.ok(
+                  sorted[i + 1] - sorted[i] >= 7,
+                  `Bass ${chord.symbol} (${v.label}) violates Low-Interval Limit: ${sorted.join(',')}`
+                );
+              }
+            }
           }
         }
       }
@@ -222,4 +252,99 @@ test('Ukulele and Bass fretboards, progressions, search, and chord families oper
   assert.ok(
     bassFamily.progressions[0].chords.every((c) => c.voicings[0].frets.length === 4)
   );
+  assert.deepEqual(
+    bassFamily.familyChords.map((c) => c.symbol),
+    ['G', 'Am', 'Bm', 'C', 'D', 'Em', 'F#dim']
+  );
 });
+
+test('Chord qualities prioritize Major chords at the top and place complex chords at the bottom', () => {
+  const bassQualities = getChordQualitiesForInstrument('bass');
+  assert.deepEqual(
+    bassQualities.slice(0, 4).map((q) => q.id),
+    ['major', 'maj7', '6', '7']
+  );
+  const coreIds = bassQualities.filter((q) => q.tier === 'core').map((q) => q.id);
+  const complexIds = bassQualities.filter((q) => q.tier !== 'core').map((q) => q.id);
+  assert.deepEqual(coreIds, ['major', 'maj7', '6', '7', '5', 'minor', 'm7', 'm6']);
+  assert.ok(complexIds.includes('sus4'));
+  assert.ok(complexIds.includes('dim'));
+  assert.ok(complexIds.includes('7sharp9'));
+  assert.ok(
+    bassQualities.findIndex((q) => q.id === 'm6') <
+      bassQualities.findIndex((q) => q.id === 'add9')
+  );
+});
+
+test('Bass Guitar supports minor chords, search, progressions, and key chord families accurately', () => {
+  const minorSearch = searchChords('Am', 0, 'bass');
+  assert.equal(minorSearch.exactChord?.symbol, 'Am');
+  assert.equal(minorSearch.exactChord?.voicings[0].frets.length, 4);
+
+  const cm7Search = searchChords('Cm7', 0, 'bass');
+  assert.equal(cm7Search.exactChord?.symbol, 'Cm7');
+  assert.equal(cm7Search.exactChord?.voicings[0].frets.length, 4);
+
+  const bassFourChord = buildProgression(7, 'four_chord_family', 'bass');
+  assert.deepEqual(
+    bassFourChord.chords.map((c) => c.symbol),
+    ['G', 'C', 'D', 'Em']
+  );
+
+  const bassKeyFamily = getKeyChordFamily(7, 'bass');
+  assert.deepEqual(
+    bassKeyFamily.chords.map((c) => c.symbol),
+    ['G', 'Am', 'Bm', 'C', 'D', 'Em']
+  );
+
+  const bassScaleDiatonic = getScaleDetails(7, 'major', 'bass').diatonicChords;
+  assert.deepEqual(
+    bassScaleDiatonic.map((d) => d.symbol),
+    ['G', 'Am', 'Bm', 'C', 'D', 'Em', 'F#m7b5']
+  );
+});
+
+test('Bass Guitar major and sharp chords default to 1 single Root Note with connecting variations', () => {
+  for (const root of CHROMATIC_NOTES) {
+    const bassMajor = getChordVoicings(root.index, 'major', null, 'bass');
+    const primary = bassMajor.voicings[0];
+    assert.equal(
+      primary.midiNotes.length,
+      1,
+      `Expected 1 primary root note for Bass ${bassMajor.symbol}, got ${primary.midiNotes.length}`
+    );
+    assert.equal(
+      ((primary.midiNotes[0] % 12) + 12) % 12,
+      root.index,
+      `Expected primary note pc=${root.index} for Bass ${bassMajor.symbol}`
+    );
+    assert.ok(
+      primary.frets.filter((f) => f >= 0).every((f) => f <= 4),
+      `Expected primary Root Note in frets 0..4 for Bass ${bassMajor.symbol}, got ${primary.frets.join(',')}`
+    );
+    assert.ok(
+      bassMajor.voicings.length >= 4,
+      `Expected connecting variations for Bass ${bassMajor.symbol}`
+    );
+    assert.ok(
+      bassMajor.voicings.some((v) => v.label.includes('Root + 5th')),
+      `Missing Root + 5th variation for Bass ${bassMajor.symbol}`
+    );
+    assert.ok(
+      bassMajor.voicings.some((v) => v.label.includes('Root + Octave')),
+      `Missing Root + Octave variation for Bass ${bassMajor.symbol}`
+    );
+  }
+
+  // Sharp lookup check (e.g. C#, F#)
+  const fSharpMajor = searchChords('F#', 0, 'bass');
+  assert.equal(fSharpMajor.exactChord?.symbol, 'F#');
+  assert.equal(fSharpMajor.exactChord?.voicings[0].midiNotes.length, 1);
+
+  // Power chord starts simple (2-note dyad)
+  const g5 = getChordVoicings(7, '5', null, 'bass');
+  assert.equal(g5.voicings[0].midiNotes.length, 2);
+});
+
+
+

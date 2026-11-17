@@ -3,48 +3,75 @@ import { midiToFrequency } from './frequencyUtils.js';
 const INSTRUMENT_TIMBRE = {
   guitar: {
     pickPos: 0.17,
-    loopBlend: 0.42, // bright steel-string harmonic decay
-    decayBase: 0.9968,
-    pickClickMix: 0.24,
-    bodyLowHz: 112,
-    bodyLowGainDb: 3.5,
-    bodyMidHz: 240,
-    bodyMidGainDb: 2.0,
-    presenceHz: 2300,
-    presenceGainDb: 1.5,
-    strumStepSec: 0.028,
-    defaultNoteDuration: 1.65,
-    defaultChordDuration: 2.35,
+    loopDamping: 0.08,
+    rt60DbPerSec: -9.5,
+    noiseMix: 0.22,
+    noiseCutoffRatio: 0.25,
+    pluckRoundFrac: 0.015, // crisp steel-string pluck corner
+    bodyTapMix: 0.08,
+    bodyTapHz: 118,
+    bodyLowHz: 108,
+    bodyLowGainDb: 4.0,
+    bodyMidHz: 225,
+    bodyMidGainDb: 2.2,
+    presenceHz: 2100,
+    presenceGainDb: 1.0,
+    attackCutoffHz: 5400,
+    sustainCutoffHz: 2300,
+    brightnessDecaySec: 0.65,
+    roomWetMix: 0.22,
+    roomDecaySec: 0.28,
+    strumStepSec: 0.025,
+    defaultNoteDuration: 1.8,
+    defaultChordDuration: 2.5,
   },
   bass: {
-    pickPos: 0.29,
-    loopBlend: 0.22, // warm fingerstyle fundamental
-    decayBase: 0.9974,
-    pickClickMix: 0.12,
-    bodyLowHz: 86,
-    bodyLowGainDb: 4.5,
-    bodyMidHz: 195,
-    bodyMidGainDb: 2.5,
-    presenceHz: 1200,
-    presenceGainDb: 0.5,
+    pickPos: 0.28,
+    loopDamping: 0.22,
+    rt60DbPerSec: -8.5,
+    noiseMix: 0.09, // subtle finger-skin transient, zero synth buzz
+    noiseCutoffRatio: 0.04,
+    pluckRoundFrac: 0.09, // thick fleshy finger pluck (period-proportional)
+    bodyTapMix: 0.14,
+    bodyTapHz: 94,
+    bodyLowHz: 92,
+    bodyLowGainDb: 3.5,
+    bodyMidHz: 235, // warm woody punch audible on mobile speakers
+    bodyMidGainDb: 4.0,
+    presenceHz: 720,
+    presenceGainDb: 1.4,
+    attackCutoffHz: 1750, // crisp finger attack
+    sustainCutoffHz: 420, // deep warm woody bass sustain (eliminates low-note buzz)
+    brightnessDecaySec: 0.38,
+    roomWetMix: 0.12,
+    roomDecaySec: 0.18,
     strumStepSec: 0.036,
-    defaultNoteDuration: 1.8,
-    defaultChordDuration: 2.2,
+    defaultNoteDuration: 1.9,
+    defaultChordDuration: 2.3,
   },
   ukulele: {
-    pickPos: 0.23,
-    loopBlend: 0.34, // mellow nylon-string rolloff
-    decayBase: 0.9946,
-    pickClickMix: 0.16,
-    bodyLowHz: 290,
-    bodyLowGainDb: 3.0,
-    bodyMidHz: 520,
-    bodyMidGainDb: 2.0,
-    presenceHz: 1900,
-    presenceGainDb: 1.0,
-    strumStepSec: 0.022,
-    defaultNoteDuration: 1.3,
-    defaultChordDuration: 1.75,
+    pickPos: 0.24,
+    loopDamping: 0.15,
+    rt60DbPerSec: -11.0,
+    noiseMix: 0.11,
+    noiseCutoffRatio: 0.09,
+    pluckRoundFrac: 0.055, // warm compliant nylon/fluorocarbon string rounding
+    bodyTapMix: 0.11,
+    bodyTapHz: 305,
+    bodyLowHz: 285,
+    bodyLowGainDb: 4.2,
+    bodyMidHz: 540,
+    bodyMidGainDb: 2.8,
+    presenceHz: 1600,
+    presenceGainDb: 0.5,
+    attackCutoffHz: 3600, // gentle nylon sparkle at attack
+    sustainCutoffHz: 1550, // sweet mellow koa/mahogany sustain
+    brightnessDecaySec: 0.45,
+    roomWetMix: 0.24,
+    roomDecaySec: 0.24,
+    strumStepSec: 0.019,
+    defaultNoteDuration: 1.55,
+    defaultChordDuration: 1.95,
   },
 };
 
@@ -53,10 +80,10 @@ export function getInstrumentTimbre(instrumentId = 'guitar') {
 }
 
 /**
- * Pure-JS Extended Karplus-Strong physical string synthesis.
- * Models pick/finger noise burst, pick-position comb filtering, exact
- * phase-compensated fractional delay (linear + loop delay subtraction),
- * and frequency-dependent string damping.
+ * Pure-JS Physical String Synthesis (Plucked-Triangle + Thiran Allpass + 3-Tap Symmetric Loop).
+ * Models realistic initial string displacement (not raw static noise), finger/nylon compliance
+ * smoothing, 1st-order Thiran Allpass fractional delay (flat magnitude across all pitches),
+ * pitch-normalized RT60 sustain, and subtle wooden body attack resonance.
  */
 export function synthesizePluckedStringSamples({
   freq,
@@ -73,90 +100,140 @@ export function synthesizePluckedStringSamples({
   const totalSamples = Math.max(256, Math.floor(durationSec * sampleRate));
   const out = new Float32Array(totalSamples);
 
-  // Two-point loop average y[n] = (1 - a) * x[n] + a * x[n-1] adds exact delay `a` samples.
-  // Subtract `a` from the period so the fundamental pitch stays sub-cent accurate.
-  const loopWeight = profile.loopBlend;
+  // Exact period in samples:
+  // Total delay = N_int (ring buffer) + d (Thiran allpass in [0.5, 1.5)) + 1.0 (symmetric 3-tap LP)
   const rawPeriod = sampleRate / freq;
-  const compensatedDelay = Math.max(4, rawPeriod - loopWeight);
-  const delayInt = Math.floor(compensatedDelay);
-  const frac = compensatedDelay - delayInt;
-  const bufLen = delayInt + 2;
+  const rem = Math.max(2.5, rawPeriod - 1.0);
+  const delayInt = Math.max(2, Math.floor(rem - 0.5));
+  const fracDelay = rem - delayInt; // strictly in [0.5, 1.5)
+  const allpassCoeff = (1 - fracDelay) / (1 + fracDelay); // |c| <= 0.3333 -> unconditionally stable
+
+  const excLen = delayInt;
+  const bufLen = excLen + 8;
   const delayLine = new Float32Array(bufLen);
 
-  // Deterministic PRNG for clean repeatable transient texture
+  // Deterministic PRNG for organic micro-texture
   let rng = (Math.abs(Math.round(freq * 100)) + seed) >>> 0 || 2463534242;
   const nextRand = () => {
     rng = (rng * 1664525 + 1013904223) >>> 0;
-    return rng / 0xffffffff - 0.5;
+    return (rng / 0xffffffff) * 2 - 1;
   };
 
-  // Pre-filter burst noise so high strings aren't overly hissy
-  const excitationLen = Math.max(8, Math.round(rawPeriod));
-  const noiseRaw = new Float32Array(excitationLen);
-  let preLp = 0;
-  const excBright = instrument === 'bass' ? 0.35 : instrument === 'ukulele' ? 0.55 : 0.72;
-  for (let i = 0; i < excitationLen; i++) {
-    const white = nextRand() * 2;
-    preLp = excBright * white + (1 - excBright) * preLp;
-    noiseRaw[i] = preLp;
+  // 1. Ideal plucked triangle displacement (natural 1/n^2 harmonic spectrum)
+  const exc = new Float32Array(excLen);
+  const pickIdx = Math.max(1, Math.min(excLen - 2, Math.round(excLen * profile.pickPos)));
+  for (let i = 0; i < excLen; i++) {
+    const tri =
+      i <= pickIdx
+        ? i / pickIdx
+        : 1 - (i - pickIdx) / Math.max(1, excLen - 1 - pickIdx);
+    exc[i] = tri;
   }
 
-  // Pick-position comb filter + gentle fundamental reinforcement for low registers
-  const pickComb = Math.max(1, Math.round(excitationLen * profile.pickPos));
-  const lowFundamentalBoost = freq < 130 ? 0.24 : freq < 220 ? 0.1 : 0.04;
-  let maxExc = 0.0001;
-  for (let i = 0; i < excitationLen; i++) {
-    const delayed = i >= pickComb ? noiseRaw[i - pickComb] : 0;
-    const fundamental = lowFundamentalBoost * Math.sin((2 * Math.PI * i) / rawPeriod);
-    const val = noiseRaw[i] - 0.82 * delayed + fundamental;
-    delayLine[i % bufLen] = val;
-    if (Math.abs(val) > maxExc) maxExc = Math.abs(val);
-  }
-  for (let i = 0; i < excitationLen; i++) {
-    delayLine[i % bufLen] /= maxExc;
+  // Round corners proportionally to period length so low bass strings are as smooth as treble strings
+  const roundWindow = Math.max(1, Math.min(24, Math.round(excLen * profile.pluckRoundFrac)));
+  for (let pass = 0; pass < roundWindow; pass++) {
+    const tmp = new Float32Array(excLen);
+    for (let i = 0; i < excLen; i++) {
+      const prev = exc[(i - 1 + excLen) % excLen];
+      const curr = exc[i];
+      const next = exc[(i + 1) % excLen];
+      tmp[i] = 0.25 * prev + 0.5 * curr + 0.25 * next;
+    }
+    exc.set(tmp);
   }
 
-  // Frequency-compensated loop damping so high notes still ring musically
-  const pitchFactor = Math.min(1, Math.max(0, (freq - 65) / 600));
-  const decay = profile.decayBase - pitchFactor * 0.0012;
+  // 2. Band-limited noise burst for organic pluck transient
+  const noise = new Float32Array(excLen);
+  for (let i = 0; i < excLen; i++) {
+    noise[i] = nextRand();
+  }
+  const noisePasses = Math.max(1, Math.min(28, Math.round(1 / Math.max(0.03, profile.noiseCutoffRatio))));
+  for (let pass = 0; pass < noisePasses; pass++) {
+    const tmp = new Float32Array(excLen);
+    for (let i = 0; i < excLen; i++) {
+      const prev = noise[(i - 1 + excLen) % excLen];
+      const curr = noise[i];
+      const next = noise[(i + 1) % excLen];
+      tmp[i] = 0.25 * prev + 0.5 * curr + 0.25 * next;
+    }
+    noise.set(tmp);
+  }
 
-  let writeIdx = 0;
-  let prevDelayed = 0;
-  let prevOut = 0;
-  const pickClickSamples = Math.min(totalSamples, Math.round(sampleRate * 0.007));
+  // Blend displacement + soft noise, center to zero mean, normalize safely below 0.86 peak
+  let sum = 0;
+  for (let i = 0; i < excLen; i++) {
+    exc[i] = exc[i] * (1 - profile.noiseMix) + noise[i] * profile.noiseMix;
+    sum += exc[i];
+  }
+  const mean = sum / excLen;
+  let maxAbs = 0.0001;
+  for (let i = 0; i < excLen; i++) {
+    exc[i] -= mean;
+    if (Math.abs(exc[i]) > maxAbs) maxAbs = Math.abs(exc[i]);
+  }
+  for (let i = 0; i < excLen; i++) {
+    delayLine[i] = (exc[i] / maxAbs) * 0.86;
+  }
+
+  // Pitch-normalized per-cycle gain so bass, guitar, and high ukulele notes all sustain naturally
+  const gainPerSec = Math.pow(10, profile.rt60DbPerSec / 20);
+  const loopGain = Math.min(0.9992, Math.pow(gainPerSec, 1 / freq));
+  // Gentle extra damping at higher pitches for authentic string air/internal friction
+  const b = Math.min(0.24, profile.loopDamping + Math.min(0.04, (freq / 1200) * 0.04));
+
+  let writeIdx = excLen % bufLen;
+  let prevApIn = 0;
+  let prevApOut = 0;
+  let apHist1 = 0;
+  let apHist2 = 0;
+  let dcPrevIn = 0;
+  let dcPrevOut = 0;
+
+  // Short damped acoustic soundboard/body knock at attack (no white-noise hiss!)
+  const bodyTapLen = Math.min(totalSamples, Math.round(sampleRate * 0.045));
+  const bodyOmega = (2 * Math.PI * profile.bodyTapHz) / sampleRate;
+  const bodyDecayPerSample = Math.exp(-85 / sampleRate);
+  let bodyAmp = profile.bodyTapMix;
+
+  const fadeSamples = Math.min(totalSamples, Math.round(sampleRate * 0.065));
 
   for (let i = 0; i < totalSamples; i++) {
-    const readA = (writeIdx - delayInt + bufLen) % bufLen;
-    const readB = (readA - 1 + bufLen) % bufLen;
+    const readIdx = (writeIdx - delayInt + bufLen) % bufLen;
+    const apIn = delayLine[readIdx];
 
-    // Fractional linear interpolation
-    const delayed = delayLine[readA] * (1 - frac) + delayLine[readB] * frac;
+    // 1st-order Thiran Allpass fractional delay (flat 0dB magnitude at all frequencies)
+    const apOut = allpassCoeff * apIn + prevApIn - allpassCoeff * prevApOut;
+    prevApIn = apIn;
+    prevApOut = apOut;
 
-    // Frequency-dependent two-point damping loop
-    const filtered = ((1 - loopWeight) * delayed + loopWeight * prevDelayed) * decay;
-    prevDelayed = delayed;
+    // Zero-phase-distortion symmetric 3-tap damping filter (exact 1.0 sample delay)
+    const lp = b * apOut + (1 - 2 * b) * apHist1 + b * apHist2;
+    apHist2 = apHist1;
+    apHist1 = apOut;
 
-    delayLine[writeIdx] = filtered;
+    const feedback = lp * loopGain;
+    delayLine[writeIdx] = feedback;
     writeIdx = (writeIdx + 1) % bufLen;
 
-    // Subtle acoustic plectrum/finger transient during first ~7ms
-    let sample = filtered;
-    if (i < pickClickSamples) {
-      const env = 1 - i / pickClickSamples;
-      sample += profile.pickClickMix * env * env * nextRand();
+    // Add soft woody body thump during the first ~45ms
+    let sample = feedback;
+    if (i < bodyTapLen) {
+      sample += bodyAmp * Math.sin(bodyOmega * i);
+      bodyAmp *= bodyDecayPerSample;
     }
 
-    // DC-blocking gentle smoothing
-    const finalSample = sample - 0.002 * prevOut;
-    prevOut = finalSample;
+    // Clean 1st-order DC blocker (R = 0.997)
+    const dcClean = sample - dcPrevIn + 0.997 * dcPrevOut;
+    dcPrevIn = sample;
+    dcPrevOut = dcClean;
 
-    // Smooth tail fade-out over last 60ms to prevent clicks
-    const fadeSamples = Math.min(totalSamples, Math.round(sampleRate * 0.06));
+    // Smooth tail fade-out over last 65ms
     if (i > totalSamples - fadeSamples) {
-      const rem = (totalSamples - i) / fadeSamples;
-      out[i] = finalSample * rem;
+      const remFade = (totalSamples - i) / fadeSamples;
+      out[i] = dcClean * remFade;
     } else {
-      out[i] = finalSample;
+      out[i] = dcClean;
     }
   }
 
@@ -206,30 +283,85 @@ export function createPluckedAudioBuffer(ctx, freq, durationSec, instrument = 'g
   return buffer;
 }
 
-export function createInstrumentBodyChain(ctx, instrument = 'guitar') {
+const roomIrCache = new WeakMap();
+
+export function getInstrumentRoomIR(ctx, instrument = 'guitar') {
+  if (!ctx || typeof ctx.createBuffer !== 'function') return null;
+  let perCtx = roomIrCache.get(ctx);
+  if (!perCtx) {
+    perCtx = new Map();
+    roomIrCache.set(ctx, perCtx);
+  }
+  if (perCtx.has(instrument)) {
+    return perCtx.get(instrument);
+  }
+
+  const profile = getInstrumentTimbre(instrument);
+  const sampleRate = ctx.sampleRate || 48000;
+  const length = Math.max(512, Math.floor(profile.roomDecaySec * sampleRate));
+  const irBuffer = ctx.createBuffer(2, length, sampleRate);
+
+  let rng = instrument === 'bass' ? 918273 : instrument === 'ukulele' ? 445566 : 112233;
+  const rand = () => {
+    rng = (rng * 1664525 + 1013904223) >>> 0;
+    return (rng / 0xffffffff) * 2 - 1;
+  };
+
+  for (let ch = 0; ch < 2; ch++) {
+    const data = irBuffer.getChannelData(ch);
+    let lp = 0;
+    const lpAlpha = instrument === 'bass' ? 0.14 : instrument === 'ukulele' ? 0.24 : 0.28;
+    const earlyGap = Math.round(sampleRate * (0.006 + ch * 0.003));
+    for (let i = earlyGap; i < length; i++) {
+      const t = i / length;
+      const env = Math.pow(1 - t, 2.4);
+      const raw = rand() * env;
+      lp = lpAlpha * raw + (1 - lpAlpha) * lp;
+      data[i] = lp * 0.45;
+    }
+  }
+
+  perCtx.set(instrument, irBuffer);
+  return irBuffer;
+}
+
+export function createInstrumentBodyChain(ctx, instrument = 'guitar', startTime = null) {
   const profile = getInstrumentTimbre(instrument);
 
   const lowBody = ctx.createBiquadFilter();
   lowBody.type = 'peaking';
   lowBody.frequency.value = profile.bodyLowHz;
-  lowBody.Q.value = 1.1;
+  lowBody.Q.value = 1.05;
   lowBody.gain.value = profile.bodyLowGainDb;
 
   const midWarmth = ctx.createBiquadFilter();
   midWarmth.type = 'peaking';
   midWarmth.frequency.value = profile.bodyMidHz;
-  midWarmth.Q.value = 1.0;
+  midWarmth.Q.value = 1.1;
   midWarmth.gain.value = profile.bodyMidGainDb;
 
   const presence = ctx.createBiquadFilter();
   presence.type = 'peaking';
   presence.frequency.value = profile.presenceHz;
-  presence.Q.value = 0.9;
+  presence.Q.value = 0.85;
   presence.gain.value = profile.presenceGainDb;
 
   const airCut = ctx.createBiquadFilter();
   airCut.type = 'lowpass';
-  airCut.frequency.value = instrument === 'bass' ? 2400 : instrument === 'ukulele' ? 4200 : 5400;
+  airCut.Q.value = 0.7;
+  if (
+    startTime !== null &&
+    typeof airCut.frequency.setValueAtTime === 'function' &&
+    typeof airCut.frequency.exponentialRampToValueAtTime === 'function'
+  ) {
+    airCut.frequency.setValueAtTime(profile.attackCutoffHz, startTime);
+    airCut.frequency.exponentialRampToValueAtTime(
+      Math.max(120, profile.sustainCutoffHz),
+      startTime + profile.brightnessDecaySec
+    );
+  } else {
+    airCut.frequency.value = profile.sustainCutoffHz;
+  }
 
   lowBody.connect(midWarmth);
   midWarmth.connect(presence);
@@ -243,6 +375,8 @@ export class LearnAudioEngine {
     this.ctx = null;
     this.compressor = null;
     this.masterGain = null;
+    this.dryBus = null;
+    this.roomWetGains = new Map();
     this.activeNodes = new Set();
     this.timers = new Set();
     this.bufferCache = new Map();
@@ -294,6 +428,7 @@ export class LearnAudioEngine {
     if (!this.ctx || this.ctx.state === 'closed') {
       this.ctx = new AudioCtx();
       this.bufferCache.clear();
+      this.roomWetGains.clear();
       this._unlocked = false;
 
       const comp = this.ctx.createDynamicsCompressor();
@@ -310,6 +445,25 @@ export class LearnAudioEngine {
       master.connect(this.ctx.destination);
       this.compressor = comp;
       this.masterGain = master;
+
+      const dry = this.ctx.createGain();
+      dry.gain.value = 0.9;
+      dry.connect(comp);
+      this.dryBus = dry;
+
+      // Single shared acoustic studio room convolver per context (zero per-note allocation)
+      if (typeof this.ctx.createConvolver === 'function') {
+        const ir = getInstrumentRoomIR(this.ctx, 'guitar');
+        if (ir) {
+          const convolver = this.ctx.createConvolver();
+          convolver.buffer = ir;
+          const wet = this.ctx.createGain();
+          wet.gain.value = 0.2;
+          convolver.connect(wet);
+          wet.connect(comp);
+          this.roomWetGains.set('default', { convolver, wet });
+        }
+      }
     }
 
     const ctx = this.ctx;
@@ -373,13 +527,21 @@ export class LearnAudioEngine {
     const source = ctx.createBufferSource();
     source.buffer = buffer;
 
-    const body = createInstrumentBodyChain(ctx, instrument);
+    const body = createInstrumentBodyChain(ctx, instrument, startTime);
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(volume, startTime);
 
     source.connect(body.input);
     body.output.connect(gain);
-    gain.connect(this.compressor || ctx.destination);
+
+    const roomBus = this.roomWetGains.get('default');
+    if (this.dryBus && roomBus) {
+      roomBus.wet.gain.setTargetAtTime(profile.roomWetMix, startTime, 0.02);
+      gain.connect(this.dryBus);
+      gain.connect(roomBus.convolver);
+    } else {
+      gain.connect(this.compressor || ctx.destination);
+    }
 
     const entry = { source, gain };
     this.activeNodes.add(entry);
@@ -471,6 +633,21 @@ export class LearnAudioEngine {
     });
   }
 
+  playChord(
+    midiNotes,
+    refFrequency = 440,
+    instrument = 'guitar',
+    playMode = 'strum',
+    { stepMs = 190 } = {}
+  ) {
+    if (!Array.isArray(midiNotes) || midiNotes.length === 0) return;
+    if (playMode === 'arpeggio' && midiNotes.length > 1) {
+      this.playSequence(midiNotes, refFrequency, stepMs, null, null, instrument);
+      return;
+    }
+    this.playChordStrum(midiNotes, refFrequency, instrument);
+  }
+
   playSequence(
     midiNotes,
     refFrequency = 440,
@@ -483,6 +660,9 @@ export class LearnAudioEngine {
     if (!Array.isArray(midiNotes) || midiNotes.length === 0) return;
 
     const gen = this.playGen;
+    const profile = getInstrumentTimbre(instrument);
+    const noteDurationSec = Math.max(1.05, profile.defaultChordDuration * 0.72);
+
     this._withReadyContext(gen, (ctx) => {
       midiNotes.forEach((midi, idx) => {
         const delayMs = idx * stepMs;
@@ -492,7 +672,7 @@ export class LearnAudioEngine {
             this._schedulePluckedFreq(ctx, freq, {
               instrument,
               delaySec: delayMs / 1000,
-              durationSec: 0.95,
+              durationSec: noteDurationSec,
               volume: 0.54,
             });
           }
@@ -522,7 +702,8 @@ export class LearnAudioEngine {
     stepMs = 900,
     onStep = null,
     onComplete = null,
-    instrument = 'guitar'
+    instrument = 'guitar',
+    playMode = 'strum'
   ) {
     this.stopAll();
     if (!Array.isArray(chords) || chords.length === 0) return;
@@ -535,17 +716,21 @@ export class LearnAudioEngine {
         const midiNotes = chord?.voicings?.[0]?.midiNotes || [];
         const baseDelayMs = cIdx * stepMs;
         const perNoteVol = Math.min(0.45, 1.3 / Math.max(1, midiNotes.length));
+        const isArp = playMode === 'arpeggio' && midiNotes.length > 1;
+        const stepOffsetMs = isArp
+          ? Math.min(200, Math.max(115, Math.floor((stepMs * 0.68) / midiNotes.length)))
+          : Math.round(profile.strumStepSec * 1000);
+        const noteDurationSec = Math.max(1.15, profile.defaultChordDuration * 0.65);
 
         midiNotes.forEach((midi, nIdx) => {
           if (!Number.isFinite(midi)) return;
           const freq = midiToFrequency(midi, refFrequency);
           if (!Number.isFinite(freq) || freq <= 0) return;
-          const delaySec =
-            (baseDelayMs + nIdx * Math.round(profile.strumStepSec * 1000)) / 1000;
+          const delaySec = (baseDelayMs + nIdx * stepOffsetMs) / 1000;
           this._schedulePluckedFreq(ctx, freq, {
             instrument,
             delaySec,
-            durationSec: 1.15,
+            durationSec: noteDurationSec,
             volume: perNoteVol,
           });
         });

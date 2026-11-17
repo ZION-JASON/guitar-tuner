@@ -2,12 +2,12 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   CHROMATIC_NOTES,
-  CHORD_QUALITIES,
   INTERVAL_LABELS,
   PROGRESSION_TEMPLATES,
   SCALE_DEFINITIONS,
   buildProgression,
   getChordFamilyContext,
+  getChordQualitiesForInstrument,
   getChordVoicings,
   getFretboardMatrix,
   getInstrumentConfig,
@@ -60,6 +60,17 @@ const QUICK_CHORD_LOOKUPS = [
   'C#m7b5',
 ];
 
+const BASS_QUICK_CHORD_LOOKUPS = [
+  'G',
+  'Cmaj7',
+  'G7',
+  'Am',
+  'G5',
+  'Bbsus4',
+  'E7#9',
+  'D6/9',
+];
+
 const POPULAR_KEY_FAMILIES = [
   { pc: 7, label: 'G Family (G–C–D)' },
   { pc: 0, label: 'C Family (C–F–G)' },
@@ -68,9 +79,24 @@ const POPULAR_KEY_FAMILIES = [
   { pc: 4, label: 'E Family (E–A–B)' },
 ];
 
+const getChordArpeggioMidi = (voicing, qualityIntervals = [0, 4, 7]) => {
+  const midiNotes = voicing?.midiNotes || [];
+  if (midiNotes.length > 1) return midiNotes;
+  if (midiNotes.length === 1) {
+    const rootMidi = midiNotes[0];
+    const notes = qualityIntervals.map((semi) => rootMidi + semi);
+    if (qualityIntervals.length <= 3) {
+      notes.push(rootMidi + 12);
+    }
+    return notes;
+  }
+  return [];
+};
+
 const ChordFamilyModal = ({
   target,
   instrument = 'guitar',
+  playMode = 'strum',
   refFrequency,
   onClose,
   onLookupChord,
@@ -128,7 +154,8 @@ const ChordFamilyModal = ({
         setPlayingId(null);
         setActiveStepIdx(null);
       },
-      instrument
+      instrument,
+      playMode
     );
   };
 
@@ -217,16 +244,21 @@ const ChordFamilyModal = ({
                     type="button"
                     onClick={() => {
                       if (fc.voicings[0]) {
-                        learnAudio.playChordStrum(
+                        learnAudio.playChord(
                           fc.voicings[0].midiNotes,
                           refFrequency,
-                          instrument
+                          instrument,
+                          playMode
                         );
                       }
                     }}
                     className="flex-1 min-h-[34px] px-1.5 py-1 rounded-lg bg-white/[0.08] hover:bg-white/[0.18] font-mono text-[10px] font-semibold text-white cursor-pointer transition-colors"
                   >
-                    Strum
+                    {fc.voicings[0]?.midiNotes?.length === 1
+                      ? 'Pluck'
+                      : playMode === 'arpeggio'
+                        ? 'Arp'
+                        : 'Strum'}
                   </button>
                   <button
                     type="button"
@@ -301,10 +333,11 @@ const ChordFamilyModal = ({
                           type="button"
                           onClick={() => {
                             if (stepChord.voicings[0]) {
-                              learnAudio.playChordStrum(
+                              learnAudio.playChord(
                                 stepChord.voicings[0].midiNotes,
                                 refFrequency,
-                                instrument
+                                instrument,
+                                playMode
                               );
                             }
                           }}
@@ -325,7 +358,11 @@ const ChordFamilyModal = ({
                             </div>
                           </div>
                           <span className="font-mono text-[10px] text-slate-400">
-                            Strum
+                            {stepChord.voicings[0]?.midiNotes?.length === 1
+                              ? 'Pluck'
+                              : playMode === 'arpeggio'
+                                ? 'Arp'
+                                : 'Strum'}
                           </span>
                         </button>
                       );
@@ -365,6 +402,7 @@ const SpotlightChordPanel = ({
   chordData,
   instrument = 'guitar',
   labelMode,
+  playMode = 'strum',
   refFrequency,
   activeRootPc,
   onSyncRoot,
@@ -372,13 +410,17 @@ const SpotlightChordPanel = ({
   onShowFamily,
 }) => {
   const [voicingIdx, setVoicingIdx] = useState(0);
+  const [showVariations, setShowVariations] = useState(false);
 
   useEffect(() => {
     setVoicingIdx(0);
+    setShowVariations(false);
   }, [chordData.symbol, chordData.rootPc, chordData.quality.id, instrument]);
 
   const safeIdx = Math.min(voicingIdx, Math.max(0, chordData.voicings.length - 1));
   const activeVoicing = chordData.voicings[safeIdx];
+  const isSingleNoteVoicing = activeVoicing?.midiNotes?.length === 1;
+  const collapseBassVariations = instrument === 'bass' && chordData.voicings.length > 1;
 
   return (
     <article
@@ -426,16 +468,20 @@ const SpotlightChordPanel = ({
                   learnAudio.playChordStrum(activeVoicing.midiNotes, refFrequency, instrument);
                 }
               }}
-              className="min-h-[42px] px-4 py-2 rounded-xl border bg-cyan-400 text-slate-950 border-cyan-300 font-mono text-xs font-semibold shadow-[0_4px_16px_rgba(34,211,238,0.28)] active:scale-[0.96] transition-transform cursor-pointer"
+              className={`min-h-[42px] px-4 py-2 rounded-xl border font-mono text-xs font-semibold active:scale-[0.96] transition-transform cursor-pointer ${
+                playMode === 'strum'
+                  ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_4px_16px_rgba(34,211,238,0.28)]'
+                  : 'bg-white/[0.08] text-slate-100 border-white/15 hover:bg-white/[0.16]'
+              }`}
             >
-              Strum Chord
+              {isSingleNoteVoicing ? 'Pluck Root' : 'Strum Chord'}
             </button>
             <button
               type="button"
               onClick={() => {
                 if (activeVoicing) {
                   learnAudio.playSequence(
-                    activeVoicing.midiNotes,
+                    getChordArpeggioMidi(activeVoicing, chordData.quality.intervals),
                     refFrequency,
                     190,
                     null,
@@ -444,9 +490,13 @@ const SpotlightChordPanel = ({
                   );
                 }
               }}
-              className="min-h-[42px] px-3.5 py-2 rounded-xl border bg-white/[0.08] text-slate-100 border-white/15 hover:bg-white/[0.16] font-mono text-xs font-semibold active:scale-[0.96] transition-colors cursor-pointer"
+              className={`min-h-[42px] px-3.5 py-2 rounded-xl border font-mono text-xs font-semibold active:scale-[0.96] transition-colors cursor-pointer ${
+                playMode === 'arpeggio'
+                  ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_4px_16px_rgba(34,211,238,0.28)]'
+                  : 'bg-white/[0.08] text-slate-100 border-white/15 hover:bg-white/[0.16]'
+              }`}
             >
-              Arpeggiate
+              Arpeggio
             </button>
             <button
               type="button"
@@ -487,24 +537,47 @@ const SpotlightChordPanel = ({
 
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            {chordData.voicings.map((v, idx) => (
+            {collapseBassVariations && !showVariations ? (
               <button
-                key={`${v.label}-${idx}`}
                 type="button"
-                onClick={() => {
-                  setVoicingIdx(idx);
-                  learnAudio.playChordStrum(v.midiNotes, refFrequency, instrument);
-                }}
-                aria-pressed={idx === safeIdx}
-                className={`min-h-[38px] px-3 py-1.5 rounded-xl border font-mono text-xs font-medium transition-colors cursor-pointer ${
-                  idx === safeIdx
-                    ? 'bg-white/20 text-white border-white/35'
-                    : 'bg-white/[0.04] text-slate-300 border-white/10 hover:bg-white/[0.1]'
-                }`}
+                onClick={() => setShowVariations(true)}
+                aria-expanded={false}
+                className="min-h-[38px] px-3.5 py-1.5 rounded-xl border border-cyan-300/35 bg-cyan-400/12 hover:bg-cyan-400/22 text-cyan-200 font-mono text-xs font-semibold transition-colors cursor-pointer"
               >
-                {v.label}
+                More Variations (+{chordData.voicings.length - 1})
               </button>
-            ))}
+            ) : (
+              <>
+                {chordData.voicings.map((v, idx) => (
+                  <button
+                    key={`${v.label}-${idx}`}
+                    type="button"
+                    onClick={() => {
+                      setVoicingIdx(idx);
+                      learnAudio.playChord(v.midiNotes, refFrequency, instrument, playMode);
+                    }}
+                    aria-pressed={idx === safeIdx}
+                    className={`min-h-[38px] px-3 py-1.5 rounded-xl border font-mono text-xs font-medium transition-colors cursor-pointer ${
+                      idx === safeIdx
+                        ? 'bg-white/20 text-white border-white/35'
+                        : 'bg-white/[0.04] text-slate-300 border-white/10 hover:bg-white/[0.1]'
+                    }`}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+                {collapseBassVariations && (
+                  <button
+                    type="button"
+                    onClick={() => setShowVariations(false)}
+                    aria-expanded={true}
+                    className="min-h-[38px] px-3 py-1.5 rounded-xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.1] text-slate-300 font-mono text-xs cursor-pointer transition-colors"
+                  >
+                    Hide Variations
+                  </button>
+                )}
+              </>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -535,21 +608,28 @@ const ChordCard = ({
   chordData,
   instrument = 'guitar',
   labelMode,
+  playMode = 'strum',
   refFrequency,
   activeStrumId,
   onStrum,
   onShowFamily,
 }) => {
   const [voicingIdx, setVoicingIdx] = useState(0);
+  const [showVariations, setShowVariations] = useState(false);
 
   useEffect(() => {
     setVoicingIdx(0);
+    setShowVariations(false);
   }, [chordData.rootPc, chordData.quality.id, instrument]);
 
   const safeIdx = Math.min(voicingIdx, Math.max(0, chordData.voicings.length - 1));
   const activeVoicing = chordData.voicings[safeIdx];
   const cardId = `${chordData.rootPc}-${chordData.quality.id}`;
-  const isStrumming = activeStrumId === cardId;
+  const isStrumActive = activeStrumId === `${cardId}:strum`;
+  const isArpActive = activeStrumId === `${cardId}:arpeggio`;
+  const isSingleNote = activeVoicing?.midiNotes?.length === 1;
+  const isBassWithVariations = instrument === 'bass' && chordData.voicings.length > 1;
+  const strumActionLabel = isSingleNote ? 'Pluck' : 'Strum';
 
   return (
     <article className="glass-panel rounded-2xl p-2.5 sm:p-4 flex flex-col justify-between gap-2 sm:gap-3 transition-[border-color,transform] duration-200 hover:border-white/25">
@@ -564,19 +644,25 @@ const ChordCard = ({
             </span>
           </div>
           <div className="mt-0.5 sm:mt-1 flex items-center gap-1.5 sm:gap-2 font-mono text-[11px] sm:text-xs text-cyan-300 truncate">
-            <span className="truncate">{chordData.notes.join(' · ')}</span>
-            <span className="text-slate-500 hidden sm:inline">/</span>
-            <span className="text-slate-400 hidden sm:inline">
-              {chordData.quality.degrees.join('–')}
-            </span>
+            {instrument === 'bass' && isSingleNote && !showVariations ? (
+              <span className="truncate">Root: {chordData.rootName}</span>
+            ) : (
+              <>
+                <span className="truncate">{chordData.notes.join(' · ')}</span>
+                <span className="text-slate-500 hidden sm:inline">/</span>
+                <span className="text-slate-400 hidden sm:inline">
+                  {chordData.quality.degrees.join('–')}
+                </span>
+              </>
+            )}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:flex items-center gap-1.5 shrink-0 w-full sm:w-auto">
+        <div className="grid grid-cols-3 sm:flex items-center gap-1 sm:gap-1.5 shrink-0 w-full sm:w-auto">
           <button
             type="button"
             onClick={() => onShowFamily(chordData)}
-            className="min-h-[40px] sm:min-h-[38px] px-2 sm:px-2.5 py-1.5 rounded-xl border border-cyan-300/30 bg-cyan-400/10 hover:bg-cyan-400/20 text-cyan-200 font-mono text-[11px] font-semibold active:scale-[0.96] transition-colors whitespace-nowrap cursor-pointer"
+            className="min-h-[38px] px-1.5 sm:px-2.5 py-1.5 rounded-xl border border-cyan-300/30 bg-cyan-400/10 hover:bg-cyan-400/20 text-cyan-200 font-mono text-[11px] font-semibold active:scale-[0.96] transition-colors whitespace-nowrap cursor-pointer"
             aria-label={`Show chord family and progressions for ${chordData.symbol}`}
           >
             Family
@@ -585,17 +671,41 @@ const ChordCard = ({
             type="button"
             onClick={() => {
               if (activeVoicing) {
-                onStrum(cardId, activeVoicing.midiNotes);
+                onStrum(cardId, activeVoicing.midiNotes, 'strum');
               }
             }}
-            className={`min-h-[40px] sm:min-h-[38px] px-2 sm:px-3 py-1.5 rounded-xl border font-mono text-[11px] sm:text-xs font-semibold active:scale-[0.96] transition-[transform,background-color,border-color,color] duration-200 whitespace-nowrap cursor-pointer ${
-              isStrumming
+            className={`min-h-[38px] px-1.5 sm:px-2.5 py-1.5 rounded-xl border font-mono text-[11px] sm:text-xs font-semibold active:scale-[0.96] transition-[transform,background-color,border-color,color] duration-200 whitespace-nowrap cursor-pointer ${
+              isStrumActive
                 ? 'bg-cyan-400 text-slate-950 border-cyan-300'
-                : 'bg-white/[0.08] text-slate-100 border-white/15 hover:bg-white/[0.16]'
+                : playMode === 'strum' && !isArpActive && activeStrumId === null
+                  ? 'bg-white/[0.1] text-white border-white/20 hover:bg-white/[0.18]'
+                  : 'bg-white/[0.06] text-slate-200 border-white/15 hover:bg-white/[0.16]'
             }`}
-            aria-label={`Strum ${chordData.symbol} (${activeVoicing?.label || ''})`}
+            aria-label={`${strumActionLabel} ${chordData.symbol} (${activeVoicing?.label || ''})`}
           >
-            Strum
+            {strumActionLabel}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (activeVoicing) {
+                onStrum(
+                  cardId,
+                  getChordArpeggioMidi(activeVoicing, chordData.quality.intervals),
+                  'arpeggio'
+                );
+              }
+            }}
+            className={`min-h-[38px] px-1.5 sm:px-2.5 py-1.5 rounded-xl border font-mono text-[11px] sm:text-xs font-semibold active:scale-[0.96] transition-[transform,background-color,border-color,color] duration-200 whitespace-nowrap cursor-pointer ${
+              isArpActive
+                ? 'bg-cyan-400 text-slate-950 border-cyan-300'
+                : playMode === 'arpeggio'
+                  ? 'bg-cyan-400/18 text-cyan-200 border-cyan-300/40 hover:bg-cyan-400/28'
+                  : 'bg-white/[0.06] text-slate-200 border-white/15 hover:bg-white/[0.16]'
+            }`}
+            aria-label={`Arpeggiate ${chordData.symbol} (${activeVoicing?.label || ''})`}
+          >
+            Arp
           </button>
         </div>
       </div>
@@ -613,34 +723,78 @@ const ChordCard = ({
 
       {/* Voicing Switcher */}
       <div className="flex flex-col gap-1.5">
-        <div className="flex items-center justify-between font-mono text-[10px] sm:text-[11px] text-slate-300">
+        <div className="flex items-center justify-between gap-2 font-mono text-[10px] sm:text-[11px] text-slate-300">
           <span className="truncate">{activeVoicing?.label}</span>
           <span className="text-slate-400 shrink-0 tabular-nums">
             {safeIdx + 1}/{chordData.voicings.length}
           </span>
         </div>
 
-        {chordData.voicings.length > 1 && (
-          <div className="flex flex-wrap gap-1 sm:gap-1.5">
-            {chordData.voicings.map((v, idx) => (
+        {isBassWithVariations ? (
+          showVariations ? (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex flex-wrap gap-1 sm:gap-1.5">
+                {chordData.voicings.map((v, idx) => (
+                  <button
+                    key={`${v.label}-${idx}`}
+                    type="button"
+                    onClick={() => {
+                      setVoicingIdx(idx);
+                      learnAudio.playChord(v.midiNotes, refFrequency, instrument, playMode);
+                    }}
+                    aria-pressed={idx === safeIdx}
+                    className={`min-h-[34px] px-2 py-1 rounded-lg border font-mono text-[10px] font-medium transition-colors cursor-pointer ${
+                      idx === safeIdx
+                        ? 'bg-white/20 text-white border-white/35'
+                        : 'bg-white/[0.04] text-slate-300 border-white/10 hover:text-white hover:bg-white/[0.1]'
+                    }`}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
               <button
-                key={`${v.label}-${idx}`}
                 type="button"
-                onClick={() => {
-                  setVoicingIdx(idx);
-                  learnAudio.playChordStrum(v.midiNotes, refFrequency, instrument);
-                }}
-                aria-pressed={idx === safeIdx}
-                className={`min-h-[34px] px-2.5 py-1 rounded-lg border font-mono text-[11px] font-medium transition-colors cursor-pointer ${
-                  idx === safeIdx
-                    ? 'bg-white/20 text-white border-white/35'
-                    : 'bg-white/[0.04] text-slate-400 border-white/10 hover:text-slate-200'
-                }`}
+                onClick={() => setShowVariations(false)}
+                aria-expanded={true}
+                className="min-h-[34px] px-2.5 py-1 rounded-lg border border-white/12 bg-white/[0.04] hover:bg-white/[0.1] text-slate-300 font-mono text-[10px] font-semibold cursor-pointer transition-colors"
               >
-                Pos {idx + 1}
+                Hide Variations
               </button>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowVariations(true)}
+              aria-expanded={false}
+              className="min-h-[36px] px-2.5 py-1 rounded-lg border border-cyan-300/30 bg-cyan-400/10 hover:bg-cyan-400/20 text-cyan-200 font-mono text-[11px] font-semibold cursor-pointer transition-colors"
+            >
+              More Variations (+{chordData.voicings.length - 1})
+            </button>
+          )
+        ) : (
+          chordData.voicings.length > 1 && (
+            <div className="flex flex-wrap gap-1 sm:gap-1.5">
+              {chordData.voicings.map((v, idx) => (
+                <button
+                  key={`${v.label}-${idx}`}
+                  type="button"
+                  onClick={() => {
+                    setVoicingIdx(idx);
+                    learnAudio.playChord(v.midiNotes, refFrequency, instrument, playMode);
+                  }}
+                  aria-pressed={idx === safeIdx}
+                  className={`min-h-[34px] px-2.5 py-1 rounded-lg border font-mono text-[11px] font-medium transition-colors cursor-pointer ${
+                    idx === safeIdx
+                      ? 'bg-white/20 text-white border-white/35'
+                      : 'bg-white/[0.04] text-slate-400 border-white/10 hover:text-slate-200'
+                  }`}
+                >
+                  Pos {idx + 1}
+                </button>
+              ))}
+            </div>
+          )
         )}
       </div>
     </article>
@@ -663,6 +817,8 @@ const LearnSection = ({
   const chordQuery = activeLearn.chordQuery || '';
   const chordCategory = activeLearn.chordCategory || 'All';
   const chordLabelMode = activeLearn.chordLabelMode || 'fingers';
+  const chordPlayMode =
+    activeLearn.chordPlayMode === 'arpeggio' ? 'arpeggio' : 'strum';
   const familyModalTarget = activeLearn.familyModalTarget || null;
   const scaleId = activeLearn.scaleId || 'major';
   const scaleLabelMode = activeLearn.scaleLabelMode || 'notes';
@@ -706,12 +862,26 @@ const LearnSection = ({
     [chordQuery, rootPc, instrument]
   );
 
-  // Compute all 25 chord qualities dynamically for the chosen rootPc & instrument
+  // Compute supported chord qualities dynamically for the chosen rootPc & instrument
   const filteredChords = useMemo(() => {
-    return CHORD_QUALITIES.filter(
-      (q) => chordCategory === 'All' || q.category === chordCategory
-    ).map((q) => getChordVoicings(rootPc, q.id, null, instrument));
+    const availableQualities = getChordQualitiesForInstrument(instrument);
+    return availableQualities
+      .filter((q) => chordCategory === 'All' || q.category === chordCategory)
+      .map((q) => getChordVoicings(rootPc, q.id, null, instrument));
   }, [rootPc, chordCategory, instrument]);
+
+  const coreChords = useMemo(
+    () => filteredChords.filter((c) => c.quality.tier === 'core'),
+    [filteredChords]
+  );
+
+  const complexChords = useMemo(
+    () => filteredChords.filter((c) => c.quality.tier !== 'core'),
+    [filteredChords]
+  );
+
+  const quickLookups =
+    instrument === 'bass' ? BASS_QUICK_CHORD_LOOKUPS : QUICK_CHORD_LOOKUPS;
 
   const keyChordFamily = useMemo(
     () => getKeyChordFamily(rootPc, instrument),
@@ -734,12 +904,12 @@ const LearnSection = ({
     [rootPc, progressionId, instrument]
   );
 
-  const handleStrum = (cardId, midiNotes) => {
+  const handleStrum = (cardId, midiNotes, mode = chordPlayMode) => {
     setIsPlayingScale(false);
     setPlayingScalePc(null);
     setActiveProgStep(null);
-    setActiveStrumId(cardId);
-    learnAudio.playChordStrum(midiNotes, refFrequency, instrument);
+    setActiveStrumId(`${cardId}:${mode}`);
+    learnAudio.playChord(midiNotes, refFrequency, instrument, mode);
   };
 
   const handlePlayScale = () => {
@@ -780,7 +950,8 @@ const LearnSection = ({
       900,
       (idx) => setActiveProgStep(idx),
       () => setActiveProgStep(null),
-      instrument
+      instrument,
+      chordPlayMode
     );
   };
 
@@ -943,11 +1114,13 @@ const LearnSection = ({
                 Chord Diagram Lookup
               </label>
               <span className="font-mono text-xs text-slate-400">
-                Type any chord symbol or quality (sus, dim, m7b5, 7#9, 9, 13, m11, 6/9)
+                {instrument === 'bass'
+                  ? 'Simple 1-note Major roots · tap More Variations for 5ths, octaves & shells'
+                  : 'Type any chord symbol or quality (sus, dim, m7b5, 7#9, 9, 13, m11, 6/9)'}
               </span>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2.5">
               <div className="relative flex-1">
                 <svg
                   aria-hidden="true"
@@ -977,7 +1150,11 @@ const LearnSection = ({
                       { replace: !(wasEmpty && isNowNonEmpty) }
                     );
                   }}
-                  placeholder="Look up chord diagram (e.g. F#dim, Bbsus4, E7#9, Am11, Cdim7)..."
+                  placeholder={
+                    instrument === 'bass'
+                      ? 'Look up bass chord (e.g. G, C#, Am, G5, E7#9)...'
+                      : 'Look up chord diagram (e.g. F#dim, Bbsus4, E7#9, Am11, Cdim7)...'
+                  }
                   aria-label="Search chord diagram"
                   className="w-full min-h-[46px] pl-10 pr-20 py-2.5 rounded-xl glass-recessed border border-white/15 focus:border-cyan-300/60 focus:outline-none font-mono text-sm text-white placeholder:text-slate-400 transition-colors"
                 />
@@ -992,48 +1169,89 @@ const LearnSection = ({
                 )}
               </div>
 
-              <div className="flex items-center gap-1.5 glass-recessed rounded-xl p-1 shrink-0 self-start sm:self-auto">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (chordLabelMode !== 'fingers') {
-                      onUpdateLearn({ chordLabelMode: 'fingers' }, { replace: true });
-                    }
-                  }}
-                  aria-pressed={chordLabelMode === 'fingers'}
-                  className={`min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
-                    chordLabelMode === 'fingers'
-                      ? 'bg-white/20 text-white'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <div
+                  role="group"
+                  aria-label="Chord Playback Style"
+                  className="flex items-center gap-1 glass-recessed rounded-xl p-1"
                 >
-                  Fingers
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (chordLabelMode !== 'notes') {
-                      onUpdateLearn({ chordLabelMode: 'notes' }, { replace: true });
-                    }
-                  }}
-                  aria-pressed={chordLabelMode === 'notes'}
-                  className={`min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
-                    chordLabelMode === 'notes'
-                      ? 'bg-white/20 text-white'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  Note Names
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (chordPlayMode !== 'strum') {
+                        onUpdateLearn({ chordPlayMode: 'strum' }, { replace: true });
+                      }
+                    }}
+                    aria-pressed={chordPlayMode === 'strum'}
+                    className={`min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                      chordPlayMode === 'strum'
+                        ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_10px_rgba(34,211,238,0.28)]'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Strum
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (chordPlayMode !== 'arpeggio') {
+                        onUpdateLearn({ chordPlayMode: 'arpeggio' }, { replace: true });
+                      }
+                    }}
+                    aria-pressed={chordPlayMode === 'arpeggio'}
+                    className={`min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                      chordPlayMode === 'arpeggio'
+                        ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_10px_rgba(34,211,238,0.28)]'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Pluck / Arp
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1.5 glass-recessed rounded-xl p-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (chordLabelMode !== 'fingers') {
+                        onUpdateLearn({ chordLabelMode: 'fingers' }, { replace: true });
+                      }
+                    }}
+                    aria-pressed={chordLabelMode === 'fingers'}
+                    className={`min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                      chordLabelMode === 'fingers'
+                        ? 'bg-white/20 text-white'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Fingers
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (chordLabelMode !== 'notes') {
+                        onUpdateLearn({ chordLabelMode: 'notes' }, { replace: true });
+                      }
+                    }}
+                    aria-pressed={chordLabelMode === 'notes'}
+                    className={`min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                      chordLabelMode === 'notes'
+                        ? 'bg-white/20 text-white'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Note Names
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* Quick Complex Chord Lookups */}
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="font-mono text-[11px] text-slate-400 mr-1">
-                Try complex:
+                {instrument === 'bass' ? 'Try bass shapes:' : 'Try complex:'}
               </span>
-              {QUICK_CHORD_LOOKUPS.map((sample) => (
+              {quickLookups.map((sample) => (
                 <button
                   key={sample}
                   type="button"
@@ -1062,6 +1280,7 @@ const LearnSection = ({
                   chordData={chordSearchResults.exactChord}
                   instrument={instrument}
                   labelMode={chordLabelMode}
+                  playMode={chordPlayMode}
                   refFrequency={refFrequency}
                   activeRootPc={rootPc}
                   onSyncRoot={handleSelectRoot}
@@ -1089,6 +1308,7 @@ const LearnSection = ({
                           chordData={chordData}
                           instrument={instrument}
                           labelMode={chordLabelMode}
+                          playMode={chordPlayMode}
                           refFrequency={refFrequency}
                           activeStrumId={activeStrumId}
                           onStrum={handleStrum}
@@ -1158,31 +1378,107 @@ const LearnSection = ({
                 </div>
                 <span className="font-mono text-xs text-slate-400">
                   Showing {filteredChords.length} {instrumentMeta.label} {selectedRootName} diagrams
+                  {instrument === 'bass' ? ' · Simple Root + Expandable Variations' : ''}
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4">
-                {filteredChords.map((chordData) => (
-                  <ChordCard
-                    key={`${chordData.rootPc}-${chordData.quality.id}`}
-                    chordData={chordData}
-                    instrument={instrument}
-                    labelMode={chordLabelMode}
-                    refFrequency={refFrequency}
-                    activeStrumId={activeStrumId}
-                    onStrum={handleStrum}
-                    onShowFamily={(cd) =>
-                      onUpdateLearn({
-                        familyModalTarget: {
-                          rootPc: cd.rootPc,
-                          qualityId: cd.quality.id,
-                          preferFlats: cd.preferFlats,
-                        },
-                      })
-                    }
-                  />
-                ))}
-              </div>
+              {chordCategory === 'All' ? (
+                <div className="flex flex-col gap-5">
+                  {/* Primary Major & Core Chords */}
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2 px-1">
+                      <h2 className="font-display font-bold text-base sm:text-lg text-white">
+                        Major &amp; Core Chords
+                      </h2>
+                      <span className="font-mono text-[11px] text-cyan-300">
+                        Major prioritized first · 7th, Power &amp; Minor ({coreChords.length})
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4">
+                      {coreChords.map((chordData) => (
+                        <ChordCard
+                          key={`${chordData.rootPc}-${chordData.quality.id}`}
+                          chordData={chordData}
+                          instrument={instrument}
+                          labelMode={chordLabelMode}
+                          playMode={chordPlayMode}
+                          refFrequency={refFrequency}
+                          activeStrumId={activeStrumId}
+                          onStrum={handleStrum}
+                          onShowFamily={(cd) =>
+                            onUpdateLearn({
+                              familyModalTarget: {
+                                rootPc: cd.rootPc,
+                                qualityId: cd.quality.id,
+                                preferFlats: cd.preferFlats,
+                              },
+                            })
+                          }
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Complex, Extended, Suspended & Altered Chords */}
+                  <div className="flex flex-col gap-3 pt-2 border-t border-white/10">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2 px-1">
+                      <h2 className="font-display font-bold text-base sm:text-lg text-slate-100">
+                        Extended, Suspended &amp; Altered Chords
+                      </h2>
+                      <span className="font-mono text-[11px] text-slate-400">
+                        Add9, Maj9, 6/9, Sus, 9th/13th, Dim &amp; Altered ({complexChords.length})
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4">
+                      {complexChords.map((chordData) => (
+                        <ChordCard
+                          key={`${chordData.rootPc}-${chordData.quality.id}`}
+                          chordData={chordData}
+                          instrument={instrument}
+                          labelMode={chordLabelMode}
+                          playMode={chordPlayMode}
+                          refFrequency={refFrequency}
+                          activeStrumId={activeStrumId}
+                          onStrum={handleStrum}
+                          onShowFamily={(cd) =>
+                            onUpdateLearn({
+                              familyModalTarget: {
+                                rootPc: cd.rootPc,
+                                qualityId: cd.quality.id,
+                                preferFlats: cd.preferFlats,
+                              },
+                            })
+                          }
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4">
+                  {filteredChords.map((chordData) => (
+                    <ChordCard
+                      key={`${chordData.rootPc}-${chordData.quality.id}`}
+                      chordData={chordData}
+                      instrument={instrument}
+                      labelMode={chordLabelMode}
+                      playMode={chordPlayMode}
+                      refFrequency={refFrequency}
+                      activeStrumId={activeStrumId}
+                      onStrum={handleStrum}
+                      onShowFamily={(cd) =>
+                        onUpdateLearn({
+                          familyModalTarget: {
+                            rootPc: cd.rootPc,
+                            qualityId: cd.quality.id,
+                            preferFlats: cd.preferFlats,
+                          },
+                        })
+                      }
+                    />
+                  ))}
+                </div>
+              )}
             </>
           )}
         </section>
@@ -1465,16 +1761,18 @@ const LearnSection = ({
               <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
                 {fretboardData.details.diatonicChords.map((dc) => {
                   const voiced = getChordVoicings(dc.rootPc, dc.qualityId, null, instrument);
+                  const singleNote = voiced.voicings[0]?.midiNotes?.length === 1;
                   return (
                     <button
                       key={`${dc.roman}-${dc.symbol}`}
                       type="button"
                       onClick={() => {
                         if (voiced.voicings[0]) {
-                          learnAudio.playChordStrum(
+                          learnAudio.playChord(
                             voiced.voicings[0].midiNotes,
                             refFrequency,
-                            instrument
+                            instrument,
+                            chordPlayMode
                           );
                         }
                       }}
@@ -1487,7 +1785,11 @@ const LearnSection = ({
                         {dc.symbol}
                       </span>
                       <span className="font-mono text-[10px] text-slate-400">
-                        Tap to Strum
+                        {singleNote
+                          ? 'Tap to Pluck'
+                          : chordPlayMode === 'arpeggio'
+                            ? 'Tap to Pluck / Arp'
+                            : 'Tap to Strum'}
                       </span>
                     </button>
                   );
@@ -1521,17 +1823,58 @@ const LearnSection = ({
                 )}
               </div>
 
-              <button
-                type="button"
-                onClick={handlePlayProgression}
-                className={`min-h-[44px] px-4 py-2 rounded-xl border font-mono text-xs font-semibold active:scale-[0.97] whitespace-nowrap shrink-0 cursor-pointer transition-[transform,background-color,border-color,color] duration-200 ${
-                  activeProgStep !== null
-                    ? 'bg-rose-500/25 text-rose-100 border-rose-300/40'
-                    : 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_4px_16px_rgba(34,211,238,0.28)]'
-                }`}
-              >
-                {activeProgStep !== null ? 'Stop Progression' : 'Play Progression'}
-              </button>
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <div
+                  role="group"
+                  aria-label="Progression Playback Style"
+                  className="flex items-center gap-1 glass-recessed rounded-xl p-1"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (chordPlayMode !== 'strum') {
+                        onUpdateLearn({ chordPlayMode: 'strum' }, { replace: true });
+                      }
+                    }}
+                    aria-pressed={chordPlayMode === 'strum'}
+                    className={`min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                      chordPlayMode === 'strum'
+                        ? 'bg-white/20 text-white'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Strum
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (chordPlayMode !== 'arpeggio') {
+                        onUpdateLearn({ chordPlayMode: 'arpeggio' }, { replace: true });
+                      }
+                    }}
+                    aria-pressed={chordPlayMode === 'arpeggio'}
+                    className={`min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                      chordPlayMode === 'arpeggio'
+                        ? 'bg-white/20 text-white'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Pluck / Arp
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handlePlayProgression}
+                  className={`min-h-[44px] px-4 py-2 rounded-xl border font-mono text-xs font-semibold active:scale-[0.97] whitespace-nowrap shrink-0 cursor-pointer transition-[transform,background-color,border-color,color] duration-200 ${
+                    activeProgStep !== null
+                      ? 'bg-rose-500/25 text-rose-100 border-rose-300/40'
+                      : 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_4px_16px_rgba(34,211,238,0.28)]'
+                  }`}
+                >
+                  {activeProgStep !== null ? 'Stop Progression' : 'Play Progression'}
+                </button>
+              </div>
             </div>
 
             {/* Quick Guitar Key Families (G-C-D, C-F-G, D-G-A, etc.) */}
@@ -1600,10 +1943,11 @@ const LearnSection = ({
                     type="button"
                     onClick={() => {
                       if (firstVoicing) {
-                        learnAudio.playChordStrum(
+                        learnAudio.playChord(
                           firstVoicing.midiNotes,
                           refFrequency,
-                          instrument
+                          instrument,
+                          chordPlayMode
                         );
                       }
                     }}
@@ -1681,16 +2025,21 @@ const LearnSection = ({
                         type="button"
                         onClick={() => {
                           if (fc.voicings[0]) {
-                            learnAudio.playChordStrum(
+                            learnAudio.playChord(
                               fc.voicings[0].midiNotes,
                               refFrequency,
-                              instrument
+                              instrument,
+                              chordPlayMode
                             );
                           }
                         }}
                         className="flex-1 min-h-[40px] px-2 py-1.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.16] border border-white/12 font-mono text-[11px] font-semibold text-white cursor-pointer transition-colors"
                       >
-                        Strum
+                        {fc.voicings[0]?.midiNotes?.length === 1
+                          ? 'Pluck'
+                          : chordPlayMode === 'arpeggio'
+                            ? 'Arp'
+                            : 'Strum'}
                       </button>
                       <button
                         type="button"
@@ -1768,6 +2117,7 @@ const LearnSection = ({
       <ChordFamilyModal
         target={familyModalTarget}
         instrument={instrument}
+        playMode={chordPlayMode}
         refFrequency={refFrequency}
         onClose={() => {
           if (canGoBack && onGoBack) {

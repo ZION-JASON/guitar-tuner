@@ -113,7 +113,7 @@ export const useTuner = (instrument = 'guitar') => {
     const source = ctx.createBufferSource();
     source.buffer = buffer;
 
-    const body = createInstrumentBodyChain(ctx, instrumentId);
+    const body = createInstrumentBodyChain(ctx, instrumentId, now);
     const masterGain = ctx.createGain();
     masterGain.gain.setValueAtTime(0.65, now);
 
