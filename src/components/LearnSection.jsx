@@ -20,7 +20,17 @@ import {
 import { INSTRUMENTS, getInstrumentMeta } from '../utils/frequencyUtils';
 import { learnAudio } from '../utils/audioSynth';
 import { DEFAULT_LEARN_STATE } from '../utils/navigationHistory';
+import {
+  loadFavoriteChords,
+  makeFavoriteChordId,
+  removeFavoriteChord,
+  saveFavoriteChords,
+  toggleFavoriteChord,
+  updateFavoriteChordVoicing,
+} from '../utils/favoriteChords';
 import ChordDiagramSVG from './ChordDiagramSVG';
+import PracticeMetronomeBar from './PracticeMetronomeBar';
+import FavoriteChordsTray from './FavoriteChordsTray';
 
 const LEARN_TABS = [
   { id: 'chords', label: 'Chords' },
@@ -405,6 +415,9 @@ const SpotlightChordPanel = ({
   playMode = 'strum',
   refFrequency,
   activeRootPc,
+  isFavorite = false,
+  onToggleFavorite,
+  onSyncFavoriteVoicing,
   onSyncRoot,
   onClearSearch,
   onShowFamily,
@@ -421,6 +434,11 @@ const SpotlightChordPanel = ({
   const activeVoicing = chordData.voicings[safeIdx];
   const isSingleNoteVoicing = activeVoicing?.midiNotes?.length === 1;
   const collapseBassVariations = instrument === 'bass' && chordData.voicings.length > 1;
+  const favId = makeFavoriteChordId({
+    instrument,
+    rootPc: chordData.rootPc,
+    qualityId: chordData.quality.id,
+  });
 
   return (
     <article
@@ -498,6 +516,23 @@ const SpotlightChordPanel = ({
             >
               Arpeggio
             </button>
+            {onToggleFavorite && (
+              <button
+                type="button"
+                onClick={() => onToggleFavorite(chordData, safeIdx)}
+                aria-pressed={isFavorite}
+                className={`min-h-[42px] px-3.5 py-2 rounded-xl border font-mono text-xs font-semibold inline-flex items-center gap-1.5 active:scale-[0.96] transition-colors cursor-pointer ${
+                  isFavorite
+                    ? 'border-amber-300/50 bg-amber-400/20 text-amber-200 hover:bg-amber-400/30'
+                    : 'border-white/15 bg-white/[0.06] text-slate-200 hover:bg-white/[0.14]'
+                }`}
+              >
+                <span aria-hidden="true" className={isFavorite ? 'text-amber-300' : 'text-slate-300'}>
+                  {isFavorite ? '★' : '☆'}
+                </span>
+                <span>{isFavorite ? 'Saved' : 'Save'}</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => onShowFamily(chordData)}
@@ -554,6 +589,9 @@ const SpotlightChordPanel = ({
                     type="button"
                     onClick={() => {
                       setVoicingIdx(idx);
+                      if (isFavorite && onSyncFavoriteVoicing) {
+                        onSyncFavoriteVoicing(favId, idx);
+                      }
                       learnAudio.playChord(v.midiNotes, refFrequency, instrument, playMode);
                     }}
                     aria-pressed={idx === safeIdx}
@@ -611,6 +649,9 @@ const ChordCard = ({
   playMode = 'strum',
   refFrequency,
   activeStrumId,
+  isFavorite = false,
+  onToggleFavorite,
+  onSyncFavoriteVoicing,
   onStrum,
   onShowFamily,
 }) => {
@@ -625,6 +666,11 @@ const ChordCard = ({
   const safeIdx = Math.min(voicingIdx, Math.max(0, chordData.voicings.length - 1));
   const activeVoicing = chordData.voicings[safeIdx];
   const cardId = `${chordData.rootPc}-${chordData.quality.id}`;
+  const favId = makeFavoriteChordId({
+    instrument,
+    rootPc: chordData.rootPc,
+    qualityId: chordData.quality.id,
+  });
   const isStrumActive = activeStrumId === `${cardId}:strum`;
   const isArpActive = activeStrumId === `${cardId}:arpeggio`;
   const isSingleNote = activeVoicing?.midiNotes?.length === 1;
@@ -633,36 +679,59 @@ const ChordCard = ({
 
   return (
     <article className="glass-panel rounded-2xl p-2.5 sm:p-4 flex flex-col justify-between gap-2 sm:gap-3 transition-[border-color,transform] duration-200 hover:border-white/25">
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="flex items-baseline gap-1.5 sm:gap-2">
-            <h3 className="font-display font-bold text-lg sm:text-xl text-white truncate">
-              {chordData.symbol}
-            </h3>
-            <span className="font-mono text-[11px] sm:text-xs text-slate-400 truncate">
-              {chordData.quality.name}
-            </span>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-start justify-between gap-1.5">
+          <div className="min-w-0">
+            <div className="flex items-baseline gap-1.5 sm:gap-2">
+              <h3 className="font-display font-bold text-lg sm:text-xl text-white truncate">
+                {chordData.symbol}
+              </h3>
+              <span className="font-mono text-[11px] sm:text-xs text-slate-400 truncate">
+                {chordData.quality.name}
+              </span>
+            </div>
+            <div className="mt-0.5 sm:mt-1 flex items-center gap-1.5 sm:gap-2 font-mono text-[11px] sm:text-xs text-cyan-300 truncate">
+              {instrument === 'bass' && isSingleNote && !showVariations ? (
+                <span className="truncate">Root: {chordData.rootName}</span>
+              ) : (
+                <>
+                  <span className="truncate">{chordData.notes.join(' · ')}</span>
+                  <span className="text-slate-500 hidden sm:inline">/</span>
+                  <span className="text-slate-400 hidden sm:inline">
+                    {chordData.quality.degrees.join('–')}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
-          <div className="mt-0.5 sm:mt-1 flex items-center gap-1.5 sm:gap-2 font-mono text-[11px] sm:text-xs text-cyan-300 truncate">
-            {instrument === 'bass' && isSingleNote && !showVariations ? (
-              <span className="truncate">Root: {chordData.rootName}</span>
-            ) : (
-              <>
-                <span className="truncate">{chordData.notes.join(' · ')}</span>
-                <span className="text-slate-500 hidden sm:inline">/</span>
-                <span className="text-slate-400 hidden sm:inline">
-                  {chordData.quality.degrees.join('–')}
-                </span>
-              </>
-            )}
-          </div>
+
+          {onToggleFavorite && (
+            <button
+              type="button"
+              onClick={() => onToggleFavorite(chordData, safeIdx)}
+              aria-pressed={isFavorite}
+              aria-label={
+                isFavorite
+                  ? `Remove ${chordData.symbol} from saved favorites`
+                  : `Save ${chordData.symbol} to favorites`
+              }
+              title={isFavorite ? 'Remove from Practice Favorites' : 'Save to Practice Favorites'}
+              className={`min-h-[34px] min-w-[34px] rounded-lg border font-mono text-sm flex items-center justify-center shrink-0 active:scale-[0.93] cursor-pointer transition-colors ${
+                isFavorite
+                  ? 'bg-amber-400/20 text-amber-300 border-amber-300/45'
+                  : 'bg-white/[0.04] text-slate-400 border-white/12 hover:text-amber-200 hover:border-amber-300/35'
+              }`}
+            >
+              {isFavorite ? '★' : '☆'}
+            </button>
+          )}
         </div>
 
-        <div className="grid grid-cols-3 sm:flex items-center gap-1 sm:gap-1.5 shrink-0 w-full sm:w-auto">
+        <div className="grid grid-cols-3 gap-1 sm:gap-1.5 w-full">
           <button
             type="button"
             onClick={() => onShowFamily(chordData)}
-            className="min-h-[38px] px-1.5 sm:px-2.5 py-1.5 rounded-xl border border-cyan-300/30 bg-cyan-400/10 hover:bg-cyan-400/20 text-cyan-200 font-mono text-[11px] font-semibold active:scale-[0.96] transition-colors whitespace-nowrap cursor-pointer"
+            className="min-h-[36px] px-1.5 sm:px-2.5 py-1 rounded-xl border border-cyan-300/30 bg-cyan-400/10 hover:bg-cyan-400/20 text-cyan-200 font-mono text-[11px] font-semibold active:scale-[0.96] transition-colors whitespace-nowrap cursor-pointer"
             aria-label={`Show chord family and progressions for ${chordData.symbol}`}
           >
             Family
@@ -674,7 +743,7 @@ const ChordCard = ({
                 onStrum(cardId, activeVoicing.midiNotes, 'strum');
               }
             }}
-            className={`min-h-[38px] px-1.5 sm:px-2.5 py-1.5 rounded-xl border font-mono text-[11px] sm:text-xs font-semibold active:scale-[0.96] transition-[transform,background-color,border-color,color] duration-200 whitespace-nowrap cursor-pointer ${
+            className={`min-h-[36px] px-1.5 sm:px-2.5 py-1 rounded-xl border font-mono text-[11px] sm:text-xs font-semibold active:scale-[0.96] transition-[transform,background-color,border-color,color] duration-200 whitespace-nowrap cursor-pointer ${
               isStrumActive
                 ? 'bg-cyan-400 text-slate-950 border-cyan-300'
                 : playMode === 'strum' && !isArpActive && activeStrumId === null
@@ -696,7 +765,7 @@ const ChordCard = ({
                 );
               }
             }}
-            className={`min-h-[38px] px-1.5 sm:px-2.5 py-1.5 rounded-xl border font-mono text-[11px] sm:text-xs font-semibold active:scale-[0.96] transition-[transform,background-color,border-color,color] duration-200 whitespace-nowrap cursor-pointer ${
+            className={`min-h-[36px] px-1.5 sm:px-2.5 py-1 rounded-xl border font-mono text-[11px] sm:text-xs font-semibold active:scale-[0.96] transition-[transform,background-color,border-color,color] duration-200 whitespace-nowrap cursor-pointer ${
               isArpActive
                 ? 'bg-cyan-400 text-slate-950 border-cyan-300'
                 : playMode === 'arpeggio'
@@ -740,6 +809,9 @@ const ChordCard = ({
                     type="button"
                     onClick={() => {
                       setVoicingIdx(idx);
+                      if (isFavorite && onSyncFavoriteVoicing) {
+                        onSyncFavoriteVoicing(favId, idx);
+                      }
                       learnAudio.playChord(v.midiNotes, refFrequency, instrument, playMode);
                     }}
                     aria-pressed={idx === safeIdx}
@@ -781,6 +853,9 @@ const ChordCard = ({
                   type="button"
                   onClick={() => {
                     setVoicingIdx(idx);
+                    if (isFavorite && onSyncFavoriteVoicing) {
+                      onSyncFavoriteVoicing(favId, idx);
+                    }
                     learnAudio.playChord(v.midiNotes, refFrequency, instrument, playMode);
                   }}
                   aria-pressed={idx === safeIdx}
@@ -832,6 +907,65 @@ const LearnSection = ({
   const [playingScalePc, setPlayingScalePc] = useState(null);
   const [isPlayingScale, setIsPlayingScale] = useState(false);
   const [activeProgStep, setActiveProgStep] = useState(null);
+  const [favorites, setFavorites] = useState(() => loadFavoriteChords());
+  const [showFavoritesTray, setShowFavoritesTray] = useState(false);
+
+  const favoriteIdSet = useMemo(
+    () => new Set(favorites.map((entry) => entry.id)),
+    [favorites]
+  );
+
+  const handleToggleFavorite = (chordData, voicingIdx = 0) => {
+    setFavorites((prev) =>
+      toggleFavoriteChord(prev, {
+        instrument,
+        rootPc: chordData.rootPc,
+        qualityId: chordData.quality.id,
+        voicingIdx,
+        preferFlats: chordData.preferFlats,
+      })
+    );
+  };
+
+  const handleSyncFavoriteVoicing = (favId, nextIdx) => {
+    setFavorites((prev) => updateFavoriteChordVoicing(prev, favId, nextIdx));
+  };
+
+  const handleRemoveFavorite = (favId) => {
+    setFavorites((prev) => removeFavoriteChord(prev, favId));
+  };
+
+  const handleClearFavorites = () => {
+    saveFavoriteChords([]);
+    setFavorites([]);
+  };
+
+  const handlePlayFavoriteChord = (
+    cardKey,
+    midiNotes,
+    mode,
+    targetInstrument,
+    targetRefFreq
+  ) => {
+    setIsPlayingScale(false);
+    setPlayingScalePc(null);
+    setActiveProgStep(null);
+    setActiveStrumId(`${cardKey}:${mode}`);
+    learnAudio.playChord(midiNotes, targetRefFreq, targetInstrument, mode);
+  };
+
+  const handleInspectFavorite = (fav, chordData) => {
+    stopPlaybackState();
+    if (fav.instrument !== instrument && onSelectInstrument) {
+      onSelectInstrument(fav.instrument);
+    }
+    onUpdateLearn({
+      tab: 'chords',
+      rootPc: fav.rootPc,
+      chordQuery: chordData.symbol,
+      familyModalTarget: null,
+    });
+  };
 
   const stopPlaybackState = () => {
     learnAudio.stopAll();
@@ -1101,6 +1235,29 @@ const LearnSection = ({
         </div>
       </section>
 
+      {/* Practice Metronome + Saved Favorite Chords Quick Access */}
+      <PracticeMetronomeBar
+        favoritesCount={favorites.length}
+        showFavoritesTray={showFavoritesTray}
+        onToggleFavoritesTray={() => setShowFavoritesTray((prev) => !prev)}
+      />
+
+      {showFavoritesTray && (
+        <FavoriteChordsTray
+          favorites={favorites}
+          currentInstrument={instrument}
+          labelMode={chordLabelMode}
+          playMode={chordPlayMode}
+          refFrequency={refFrequency}
+          activeStrumId={activeStrumId}
+          onPlayChord={handlePlayFavoriteChord}
+          onRemoveFavorite={handleRemoveFavorite}
+          onClearAll={handleClearFavorites}
+          onInspectFavorite={handleInspectFavorite}
+          onClose={() => setShowFavoritesTray(false)}
+        />
+      )}
+
       {/* TAB 1: CHORD LIBRARY & DIAGRAM LOOKUP */}
       {activeTab === 'chords' && (
         <section aria-label="Chord Diagrams Library" className="flex flex-col gap-4">
@@ -1283,6 +1440,15 @@ const LearnSection = ({
                   playMode={chordPlayMode}
                   refFrequency={refFrequency}
                   activeRootPc={rootPc}
+                  isFavorite={favoriteIdSet.has(
+                    makeFavoriteChordId({
+                      instrument,
+                      rootPc: chordSearchResults.exactChord.rootPc,
+                      qualityId: chordSearchResults.exactChord.quality.id,
+                    })
+                  )}
+                  onToggleFavorite={handleToggleFavorite}
+                  onSyncFavoriteVoicing={handleSyncFavoriteVoicing}
                   onSyncRoot={handleSelectRoot}
                   onClearSearch={() => onUpdateLearn({ chordQuery: '' })}
                   onShowFamily={(cd) =>
@@ -1311,6 +1477,15 @@ const LearnSection = ({
                           playMode={chordPlayMode}
                           refFrequency={refFrequency}
                           activeStrumId={activeStrumId}
+                          isFavorite={favoriteIdSet.has(
+                            makeFavoriteChordId({
+                              instrument,
+                              rootPc: chordData.rootPc,
+                              qualityId: chordData.quality.id,
+                            })
+                          )}
+                          onToggleFavorite={handleToggleFavorite}
+                          onSyncFavoriteVoicing={handleSyncFavoriteVoicing}
                           onStrum={handleStrum}
                           onShowFamily={(cd) =>
                             onUpdateLearn({
@@ -1375,6 +1550,19 @@ const LearnSection = ({
                       </button>
                     );
                   })}
+                  <button
+                    type="button"
+                    onClick={() => setShowFavoritesTray((prev) => !prev)}
+                    aria-pressed={showFavoritesTray}
+                    className={`min-h-[40px] px-3 py-1.5 rounded-xl border font-mono text-xs font-semibold whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 cursor-pointer transition-colors ${
+                      showFavoritesTray
+                        ? 'bg-amber-400/20 text-amber-200 border-amber-300/45'
+                        : 'bg-white/[0.04] text-amber-200/90 border-amber-300/20 hover:bg-amber-400/12'
+                    }`}
+                  >
+                    <span aria-hidden="true">★</span>
+                    <span>Favorites ({favorites.length})</span>
+                  </button>
                 </div>
                 <span className="font-mono text-xs text-slate-400">
                   Showing {filteredChords.length} {instrumentMeta.label} {selectedRootName} diagrams
@@ -1404,6 +1592,15 @@ const LearnSection = ({
                           playMode={chordPlayMode}
                           refFrequency={refFrequency}
                           activeStrumId={activeStrumId}
+                          isFavorite={favoriteIdSet.has(
+                            makeFavoriteChordId({
+                              instrument,
+                              rootPc: chordData.rootPc,
+                              qualityId: chordData.quality.id,
+                            })
+                          )}
+                          onToggleFavorite={handleToggleFavorite}
+                          onSyncFavoriteVoicing={handleSyncFavoriteVoicing}
                           onStrum={handleStrum}
                           onShowFamily={(cd) =>
                             onUpdateLearn({
@@ -1439,6 +1636,15 @@ const LearnSection = ({
                           playMode={chordPlayMode}
                           refFrequency={refFrequency}
                           activeStrumId={activeStrumId}
+                          isFavorite={favoriteIdSet.has(
+                            makeFavoriteChordId({
+                              instrument,
+                              rootPc: chordData.rootPc,
+                              qualityId: chordData.quality.id,
+                            })
+                          )}
+                          onToggleFavorite={handleToggleFavorite}
+                          onSyncFavoriteVoicing={handleSyncFavoriteVoicing}
                           onStrum={handleStrum}
                           onShowFamily={(cd) =>
                             onUpdateLearn({
@@ -1465,6 +1671,15 @@ const LearnSection = ({
                       playMode={chordPlayMode}
                       refFrequency={refFrequency}
                       activeStrumId={activeStrumId}
+                      isFavorite={favoriteIdSet.has(
+                        makeFavoriteChordId({
+                          instrument,
+                          rootPc: chordData.rootPc,
+                          qualityId: chordData.quality.id,
+                        })
+                      )}
+                      onToggleFavorite={handleToggleFavorite}
+                      onSyncFavoriteVoicing={handleSyncFavoriteVoicing}
                       onStrum={handleStrum}
                       onShowFamily={(cd) =>
                         onUpdateLearn({

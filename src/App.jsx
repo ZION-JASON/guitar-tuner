@@ -15,6 +15,7 @@ import {
 import TunerDisplay from './components/TunerDisplay';
 import StringMatrix from './components/StringMatrix';
 import LearnSection from './components/LearnSection';
+import ChromaTunerLogo from './components/ChromaTunerLogo';
 
 function App() {
   const [navState, setNavState] = useState(() => createInitialNavSnapshot());
@@ -129,13 +130,14 @@ function App() {
 
       {/* 3-Zone Single-Row Frosted Header */}
       <header className="relative z-20 glass-bar border-b border-white/12">
-        <div className="max-w-[1280px] mx-auto px-3.5 sm:px-6 py-2 sm:py-3.5 flex items-center justify-between gap-3 sm:gap-8">
+        <div className="max-w-[1280px] mx-auto px-3.5 sm:px-6 py-2 sm:py-3.5 flex items-center justify-between gap-2 sm:gap-8">
           <button
             type="button"
             onClick={() => switchView('tuner')}
-            className="font-display font-bold text-base sm:text-xl tracking-tight text-white whitespace-nowrap shrink-0 cursor-pointer text-left"
+            className="inline-flex items-center gap-2 sm:gap-2.5 font-display font-bold text-[15px] sm:text-xl tracking-tight text-white whitespace-nowrap shrink-0 cursor-pointer text-left"
           >
-            Chroma Glass
+            <ChromaTunerLogo className="w-5 h-5 sm:w-7 sm:h-7 shrink-0" />
+            <span>ChromaTuner</span>
           </button>
 
           {/* Top-Level Navigation: Tuner | Learn */}

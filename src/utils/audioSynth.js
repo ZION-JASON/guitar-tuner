@@ -384,6 +384,17 @@ export class LearnAudioEngine {
     this._unlocked = false;
     this._gestureListenersBound = false;
 
+    this._metroGen = 0;
+    this._metroRunning = false;
+    this._metroBpm = 90;
+    this._metroBeats = 4;
+    this._metroVolume = 0.7;
+    this._metroBeatIndex = 0;
+    this._metroNextNoteTime = 0;
+    this._metroIntervalId = null;
+    this._metroUiTimers = new Set();
+    this._metroOnBeat = null;
+
     this._bindGlobalUnlock();
   }
 
@@ -754,8 +765,131 @@ export class LearnAudioEngine {
     });
   }
 
+  _scheduleMetronomeClick(ctx, time, isAccent, gen) {
+    if (!ctx || ctx.state === 'closed' || gen !== this._metroGen) return;
+
+    const osc = ctx.createOscillator();
+    const clickGain = ctx.createGain();
+    const vol = Math.max(0.05, Math.min(1, this._metroVolume)) * (isAccent ? 0.55 : 0.36);
+
+    osc.type = 'triangle';
+    const startFreq = isAccent ? 1240 : 880;
+    const endFreq = isAccent ? 760 : 540;
+    osc.frequency.setValueAtTime(startFreq, time);
+    osc.frequency.exponentialRampToValueAtTime(endFreq, time + 0.032);
+
+    clickGain.gain.setValueAtTime(0.0001, time);
+    clickGain.gain.linearRampToValueAtTime(vol, time + 0.002);
+    clickGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.055);
+
+    osc.connect(clickGain);
+    clickGain.connect(this.compressor || ctx.destination);
+
+    osc.onended = () => {
+      try {
+        osc.disconnect();
+        clickGain.disconnect();
+      } catch {
+        // ignore
+      }
+    };
+
+    osc.start(time);
+    osc.stop(time + 0.065);
+  }
+
+  _runMetronomeScheduler() {
+    if (!this._metroRunning || !this.ctx || this.ctx.state !== 'running') return;
+    const lookaheadSec = 0.12;
+    const currentGen = this._metroGen;
+    const beatDurSec = 60 / Math.max(40, Math.min(220, this._metroBpm));
+
+    if (this._metroNextNoteTime < this.ctx.currentTime - 0.15) {
+      this._metroNextNoteTime = this.ctx.currentTime + 0.02;
+    }
+
+    while (this._metroNextNoteTime < this.ctx.currentTime + lookaheadSec) {
+      const beatIdx = this._metroBeatIndex;
+      const totalBeats = this._metroBeats;
+      const noteTime = this._metroNextNoteTime;
+
+      this._scheduleMetronomeClick(this.ctx, noteTime, beatIdx === 0, currentGen);
+
+      if (this._metroOnBeat) {
+        const delayMs = Math.max(0, (noteTime - this.ctx.currentTime) * 1000);
+        const uiId = setTimeout(() => {
+          this._metroUiTimers.delete(uiId);
+          if (this._metroRunning && currentGen === this._metroGen && this._metroOnBeat) {
+            this._metroOnBeat(beatIdx, totalBeats);
+          }
+        }, delayMs);
+        this._metroUiTimers.add(uiId);
+      }
+
+      this._metroBeatIndex = (beatIdx + 1) % totalBeats;
+      this._metroNextNoteTime += beatDurSec;
+    }
+  }
+
+  startMetronome({ bpm = 90, beatsPerBar = 4, volume = 0.7, onBeat = null } = {}) {
+    this.stopMetronome();
+    const { ctx, resumePromise } = this._unlockContextSync();
+    if (!ctx) return false;
+
+    const gen = ++this._metroGen;
+    this._metroRunning = true;
+    this._metroBpm = Math.max(40, Math.min(220, Math.round(bpm || 90)));
+    this._metroBeats = Math.max(1, Math.min(12, Math.round(beatsPerBar || 4)));
+    this._metroVolume = Number.isFinite(volume) ? volume : 0.7;
+    this._metroBeatIndex = 0;
+    this._metroOnBeat = onBeat;
+
+    const beginLoop = () => {
+      if (!this._metroRunning || gen !== this._metroGen || !this.ctx) return;
+      this._metroNextNoteTime = this.ctx.currentTime + 0.03;
+      this._runMetronomeScheduler();
+      this._metroIntervalId = setInterval(() => {
+        this._runMetronomeScheduler();
+      }, 25);
+    };
+
+    if (ctx.state === 'running' || !resumePromise) {
+      beginLoop();
+    } else {
+      resumePromise.then(beginLoop).catch(() => {});
+    }
+
+    return true;
+  }
+
+  updateMetronome({ bpm, beatsPerBar, volume } = {}) {
+    if (bpm !== undefined) {
+      this._metroBpm = Math.max(40, Math.min(220, Math.round(bpm)));
+    }
+    if (beatsPerBar !== undefined) {
+      const nextBeats = Math.max(1, Math.min(12, Math.round(beatsPerBar)));
+      this._metroBeats = nextBeats;
+      this._metroBeatIndex = this._metroBeatIndex % nextBeats;
+    }
+    if (volume !== undefined && Number.isFinite(volume)) {
+      this._metroVolume = Math.max(0.1, Math.min(1, volume));
+    }
+  }
+
+  stopMetronome() {
+    this._metroGen += 1;
+    this._metroRunning = false;
+    if (this._metroIntervalId !== null) {
+      clearInterval(this._metroIntervalId);
+      this._metroIntervalId = null;
+    }
+    this._metroUiTimers.forEach((id) => clearTimeout(id));
+    this._metroUiTimers.clear();
+  }
+
   dispose() {
     this.stopAll();
+    this.stopMetronome();
     this.bufferCache.clear();
     if (this.ctx && this.ctx.state !== 'closed') {
       this.ctx.close().catch(() => {});
