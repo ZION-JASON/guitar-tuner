@@ -130,11 +130,11 @@ function App() {
 
       {/* 3-Zone Single-Row Frosted Header */}
       <header className="relative z-20 glass-bar border-b border-white/12">
-        <div className="max-w-[1280px] mx-auto px-3.5 sm:px-6 py-2 sm:py-3.5 flex items-center justify-between gap-2 sm:gap-8">
+        <div className="max-w-[1280px] mx-auto px-3 sm:px-6 py-2 sm:py-3.5 flex items-center justify-between gap-1.5 sm:gap-8">
           <button
             type="button"
             onClick={() => switchView('tuner')}
-            className="inline-flex items-center gap-2 sm:gap-2.5 font-display font-bold text-[15px] sm:text-xl tracking-tight text-white whitespace-nowrap shrink-0 cursor-pointer text-left"
+            className="inline-flex items-center gap-1.5 sm:gap-2.5 font-display font-bold text-[14px] sm:text-xl tracking-tight text-white whitespace-nowrap shrink-0 cursor-pointer text-left min-h-[40px]"
           >
             <ChromaTunerLogo className="w-5 h-5 sm:w-7 sm:h-7 shrink-0" />
             <span>ChromaTuner</span>
@@ -143,13 +143,13 @@ function App() {
           {/* Top-Level Navigation: Tuner | Learn */}
           <nav
             aria-label="Primary Navigation"
-            className="flex items-center gap-1.5 glass-recessed rounded-xl p-1"
+            className="flex items-center gap-1 sm:gap-1.5 glass-recessed rounded-xl p-1"
           >
             <button
               type="button"
               onClick={() => switchView('tuner')}
               aria-pressed={activeView === 'tuner'}
-              className={`min-h-[38px] px-3.5 sm:px-4 py-1.5 rounded-lg font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
+              className={`min-h-[38px] px-2.5 sm:px-4 py-1.5 rounded-lg font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
                 activeView === 'tuner'
                   ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_12px_rgba(34,211,238,0.28)]'
                   : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
@@ -161,7 +161,7 @@ function App() {
               type="button"
               onClick={() => switchView('learn')}
               aria-pressed={activeView === 'learn'}
-              className={`min-h-[38px] px-3.5 sm:px-4 py-1.5 rounded-lg font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
+              className={`min-h-[38px] px-2.5 sm:px-4 py-1.5 rounded-lg font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
                 activeView === 'learn'
                   ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_12px_rgba(34,211,238,0.28)]'
                   : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
@@ -175,7 +175,7 @@ function App() {
             <button
               type="button"
               onClick={isListening ? stopTuner : startTuner}
-              className={`min-h-[38px] sm:min-h-[40px] px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl border font-mono text-xs font-semibold tracking-wide active:scale-[0.97] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color] duration-200 cursor-pointer ${
+              className={`min-h-[38px] sm:min-h-[40px] px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl border font-mono text-xs font-semibold tracking-wide active:scale-[0.97] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color] duration-200 cursor-pointer ${
                 isListening
                   ? 'bg-rose-500/20 text-rose-100 border-rose-300/40 hover:bg-rose-500/30'
                   : 'bg-white/[0.08] text-slate-100 border-white/15 hover:bg-white/[0.16]'
@@ -193,8 +193,10 @@ function App() {
       {/* Main Workspace */}
       <main
         id="main-workspace"
-        className={`relative z-10 flex-1 w-full max-w-[1280px] mx-auto px-3.5 sm:px-6 pt-3 lg:py-8 flex flex-col gap-3.5 sm:gap-6 ${
-          activeView === 'tuner' ? 'pb-22 lg:pb-10' : 'pb-10'
+        className={`relative z-10 flex-1 w-full max-w-[1280px] mx-auto px-3 sm:px-6 pt-3 lg:py-8 flex flex-col gap-3.5 sm:gap-6 ${
+          activeView === 'tuner'
+            ? 'pb-[calc(5.75rem+env(safe-area-inset-bottom))] lg:pb-10'
+            : 'pb-[calc(2.5rem+env(safe-area-inset-bottom))] lg:pb-10'
         }`}
       >
         {/* Instrument & Tuning Preset Workspace Bar (Tuner View) */}

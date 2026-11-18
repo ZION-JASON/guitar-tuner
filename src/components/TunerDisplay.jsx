@@ -79,7 +79,7 @@ const TunerDisplay = ({
             <button
               type="button"
               onClick={onClearLock}
-              className="min-h-[32px] px-2.5 py-0.5 rounded-lg border border-amber-300/40 bg-amber-400/15 text-amber-200 font-mono text-xs font-semibold hover:bg-amber-400/25 active:scale-[0.98] transition-[transform,background-color] duration-200 whitespace-nowrap shrink-0 cursor-pointer"
+              className="min-h-[38px] sm:min-h-[32px] px-3 py-1 rounded-lg border border-amber-300/40 bg-amber-400/15 text-amber-200 font-mono text-xs font-semibold hover:bg-amber-400/25 active:scale-[0.98] transition-[transform,background-color] duration-200 whitespace-nowrap shrink-0 cursor-pointer"
             >
               String {lockedStringNum} Locked · Unlock
             </button>
@@ -288,32 +288,32 @@ const TunerDisplay = ({
         </div>
       </div>
 
-      {/* 4-Cell Tabular Metric Strip */}
-      <div className="grid grid-cols-4 border-t border-white/12 bg-white/[0.03]">
-        <div className="p-2.5 sm:p-4 border-r border-white/12 min-w-0">
-          <div className="font-mono text-[10px] sm:text-xs text-slate-400 truncate">
+      {/* 4-Cell Tabular Metric Strip (2x2 on mobile, 4-col on sm+/PC) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 border-t border-white/12 bg-white/[0.03]">
+        <div className="p-3 sm:p-4 border-r border-b sm:border-b-0 border-white/12 min-w-0">
+          <div className="font-mono text-[11px] sm:text-xs text-slate-400 truncate">
             Detected
           </div>
-          <div className="mt-0.5 sm:mt-1 font-mono text-xs sm:text-xl font-semibold tabular-nums text-slate-50 whitespace-nowrap truncate">
+          <div className="mt-0.5 sm:mt-1 font-mono text-sm sm:text-xl font-semibold tabular-nums text-slate-50 whitespace-nowrap truncate">
             {hasSignal ? `${frequency.toFixed(2)} Hz` : '0.00 Hz'}
           </div>
         </div>
 
-        <div className="p-2.5 sm:p-4 border-r border-white/12 min-w-0">
-          <div className="font-mono text-[10px] sm:text-xs text-slate-400 truncate">
+        <div className="p-3 sm:p-4 sm:border-r border-b sm:border-b-0 border-white/12 min-w-0">
+          <div className="font-mono text-[11px] sm:text-xs text-slate-400 truncate">
             Target
           </div>
-          <div className="mt-0.5 sm:mt-1 font-mono text-xs sm:text-xl font-semibold tabular-nums text-slate-50 whitespace-nowrap truncate">
+          <div className="mt-0.5 sm:mt-1 font-mono text-sm sm:text-xl font-semibold tabular-nums text-slate-50 whitespace-nowrap truncate">
             {targetFrequency > 0 ? `${targetFrequency.toFixed(2)} Hz` : '--'}
           </div>
         </div>
 
-        <div className="p-2.5 sm:p-4 border-r border-white/12 min-w-0">
-          <div className="font-mono text-[10px] sm:text-xs text-slate-400 truncate">
+        <div className="p-3 sm:p-4 border-r border-white/12 min-w-0">
+          <div className="font-mono text-[11px] sm:text-xs text-slate-400 truncate">
             Stability
           </div>
           <div
-            className={`mt-0.5 sm:mt-1 font-mono text-xs sm:text-xl font-semibold tabular-nums truncate ${
+            className={`mt-0.5 sm:mt-1 font-mono text-sm sm:text-xl font-semibold tabular-nums truncate ${
               inTune ? 'text-emerald-300' : 'text-slate-50'
             }`}
           >
@@ -321,11 +321,11 @@ const TunerDisplay = ({
           </div>
         </div>
 
-        <div className="p-2.5 sm:p-4 min-w-0">
-          <div className="font-mono text-[10px] sm:text-xs text-slate-400 truncate">
+        <div className="p-3 sm:p-4 min-w-0">
+          <div className="font-mono text-[11px] sm:text-xs text-slate-400 truncate">
             Clarity
           </div>
-          <div className="mt-0.5 sm:mt-1 font-mono text-xs sm:text-xl font-semibold tabular-nums text-slate-50 whitespace-nowrap truncate">
+          <div className="mt-0.5 sm:mt-1 font-mono text-sm sm:text-xl font-semibold tabular-nums text-slate-50 whitespace-nowrap truncate">
             {clarityPercent}%
           </div>
         </div>

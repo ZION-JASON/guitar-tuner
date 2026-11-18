@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   CHROMATIC_NOTES,
@@ -28,9 +28,22 @@ import {
   toggleFavoriteChord,
   updateFavoriteChordVoicing,
 } from '../utils/favoriteChords';
+import {
+  appendFavoriteToProgression,
+  clearCustomProgression,
+  createProgressionStep,
+  duplicateProgressionStep,
+  loadCustomProgression,
+  moveProgressionStep,
+  removeProgressionStep,
+  saveCustomProgression,
+  updateProgressionStepBeats,
+} from '../utils/customProgression';
+import { DEFAULT_BPM, getTimeSignatureConfig } from '../utils/metronome';
 import ChordDiagramSVG from './ChordDiagramSVG';
 import PracticeMetronomeBar from './PracticeMetronomeBar';
 import FavoriteChordsTray from './FavoriteChordsTray';
+import CustomProgressionSequencer from './CustomProgressionSequencer';
 
 const LEARN_TABS = [
   { id: 'chords', label: 'Chords' },
@@ -182,7 +195,7 @@ const ChordFamilyModal = ({
         }
       }}
     >
-      <div className="glass-panel rounded-t-3xl sm:rounded-2xl border border-cyan-300/35 shadow-[0_24px_64px_rgba(2,6,23,0.75)] w-full max-w-4xl max-h-[88dvh] sm:max-h-[90dvh] overflow-y-auto p-4 sm:p-6 flex flex-col gap-4 sm:gap-5">
+      <div className="glass-panel rounded-t-3xl sm:rounded-2xl border border-cyan-300/35 shadow-[0_24px_64px_rgba(2,6,23,0.75)] w-full max-w-4xl max-h-[88dvh] sm:max-h-[90dvh] overflow-y-auto p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-6 flex flex-col gap-4 sm:gap-5">
         <div
           aria-hidden="true"
           className="w-10 h-1 rounded-full bg-white/25 mx-auto sm:hidden shrink-0"
@@ -262,7 +275,7 @@ const ChordFamilyModal = ({
                         );
                       }
                     }}
-                    className="flex-1 min-h-[34px] px-1.5 py-1 rounded-lg bg-white/[0.08] hover:bg-white/[0.18] font-mono text-[10px] font-semibold text-white cursor-pointer transition-colors"
+                    className="flex-1 min-h-[38px] sm:min-h-[34px] px-1.5 py-1 rounded-lg bg-white/[0.08] hover:bg-white/[0.18] font-mono text-[11px] sm:text-[10px] font-semibold text-white cursor-pointer transition-colors"
                   >
                     {fc.voicings[0]?.midiNotes?.length === 1
                       ? 'Pluck'
@@ -276,7 +289,7 @@ const ChordFamilyModal = ({
                       learnAudio.stopAll();
                       onLookupChord(fc.symbol);
                     }}
-                    className="min-h-[34px] px-1.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.14] font-mono text-[10px] text-slate-300 cursor-pointer transition-colors"
+                    className="min-h-[38px] sm:min-h-[34px] px-2 sm:px-1.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.14] font-mono text-[11px] sm:text-[10px] text-slate-300 cursor-pointer transition-colors"
                     aria-label={`Inspect ${fc.symbol} diagram`}
                   >
                     View
@@ -478,7 +491,7 @@ const SpotlightChordPanel = ({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto">
             <button
               type="button"
               onClick={() => {
@@ -595,7 +608,7 @@ const SpotlightChordPanel = ({
                       learnAudio.playChord(v.midiNotes, refFrequency, instrument, playMode);
                     }}
                     aria-pressed={idx === safeIdx}
-                    className={`min-h-[38px] px-3 py-1.5 rounded-xl border font-mono text-xs font-medium transition-colors cursor-pointer ${
+                    className={`min-h-[42px] sm:min-h-[38px] px-3 py-1.5 rounded-xl border font-mono text-xs font-medium transition-colors cursor-pointer ${
                       idx === safeIdx
                         ? 'bg-white/20 text-white border-white/35'
                         : 'bg-white/[0.04] text-slate-300 border-white/10 hover:bg-white/[0.1]'
@@ -716,7 +729,7 @@ const ChordCard = ({
                   : `Save ${chordData.symbol} to favorites`
               }
               title={isFavorite ? 'Remove from Practice Favorites' : 'Save to Practice Favorites'}
-              className={`min-h-[34px] min-w-[34px] rounded-lg border font-mono text-sm flex items-center justify-center shrink-0 active:scale-[0.93] cursor-pointer transition-colors ${
+              className={`min-h-[38px] min-w-[38px] sm:min-h-[34px] sm:min-w-[34px] rounded-lg border font-mono text-sm flex items-center justify-center shrink-0 active:scale-[0.93] cursor-pointer transition-colors ${
                 isFavorite
                   ? 'bg-amber-400/20 text-amber-300 border-amber-300/45'
                   : 'bg-white/[0.04] text-slate-400 border-white/12 hover:text-amber-200 hover:border-amber-300/35'
@@ -727,11 +740,11 @@ const ChordCard = ({
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-1 sm:gap-1.5 w-full">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 w-full">
           <button
             type="button"
             onClick={() => onShowFamily(chordData)}
-            className="min-h-[36px] px-1.5 sm:px-2.5 py-1 rounded-xl border border-cyan-300/30 bg-cyan-400/10 hover:bg-cyan-400/20 text-cyan-200 font-mono text-[11px] font-semibold active:scale-[0.96] transition-colors whitespace-nowrap cursor-pointer"
+            className="order-3 col-span-2 sm:order-1 sm:col-span-1 min-h-[38px] sm:min-h-[36px] px-2 sm:px-2.5 py-1 rounded-xl border border-cyan-300/30 bg-cyan-400/10 hover:bg-cyan-400/20 text-cyan-200 font-mono text-[11px] font-semibold active:scale-[0.96] transition-colors whitespace-nowrap cursor-pointer"
             aria-label={`Show chord family and progressions for ${chordData.symbol}`}
           >
             Family
@@ -743,7 +756,7 @@ const ChordCard = ({
                 onStrum(cardId, activeVoicing.midiNotes, 'strum');
               }
             }}
-            className={`min-h-[36px] px-1.5 sm:px-2.5 py-1 rounded-xl border font-mono text-[11px] sm:text-xs font-semibold active:scale-[0.96] transition-[transform,background-color,border-color,color] duration-200 whitespace-nowrap cursor-pointer ${
+            className={`order-1 sm:order-2 min-h-[40px] sm:min-h-[36px] px-2 sm:px-2.5 py-1 rounded-xl border font-mono text-xs font-semibold active:scale-[0.96] transition-[transform,background-color,border-color,color] duration-200 whitespace-nowrap cursor-pointer ${
               isStrumActive
                 ? 'bg-cyan-400 text-slate-950 border-cyan-300'
                 : playMode === 'strum' && !isArpActive && activeStrumId === null
@@ -765,7 +778,7 @@ const ChordCard = ({
                 );
               }
             }}
-            className={`min-h-[36px] px-1.5 sm:px-2.5 py-1 rounded-xl border font-mono text-[11px] sm:text-xs font-semibold active:scale-[0.96] transition-[transform,background-color,border-color,color] duration-200 whitespace-nowrap cursor-pointer ${
+            className={`order-2 sm:order-3 min-h-[40px] sm:min-h-[36px] px-2 sm:px-2.5 py-1 rounded-xl border font-mono text-xs font-semibold active:scale-[0.96] transition-[transform,background-color,border-color,color] duration-200 whitespace-nowrap cursor-pointer ${
               isArpActive
                 ? 'bg-cyan-400 text-slate-950 border-cyan-300'
                 : playMode === 'arpeggio'
@@ -815,7 +828,7 @@ const ChordCard = ({
                       learnAudio.playChord(v.midiNotes, refFrequency, instrument, playMode);
                     }}
                     aria-pressed={idx === safeIdx}
-                    className={`min-h-[34px] px-2 py-1 rounded-lg border font-mono text-[10px] font-medium transition-colors cursor-pointer ${
+                    className={`min-h-[38px] sm:min-h-[34px] px-2 py-1 rounded-lg border font-mono text-[10px] font-medium transition-colors cursor-pointer ${
                       idx === safeIdx
                         ? 'bg-white/20 text-white border-white/35'
                         : 'bg-white/[0.04] text-slate-300 border-white/10 hover:text-white hover:bg-white/[0.1]'
@@ -829,7 +842,7 @@ const ChordCard = ({
                 type="button"
                 onClick={() => setShowVariations(false)}
                 aria-expanded={true}
-                className="min-h-[34px] px-2.5 py-1 rounded-lg border border-white/12 bg-white/[0.04] hover:bg-white/[0.1] text-slate-300 font-mono text-[10px] font-semibold cursor-pointer transition-colors"
+                className="min-h-[38px] sm:min-h-[34px] px-2.5 py-1 rounded-lg border border-white/12 bg-white/[0.04] hover:bg-white/[0.1] text-slate-300 font-mono text-[10px] font-semibold cursor-pointer transition-colors"
               >
                 Hide Variations
               </button>
@@ -839,7 +852,7 @@ const ChordCard = ({
               type="button"
               onClick={() => setShowVariations(true)}
               aria-expanded={false}
-              className="min-h-[36px] px-2.5 py-1 rounded-lg border border-cyan-300/30 bg-cyan-400/10 hover:bg-cyan-400/20 text-cyan-200 font-mono text-[11px] font-semibold cursor-pointer transition-colors"
+              className="min-h-[40px] sm:min-h-[36px] px-2.5 py-1 rounded-lg border border-cyan-300/30 bg-cyan-400/10 hover:bg-cyan-400/20 text-cyan-200 font-mono text-[11px] font-semibold cursor-pointer transition-colors"
             >
               More Variations (+{chordData.voicings.length - 1})
             </button>
@@ -859,7 +872,7 @@ const ChordCard = ({
                     learnAudio.playChord(v.midiNotes, refFrequency, instrument, playMode);
                   }}
                   aria-pressed={idx === safeIdx}
-                  className={`min-h-[34px] px-2.5 py-1 rounded-lg border font-mono text-[11px] font-medium transition-colors cursor-pointer ${
+                  className={`min-h-[38px] sm:min-h-[34px] px-2.5 py-1 rounded-lg border font-mono text-[11px] font-medium transition-colors cursor-pointer ${
                     idx === safeIdx
                       ? 'bg-white/20 text-white border-white/35'
                       : 'bg-white/[0.04] text-slate-400 border-white/10 hover:text-slate-200'
@@ -910,10 +923,74 @@ const LearnSection = ({
   const [favorites, setFavorites] = useState(() => loadFavoriteChords());
   const [showFavoritesTray, setShowFavoritesTray] = useState(false);
 
+  const [metroBpm, setMetroBpm] = useState(DEFAULT_BPM);
+  const [metroTimeSigId, setMetroTimeSigId] = useState('4/4');
+  const [isMetroPlaying, setIsMetroPlaying] = useState(false);
+
+  const [customSequence, setCustomSequence] = useState(() => loadCustomProgression());
+  const [showSequencer, setShowSequencer] = useState(false);
+  const [seqWithClick, setSeqWithClick] = useState(true);
+  const [seqLoop, setSeqLoop] = useState(true);
+  const [isSeqPlaying, setIsSeqPlaying] = useState(false);
+  const [activeSeqState, setActiveSeqState] = useState(null);
+
+  const fretboardScrollRef = useRef(null);
+  const defaultStepBeats = getTimeSignatureConfig(metroTimeSigId).beats;
+
   const favoriteIdSet = useMemo(
     () => new Set(favorites.map((entry) => entry.id)),
     [favorites]
   );
+
+  const resolvedSequenceAudioSteps = useMemo(() => {
+    return customSequence
+      .map((step) => {
+        const chordData = getChordVoicings(
+          step.rootPc,
+          step.qualityId,
+          step.preferFlats,
+          step.instrument
+        );
+        if (!chordData || !chordData.voicings.length) return null;
+        const safeIdx = Math.min(
+          Math.max(0, step.voicingIdx || 0),
+          chordData.voicings.length - 1
+        );
+        return {
+          uid: step.uid,
+          instrument: step.instrument,
+          beats: step.beats,
+          midiNotes: chordData.voicings[safeIdx].midiNotes,
+        };
+      })
+      .filter(Boolean);
+  }, [customSequence]);
+
+  useEffect(() => {
+    if (!isSeqPlaying) return;
+    if (resolvedSequenceAudioSteps.length === 0) {
+      learnAudio.stopCustomProgression();
+      setIsSeqPlaying(false);
+      setActiveSeqState(null);
+      return;
+    }
+    learnAudio.updateCustomProgression({
+      steps: resolvedSequenceAudioSteps,
+      bpm: metroBpm,
+      refFrequency,
+      playMode: chordPlayMode,
+      withClick: seqWithClick,
+      loop: seqLoop,
+    });
+  }, [
+    isSeqPlaying,
+    resolvedSequenceAudioSteps,
+    metroBpm,
+    refFrequency,
+    chordPlayMode,
+    seqWithClick,
+    seqLoop,
+  ]);
 
   const handleToggleFavorite = (chordData, voicingIdx = 0) => {
     setFavorites((prev) =>
@@ -940,6 +1017,101 @@ const LearnSection = ({
     setFavorites([]);
   };
 
+  const handleAddFavoriteToSequence = (fav) => {
+    setCustomSequence((prev) =>
+      appendFavoriteToProgression(prev, fav, defaultStepBeats)
+    );
+    setShowSequencer(true);
+  };
+
+  const handleQueueAllFavoritesToSequence = (favList = favorites) => {
+    const newSteps = favList
+      .map((fav) => createProgressionStep(fav, defaultStepBeats))
+      .filter(Boolean);
+    if (newSteps.length === 0) return;
+    setCustomSequence((prev) => {
+      const next = [...prev, ...newSteps];
+      saveCustomProgression(next);
+      return next;
+    });
+    setShowSequencer(true);
+  };
+
+  const handleRemoveSequenceStep = (uid) => {
+    setCustomSequence((prev) => removeProgressionStep(prev, uid));
+  };
+
+  const handleMoveSequenceStep = (fromIdx, toIdx) => {
+    setCustomSequence((prev) => moveProgressionStep(prev, fromIdx, toIdx));
+  };
+
+  const handleDuplicateSequenceStep = (uid) => {
+    setCustomSequence((prev) => duplicateProgressionStep(prev, uid));
+  };
+
+  const handleChangeSequenceStepBeats = (uid, nextBeats) => {
+    setCustomSequence((prev) => updateProgressionStepBeats(prev, uid, nextBeats));
+  };
+
+  const handleClearSequence = () => {
+    if (isSeqPlaying) {
+      learnAudio.stopCustomProgression();
+      setIsSeqPlaying(false);
+      setActiveSeqState(null);
+    }
+    setCustomSequence(clearCustomProgression());
+  };
+
+  const handleToggleSequencePlay = () => {
+    if (isSeqPlaying) {
+      learnAudio.stopCustomProgression();
+      setIsSeqPlaying(false);
+      setActiveSeqState(null);
+      return;
+    }
+
+    if (resolvedSequenceAudioSteps.length === 0) return;
+    setIsPlayingScale(false);
+    setPlayingScalePc(null);
+    setActiveProgStep(null);
+    setActiveStrumId(null);
+    setIsMetroPlaying(false);
+
+    const started = learnAudio.startCustomProgression({
+      steps: resolvedSequenceAudioSteps,
+      bpm: metroBpm,
+      refFrequency,
+      playMode: chordPlayMode,
+      withClick: seqWithClick,
+      loop: seqLoop,
+      onStepBeat: (beatInfo) => {
+        setActiveSeqState(beatInfo);
+      },
+      onComplete: () => {
+        setIsSeqPlaying(false);
+        setActiveSeqState(null);
+      },
+    });
+    if (started) {
+      setIsSeqPlaying(true);
+    }
+  };
+
+  const handlePreviewSequenceStep = (
+    midiNotes,
+    targetRefFreq,
+    targetInstrument,
+    mode
+  ) => {
+    setIsSeqPlaying(false);
+    setActiveSeqState(null);
+    setIsPlayingScale(false);
+    setPlayingScalePc(null);
+    setActiveProgStep(null);
+    setActiveStrumId(null);
+    learnAudio.playChord(midiNotes, targetRefFreq, targetInstrument, mode);
+  };
+
   const handlePlayFavoriteChord = (
     cardKey,
     midiNotes,
@@ -947,6 +1119,8 @@ const LearnSection = ({
     targetInstrument,
     targetRefFreq
   ) => {
+    setIsSeqPlaying(false);
+    setActiveSeqState(null);
     setIsPlayingScale(false);
     setPlayingScalePc(null);
     setActiveProgStep(null);
@@ -969,6 +1143,8 @@ const LearnSection = ({
 
   const stopPlaybackState = () => {
     learnAudio.stopAll();
+    setIsSeqPlaying(false);
+    setActiveSeqState(null);
     setIsPlayingScale(false);
     setPlayingScalePc(null);
     setActiveProgStep(null);
@@ -1033,12 +1209,25 @@ const LearnSection = ({
     [rootPc, boxFilter, instrument]
   );
 
+  useEffect(() => {
+    if (activeTab !== 'scales') return;
+    const scroller = fretboardScrollRef.current;
+    if (!scroller || scroller.scrollWidth <= scroller.clientWidth) return;
+    const targetLeft =
+      boxWindow.min <= 0
+        ? 0
+        : Math.max(0, Math.round((boxWindow.min / 16) * scroller.scrollWidth - 48));
+    scroller.scrollTo({ left: targetLeft, behavior: 'smooth' });
+  }, [activeTab, boxFilter, boxWindow.min]);
+
   const activeProgression = useMemo(
     () => buildProgression(rootPc, progressionId, instrument),
     [rootPc, progressionId, instrument]
   );
 
   const handleStrum = (cardId, midiNotes, mode = chordPlayMode) => {
+    setIsSeqPlaying(false);
+    setActiveSeqState(null);
     setIsPlayingScale(false);
     setPlayingScalePc(null);
     setActiveProgStep(null);
@@ -1053,6 +1242,8 @@ const LearnSection = ({
       setPlayingScalePc(null);
       return;
     }
+    setIsSeqPlaying(false);
+    setActiveSeqState(null);
     setActiveProgStep(null);
     setIsPlayingScale(true);
     learnAudio.playSequence(
@@ -1076,6 +1267,8 @@ const LearnSection = ({
       setActiveProgStep(null);
       return;
     }
+    setIsSeqPlaying(false);
+    setActiveSeqState(null);
     setIsPlayingScale(false);
     setPlayingScalePc(null);
     learnAudio.playProgression(
@@ -1235,11 +1428,26 @@ const LearnSection = ({
         </div>
       </section>
 
-      {/* Practice Metronome + Saved Favorite Chords Quick Access */}
+      {/* Practice Metronome + Saved Favorite Chords + Custom Sequencer Dock */}
       <PracticeMetronomeBar
+        bpm={metroBpm}
+        onBpmChange={setMetroBpm}
+        timeSigId={metroTimeSigId}
+        onTimeSigChange={setMetroTimeSigId}
+        isPlaying={isMetroPlaying}
+        onPlayingChange={(nextMetro) => {
+          if (nextMetro) {
+            setIsSeqPlaying(false);
+            setActiveSeqState(null);
+          }
+          setIsMetroPlaying(nextMetro);
+        }}
         favoritesCount={favorites.length}
         showFavoritesTray={showFavoritesTray}
         onToggleFavoritesTray={() => setShowFavoritesTray((prev) => !prev)}
+        sequenceCount={customSequence.length}
+        showSequencer={showSequencer}
+        onToggleSequencer={() => setShowSequencer((prev) => !prev)}
       />
 
       {showFavoritesTray && (
@@ -1251,10 +1459,49 @@ const LearnSection = ({
           refFrequency={refFrequency}
           activeStrumId={activeStrumId}
           onPlayChord={handlePlayFavoriteChord}
+          onAddToSequence={handleAddFavoriteToSequence}
+          onQueueAllFavorites={handleQueueAllFavoritesToSequence}
           onRemoveFavorite={handleRemoveFavorite}
           onClearAll={handleClearFavorites}
           onInspectFavorite={handleInspectFavorite}
           onClose={() => setShowFavoritesTray(false)}
+        />
+      )}
+
+      {showSequencer && (
+        <CustomProgressionSequencer
+          steps={customSequence}
+          favorites={favorites}
+          bpm={metroBpm}
+          defaultStepBeats={defaultStepBeats}
+          playMode={chordPlayMode}
+          withClick={seqWithClick}
+          loop={seqLoop}
+          isPlaying={isSeqPlaying}
+          activeState={activeSeqState}
+          labelMode={chordLabelMode}
+          refFrequency={refFrequency}
+          onBpmChange={setMetroBpm}
+          onTogglePlay={handleToggleSequencePlay}
+          onToggleWithClick={() => setSeqWithClick((prev) => !prev)}
+          onToggleLoop={() => setSeqLoop((prev) => !prev)}
+          onChangePlayMode={(nextMode) => {
+            if (chordPlayMode !== nextMode) {
+              onUpdateLearn({ chordPlayMode: nextMode }, { replace: true });
+            }
+          }}
+          onAddFavoriteStep={handleAddFavoriteToSequence}
+          onQueueAllFavorites={() => handleQueueAllFavoritesToSequence(favorites)}
+          onRemoveStep={handleRemoveSequenceStep}
+          onMoveStep={handleMoveSequenceStep}
+          onDuplicateStep={handleDuplicateSequenceStep}
+          onChangeStepBeats={handleChangeSequenceStepBeats}
+          onClearSequence={handleClearSequence}
+          onPreviewStep={handlePreviewSequenceStep}
+          onBrowseChords={() =>
+            onUpdateLearn({ tab: 'chords', chordQuery: '', familyModalTarget: null })
+          }
+          onClose={() => setShowSequencer(false)}
         />
       )}
 
@@ -1313,24 +1560,24 @@ const LearnSection = ({
                       : 'Look up chord diagram (e.g. F#dim, Bbsus4, E7#9, Am11, Cdim7)...'
                   }
                   aria-label="Search chord diagram"
-                  className="w-full min-h-[46px] pl-10 pr-20 py-2.5 rounded-xl glass-recessed border border-white/15 focus:border-cyan-300/60 focus:outline-none font-mono text-sm text-white placeholder:text-slate-400 transition-colors"
+                  className="w-full min-h-[48px] sm:min-h-[46px] pl-10 pr-20 py-2.5 rounded-xl glass-recessed border border-white/15 focus:border-cyan-300/60 focus:outline-none font-mono text-base sm:text-sm text-white placeholder:text-slate-400 transition-colors"
                 />
                 {chordQuery && (
                   <button
                     type="button"
                     onClick={() => onUpdateLearn({ chordQuery: '' })}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[32px] px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 font-mono text-xs cursor-pointer transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[36px] sm:min-h-[32px] px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 font-mono text-xs cursor-pointer transition-colors"
                   >
                     Clear
                   </button>
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 shrink-0">
                 <div
                   role="group"
                   aria-label="Chord Playback Style"
-                  className="flex items-center gap-1 glass-recessed rounded-xl p-1"
+                  className="grid grid-cols-2 sm:flex items-center gap-1 glass-recessed rounded-xl p-1"
                 >
                   <button
                     type="button"
@@ -1340,7 +1587,7 @@ const LearnSection = ({
                       }
                     }}
                     aria-pressed={chordPlayMode === 'strum'}
-                    className={`min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                    className={`min-h-[40px] sm:min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
                       chordPlayMode === 'strum'
                         ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_10px_rgba(34,211,238,0.28)]'
                         : 'text-slate-400 hover:text-slate-200'
@@ -1356,7 +1603,7 @@ const LearnSection = ({
                       }
                     }}
                     aria-pressed={chordPlayMode === 'arpeggio'}
-                    className={`min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                    className={`min-h-[40px] sm:min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
                       chordPlayMode === 'arpeggio'
                         ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_10px_rgba(34,211,238,0.28)]'
                         : 'text-slate-400 hover:text-slate-200'
@@ -1366,7 +1613,7 @@ const LearnSection = ({
                   </button>
                 </div>
 
-                <div className="flex items-center gap-1.5 glass-recessed rounded-xl p-1">
+                <div className="grid grid-cols-2 sm:flex items-center gap-1.5 glass-recessed rounded-xl p-1">
                   <button
                     type="button"
                     onClick={() => {
@@ -1375,7 +1622,7 @@ const LearnSection = ({
                       }
                     }}
                     aria-pressed={chordLabelMode === 'fingers'}
-                    className={`min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                    className={`min-h-[40px] sm:min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
                       chordLabelMode === 'fingers'
                         ? 'bg-white/20 text-white'
                         : 'text-slate-400 hover:text-slate-200'
@@ -1391,7 +1638,7 @@ const LearnSection = ({
                       }
                     }}
                     aria-pressed={chordLabelMode === 'notes'}
-                    className={`min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                    className={`min-h-[40px] sm:min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
                       chordLabelMode === 'notes'
                         ? 'bg-white/20 text-white'
                         : 'text-slate-400 hover:text-slate-200'
@@ -1404,8 +1651,8 @@ const LearnSection = ({
             </div>
 
             {/* Quick Complex Chord Lookups */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="font-mono text-[11px] text-slate-400 mr-1">
+            <div className="flex items-center gap-1.5 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar pb-0.5 sm:pb-0">
+              <span className="font-mono text-[11px] text-slate-400 mr-1 whitespace-nowrap shrink-0">
                 {instrument === 'bass' ? 'Try bass shapes:' : 'Try complex:'}
               </span>
               {quickLookups.map((sample) => (
@@ -1417,7 +1664,7 @@ const LearnSection = ({
                       onUpdateLearn({ chordQuery: sample });
                     }
                   }}
-                  className={`min-h-[40px] px-3 py-1.5 rounded-lg border font-mono text-xs transition-colors cursor-pointer ${
+                  className={`min-h-[40px] px-3 py-1.5 rounded-lg border font-mono text-xs whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
                     chordQuery.trim().toLowerCase() === sample.toLowerCase()
                       ? 'bg-cyan-400/20 text-cyan-200 border-cyan-300/45'
                       : 'bg-white/[0.04] text-slate-300 border-white/10 hover:bg-white/[0.12] hover:text-white'
@@ -1867,11 +2114,11 @@ const LearnSection = ({
               </div>
             </div>
 
-            <div className="overflow-x-auto pb-2">
+            <div ref={fretboardScrollRef} className="overflow-x-auto pb-2">
               <div className="min-w-[780px] glass-recessed rounded-xl p-3 sm:p-4">
                 {/* Fret Numbers Header */}
                 <div className="grid grid-cols-[44px_repeat(16,minmax(0,1fr))] items-center gap-1 mb-2">
-                  <div className="font-mono text-[10px] text-slate-400 text-center">
+                  <div className="sticky left-0 z-20 bg-[#0c1426]/95 backdrop-blur-sm py-1 rounded font-mono text-[10px] text-slate-400 text-center">
                     STR
                   </div>
                   {Array.from({ length: 16 }).map((_, fret) => (
@@ -1888,14 +2135,14 @@ const LearnSection = ({
                   ))}
                 </div>
 
-                {/* 6 Guitar Strings */}
+                {/* Instrument Strings */}
                 <div className="flex flex-col gap-1.5">
                   {fretboardData.rows.map((row) => (
                     <div
                       key={row.label}
                       className="grid grid-cols-[44px_repeat(16,minmax(0,1fr))] items-center gap-1"
                     >
-                      <div className="font-mono text-xs font-semibold text-slate-300 text-center">
+                      <div className="sticky left-0 z-20 bg-[#0c1426]/95 backdrop-blur-sm py-1.5 rounded font-mono text-xs font-semibold text-slate-300 text-center">
                         {row.label}
                       </div>
 
@@ -1908,7 +2155,7 @@ const LearnSection = ({
                         return (
                           <div
                             key={`${row.label}-${cell.fret}`}
-                            className={`relative h-10 flex items-center justify-center rounded-md ${
+                            className={`relative h-11 sm:h-10 flex items-center justify-center rounded-md ${
                               cell.fret === 0
                                 ? 'border-r-2 border-white/50 bg-white/[0.04]'
                                 : 'border-r border-white/12'
@@ -1934,7 +2181,7 @@ const LearnSection = ({
                                   )
                                 }
                                 aria-label={`${row.label} fret ${cell.fret} ${cell.noteName}`}
-                                className={`relative z-10 w-8 h-8 rounded-full font-mono text-[11px] font-bold flex items-center justify-center active:scale-90 transition-[transform,opacity,background-color,box-shadow] duration-150 cursor-pointer ${
+                                className={`relative z-10 w-9 h-9 sm:w-8 sm:h-8 rounded-full font-mono text-[11px] font-bold flex items-center justify-center active:scale-90 transition-[transform,opacity,background-color,box-shadow] duration-150 cursor-pointer ${
                                   !inBox
                                     ? 'opacity-20 bg-white/15 text-slate-300'
                                     : isSounding
@@ -2093,8 +2340,8 @@ const LearnSection = ({
             </div>
 
             {/* Quick Guitar Key Families (G-C-D, C-F-G, D-G-A, etc.) */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="font-mono text-[11px] text-slate-400 mr-1">
+            <div className="flex items-center gap-1.5 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar pb-0.5 sm:pb-0">
+              <span className="font-mono text-[11px] text-slate-400 mr-1 whitespace-nowrap shrink-0">
                 Quick Keys:
               </span>
               {POPULAR_KEY_FAMILIES.map((fam) => {
@@ -2105,7 +2352,7 @@ const LearnSection = ({
                     type="button"
                     onClick={() => handleSelectRoot(fam.pc)}
                     aria-pressed={active}
-                    className={`min-h-[40px] px-3 py-1.5 rounded-xl border font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                    className={`min-h-[40px] px-3 py-1.5 rounded-xl border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
                       active
                         ? 'bg-cyan-400/20 text-cyan-200 border-cyan-300/45'
                         : 'bg-white/[0.04] text-slate-300 border-white/10 hover:bg-white/[0.1]'

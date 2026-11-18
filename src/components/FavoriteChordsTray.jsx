@@ -11,6 +11,8 @@ const FavoriteChordsTray = ({
   refFrequency = 440,
   activeStrumId = null,
   onPlayChord,
+  onAddToSequence,
+  onQueueAllFavorites,
   onRemoveFavorite,
   onClearAll,
   onInspectFavorite,
@@ -114,6 +116,16 @@ const FavoriteChordsTray = ({
             </div>
           )}
 
+          {visibleItems.length > 0 && onQueueAllFavorites && (
+            <button
+              type="button"
+              onClick={() => onQueueAllFavorites(visibleItems.map((item) => item.fav))}
+              className="min-h-[36px] px-3 py-1 rounded-xl border border-cyan-300/35 bg-cyan-400/12 hover:bg-cyan-400/22 text-cyan-200 font-mono text-[11px] font-semibold cursor-pointer transition-colors"
+            >
+              + Sequence All ({visibleItems.length})
+            </button>
+          )}
+
           {favorites.length > 1 && (
             <button
               type="button"
@@ -179,7 +191,7 @@ const FavoriteChordsTray = ({
                     type="button"
                     onClick={() => onRemoveFavorite(fav.id)}
                     aria-label={`Remove ${chordData.symbol} (${instMeta.label}) from favorites`}
-                    className="min-h-[32px] min-w-[32px] rounded-lg border border-amber-300/35 bg-amber-400/15 hover:bg-rose-500/20 hover:border-rose-300/40 text-amber-300 hover:text-rose-200 font-mono text-xs flex items-center justify-center shrink-0 cursor-pointer transition-colors"
+                    className="min-h-[38px] min-w-[38px] sm:min-h-[34px] sm:min-w-[34px] rounded-lg border border-amber-300/35 bg-amber-400/15 hover:bg-rose-500/20 hover:border-rose-300/40 text-amber-300 hover:text-rose-200 font-mono text-xs flex items-center justify-center shrink-0 cursor-pointer transition-colors"
                     title="Remove from favorites"
                   >
                     ★
@@ -197,7 +209,7 @@ const FavoriteChordsTray = ({
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-1">
+                <div className="grid grid-cols-2 gap-1.5">
                   <button
                     type="button"
                     onClick={() =>
@@ -209,7 +221,7 @@ const FavoriteChordsTray = ({
                         refFrequency
                       )
                     }
-                    className={`min-h-[34px] px-1.5 py-1 rounded-lg border font-mono text-[10px] font-semibold cursor-pointer transition-colors ${
+                    className={`min-h-[40px] sm:min-h-[34px] px-2 py-1 rounded-lg border font-mono text-[11px] sm:text-[10px] font-semibold cursor-pointer transition-colors ${
                       isStrumActive
                         ? 'bg-cyan-400 text-slate-950 border-cyan-300'
                         : playMode === 'strum'
@@ -230,7 +242,7 @@ const FavoriteChordsTray = ({
                         refFrequency
                       )
                     }
-                    className={`min-h-[34px] px-1.5 py-1 rounded-lg border font-mono text-[10px] font-semibold cursor-pointer transition-colors ${
+                    className={`min-h-[40px] sm:min-h-[34px] px-2 py-1 rounded-lg border font-mono text-[11px] sm:text-[10px] font-semibold cursor-pointer transition-colors ${
                       isArpActive
                         ? 'bg-cyan-400 text-slate-950 border-cyan-300'
                         : playMode === 'arpeggio'
@@ -240,11 +252,23 @@ const FavoriteChordsTray = ({
                   >
                     Arp
                   </button>
+                  {onAddToSequence && (
+                    <button
+                      type="button"
+                      onClick={() => onAddToSequence(fav)}
+                      aria-label={`Add ${chordData.symbol} (${instMeta.label}) to rhythm sequence`}
+                      className="min-h-[38px] sm:min-h-[34px] px-2 py-1 rounded-lg border border-cyan-300/30 bg-cyan-400/10 hover:bg-cyan-400/22 text-cyan-200 font-mono text-[11px] sm:text-[10px] font-semibold cursor-pointer transition-colors"
+                    >
+                      + Seq
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => onInspectFavorite(fav, chordData)}
                     aria-label={`Open ${chordData.symbol} diagram`}
-                    className="min-h-[34px] px-1.5 py-1 rounded-lg border border-white/12 bg-white/[0.04] hover:bg-white/[0.14] text-slate-300 hover:text-white font-mono text-[10px] font-semibold cursor-pointer transition-colors"
+                    className={`${
+                      onAddToSequence ? '' : 'col-span-2'
+                    } min-h-[38px] sm:min-h-[34px] px-2 py-1 rounded-lg border border-white/12 bg-white/[0.04] hover:bg-white/[0.14] text-slate-300 hover:text-white font-mono text-[11px] sm:text-[10px] font-semibold cursor-pointer transition-colors`}
                   >
                     Open
                   </button>

@@ -117,8 +117,8 @@ const StringMatrix = ({
                             {s.octave}
                           </span>
                         </span>
-                        <span className="sm:hidden font-mono text-[10px] tabular-nums text-slate-400 leading-tight">
-                          {targetHz.toFixed(1)} Hz
+                        <span className="sm:hidden font-mono text-[10px] tabular-nums text-slate-400 leading-tight truncate">
+                          {isLocked ? 'Locked' : `${targetHz.toFixed(1)} Hz`}
                         </span>
                       </div>
                     </div>
@@ -144,7 +144,7 @@ const StringMatrix = ({
                         ? `Stop reference tone for ${s.noteName}${s.octave}`
                         : `Play reference tone for ${s.noteName}${s.octave}`
                     }
-                    className={`min-h-[42px] sm:min-h-[44px] min-w-[52px] sm:min-w-[68px] px-2.5 sm:px-3 py-2 rounded-xl border font-mono text-[11px] sm:text-xs font-semibold active:scale-[0.96] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color,box-shadow] duration-200 cursor-pointer ${
+                    className={`min-h-[44px] min-w-[50px] sm:min-w-[68px] px-2.5 sm:px-3 py-2 rounded-xl border font-mono text-[11px] sm:text-xs font-semibold active:scale-[0.96] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color,box-shadow] duration-200 cursor-pointer ${
                       isPlaying
                         ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.35)]'
                         : 'bg-white/[0.07] text-slate-200 border-white/15 hover:bg-white/[0.15]'
@@ -177,7 +177,7 @@ const StringMatrix = ({
                     type="button"
                     onClick={() => onToggleTone(toneKey, targetHz, item.midi)}
                     aria-pressed={isPlaying}
-                    className={`min-h-[42px] sm:min-h-[44px] min-w-[52px] sm:min-w-[68px] px-2.5 sm:px-3 py-2 rounded-xl border font-mono text-[11px] sm:text-xs font-semibold active:scale-[0.96] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color,box-shadow] duration-200 cursor-pointer ${
+                    className={`min-h-[44px] min-w-[50px] sm:min-w-[68px] px-2.5 sm:px-3 py-2 rounded-xl border font-mono text-[11px] sm:text-xs font-semibold active:scale-[0.96] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color,box-shadow] duration-200 cursor-pointer ${
                       isPlaying
                         ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.35)]'
                         : 'bg-white/[0.07] text-slate-200 border-white/15 hover:bg-white/[0.15]'
@@ -218,7 +218,7 @@ const StringMatrix = ({
                   <button
                     type="button"
                     onClick={() => onChangeRefFrequency(DEFAULT_REF_FREQUENCY)}
-                    className="min-h-[28px] px-2 py-0.5 rounded-md border border-amber-300/35 bg-amber-400/15 hover:bg-amber-400/25 font-mono text-[11px] font-semibold text-amber-200 cursor-pointer transition-colors"
+                    className="min-h-[36px] sm:min-h-[30px] px-2.5 py-1 rounded-lg border border-amber-300/35 bg-amber-400/15 hover:bg-amber-400/25 font-mono text-[11px] font-semibold text-amber-200 cursor-pointer transition-colors"
                   >
                     Reset 440
                   </button>

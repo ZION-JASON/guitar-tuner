@@ -395,6 +395,23 @@ export class LearnAudioEngine {
     this._metroUiTimers = new Set();
     this._metroOnBeat = null;
 
+    this._seqGen = 0;
+    this._seqRunning = false;
+    this._seqSteps = [];
+    this._seqBpm = 90;
+    this._seqRefFrequency = 440;
+    this._seqPlayMode = 'strum';
+    this._seqWithClick = true;
+    this._seqLoop = true;
+    this._seqStepIdx = 0;
+    this._seqBeatInStep = 0;
+    this._seqNextBeatTime = 0;
+    this._seqIntervalId = null;
+    this._seqUiTimers = new Set();
+    this._seqOnStepBeat = null;
+    this._seqOnComplete = null;
+    this._seqEndScheduled = false;
+
     this._bindGlobalUnlock();
   }
 
@@ -526,13 +543,22 @@ export class LearnAudioEngine {
   _schedulePluckedFreq(
     ctx,
     freq,
-    { instrument = 'guitar', delaySec = 0, durationSec = null, volume = 0.55 } = {}
+    {
+      instrument = 'guitar',
+      delaySec = 0,
+      startTime: explicitStartTime = null,
+      durationSec = null,
+      volume = 0.55,
+    } = {}
   ) {
     if (!ctx || ctx.state === 'closed' || !Number.isFinite(freq) || freq <= 0) return;
 
     const profile = getInstrumentTimbre(instrument);
     const dur = durationSec ?? profile.defaultNoteDuration;
-    const startTime = ctx.currentTime + Math.max(0, delaySec);
+    const startTime =
+      Number.isFinite(explicitStartTime) && explicitStartTime >= ctx.currentTime
+        ? explicitStartTime
+        : ctx.currentTime + Math.max(0, delaySec);
 
     const buffer = this._getCachedBuffer(ctx, freq, dur, instrument);
     const source = ctx.createBufferSource();
@@ -573,6 +599,7 @@ export class LearnAudioEngine {
 
   stopAll() {
     this.playGen += 1;
+    this.stopCustomProgression();
     this.timers.forEach((id) => clearTimeout(id));
     this.timers.clear();
 
@@ -765,8 +792,8 @@ export class LearnAudioEngine {
     });
   }
 
-  _scheduleMetronomeClick(ctx, time, isAccent, gen) {
-    if (!ctx || ctx.state === 'closed' || gen !== this._metroGen) return;
+  _scheduleClickAt(ctx, time, isAccent) {
+    if (!ctx || ctx.state === 'closed') return;
 
     const osc = ctx.createOscillator();
     const clickGain = ctx.createGain();
@@ -796,6 +823,11 @@ export class LearnAudioEngine {
 
     osc.start(time);
     osc.stop(time + 0.065);
+  }
+
+  _scheduleMetronomeClick(ctx, time, isAccent, gen) {
+    if (gen !== this._metroGen) return;
+    this._scheduleClickAt(ctx, time, isAccent);
   }
 
   _runMetronomeScheduler() {
@@ -832,6 +864,7 @@ export class LearnAudioEngine {
   }
 
   startMetronome({ bpm = 90, beatsPerBar = 4, volume = 0.7, onBeat = null } = {}) {
+    this.stopCustomProgression();
     this.stopMetronome();
     const { ctx, resumePromise } = this._unlockContextSync();
     if (!ctx) return false;
@@ -887,9 +920,207 @@ export class LearnAudioEngine {
     this._metroUiTimers.clear();
   }
 
+  _runCustomProgressionScheduler() {
+    if (!this._seqRunning || this._seqEndScheduled || !this.ctx || this.ctx.state !== 'running') {
+      return;
+    }
+    if (!Array.isArray(this._seqSteps) || this._seqSteps.length === 0) {
+      this.stopCustomProgression();
+      return;
+    }
+
+    const lookaheadSec = 0.14;
+    const currentGen = this._seqGen;
+    const beatDurSec = 60 / Math.max(40, Math.min(220, this._seqBpm));
+
+    if (this._seqNextBeatTime < this.ctx.currentTime - 0.15) {
+      this._seqNextBeatTime = this.ctx.currentTime + 0.02;
+    }
+
+    while (this._seqNextBeatTime < this.ctx.currentTime + lookaheadSec) {
+      if (this._seqStepIdx >= this._seqSteps.length) {
+        if (this._seqLoop) {
+          this._seqStepIdx = 0;
+          this._seqBeatInStep = 0;
+        } else {
+          this._seqEndScheduled = true;
+          const finishDelayMs = Math.max(
+            60,
+            (this._seqNextBeatTime - this.ctx.currentTime) * 1000 + 80
+          );
+          const doneTimer = setTimeout(() => {
+            this._seqUiTimers.delete(doneTimer);
+            if (currentGen !== this._seqGen) return;
+            const onDone = this._seqOnComplete;
+            this.stopCustomProgression();
+            if (onDone) onDone();
+          }, finishDelayMs);
+          this._seqUiTimers.add(doneTimer);
+          break;
+        }
+      }
+
+      const stepIndex = this._seqStepIdx;
+      const step = this._seqSteps[stepIndex];
+      const totalBeatsInStep = Math.max(1, Math.min(16, Math.round(step?.beats || 4)));
+      const beatIndex = this._seqBeatInStep;
+      const noteTime = this._seqNextBeatTime;
+
+      if (this._seqWithClick) {
+        this._scheduleClickAt(this.ctx, noteTime, beatIndex === 0);
+      }
+
+      if (beatIndex === 0 && step && Array.isArray(step.midiNotes) && step.midiNotes.length > 0) {
+        const inst = step.instrument || 'guitar';
+        const profile = getInstrumentTimbre(inst);
+        const stepDurationSec = totalBeatsInStep * beatDurSec;
+        const noteDurSec = Math.max(
+          0.75,
+          Math.min(profile.defaultChordDuration + 0.35, stepDurationSec * 1.04)
+        );
+        const midiNotes = step.midiNotes;
+        const perNoteVol = Math.min(0.46, 1.32 / Math.max(1, midiNotes.length));
+        const isArp = this._seqPlayMode === 'arpeggio' && midiNotes.length > 1;
+        const stepOffsetSec = isArp
+          ? Math.min(0.2, Math.max(0.085, (stepDurationSec * 0.68) / midiNotes.length))
+          : profile.strumStepSec;
+
+        midiNotes.forEach((midi, nIdx) => {
+          if (!Number.isFinite(midi)) return;
+          const freq = midiToFrequency(midi, this._seqRefFrequency);
+          if (!Number.isFinite(freq) || freq <= 0) return;
+          const jitter = isArp ? 0 : (nIdx % 2 === 0 ? 1 : -1) * 0.0018;
+          const exactStart = Math.max(this.ctx.currentTime, noteTime + nIdx * stepOffsetSec + jitter);
+          const accent = nIdx === 0 ? 1.06 : nIdx === midiNotes.length - 1 ? 0.96 : 0.9;
+          this._schedulePluckedFreq(this.ctx, freq, {
+            instrument: inst,
+            startTime: exactStart,
+            durationSec: noteDurSec,
+            volume: perNoteVol * accent,
+          });
+        });
+      }
+
+      if (this._seqOnStepBeat) {
+        const delayMs = Math.max(0, (noteTime - this.ctx.currentTime) * 1000);
+        const uiId = setTimeout(() => {
+          this._seqUiTimers.delete(uiId);
+          if (this._seqRunning && currentGen === this._seqGen && this._seqOnStepBeat) {
+            this._seqOnStepBeat({
+              stepIndex,
+              beatIndex,
+              totalBeatsInStep,
+              uid: step?.uid,
+            });
+          }
+        }, delayMs);
+        this._seqUiTimers.add(uiId);
+      }
+
+      this._seqBeatInStep += 1;
+      if (this._seqBeatInStep >= totalBeatsInStep) {
+        this._seqBeatInStep = 0;
+        this._seqStepIdx += 1;
+      }
+      this._seqNextBeatTime += beatDurSec;
+    }
+  }
+
+  startCustomProgression({
+    steps = [],
+    bpm = 90,
+    refFrequency = 440,
+    playMode = 'strum',
+    withClick = true,
+    loop = true,
+    onStepBeat = null,
+    onComplete = null,
+  } = {}) {
+    if (!Array.isArray(steps) || steps.length === 0) return false;
+
+    this.stopMetronome();
+    this.stopAll();
+
+    const { ctx, resumePromise } = this._unlockContextSync();
+    if (!ctx) return false;
+
+    const gen = ++this._seqGen;
+    this._seqRunning = true;
+    this._seqEndScheduled = false;
+    this._seqSteps = steps;
+    this._seqBpm = Math.max(40, Math.min(220, Math.round(bpm || 90)));
+    this._seqRefFrequency = Number.isFinite(refFrequency) ? refFrequency : 440;
+    this._seqPlayMode = playMode === 'arpeggio' ? 'arpeggio' : 'strum';
+    this._seqWithClick = Boolean(withClick);
+    this._seqLoop = Boolean(loop);
+    this._seqStepIdx = 0;
+    this._seqBeatInStep = 0;
+    this._seqOnStepBeat = onStepBeat;
+    this._seqOnComplete = onComplete;
+
+    const beginLoop = () => {
+      if (!this._seqRunning || gen !== this._seqGen || !this.ctx) return;
+      this._seqNextBeatTime = this.ctx.currentTime + 0.03;
+      this._runCustomProgressionScheduler();
+      this._seqIntervalId = setInterval(() => {
+        this._runCustomProgressionScheduler();
+      }, 25);
+    };
+
+    if (ctx.state === 'running' || !resumePromise) {
+      beginLoop();
+    } else {
+      resumePromise.then(beginLoop).catch(() => {});
+    }
+
+    return true;
+  }
+
+  updateCustomProgression({ steps, bpm, refFrequency, playMode, withClick, loop } = {}) {
+    if (Array.isArray(steps)) {
+      this._seqSteps = steps;
+      if (steps.length === 0) {
+        this.stopCustomProgression();
+        return;
+      }
+      if (this._seqStepIdx >= steps.length) {
+        this._seqStepIdx = 0;
+        this._seqBeatInStep = 0;
+      }
+    }
+    if (bpm !== undefined) {
+      this._seqBpm = Math.max(40, Math.min(220, Math.round(bpm)));
+    }
+    if (refFrequency !== undefined && Number.isFinite(refFrequency)) {
+      this._seqRefFrequency = refFrequency;
+    }
+    if (playMode !== undefined) {
+      this._seqPlayMode = playMode === 'arpeggio' ? 'arpeggio' : 'strum';
+    }
+    if (withClick !== undefined) {
+      this._seqWithClick = Boolean(withClick);
+    }
+    if (loop !== undefined) {
+      this._seqLoop = Boolean(loop);
+    }
+  }
+
+  stopCustomProgression() {
+    this._seqGen += 1;
+    this._seqRunning = false;
+    this._seqEndScheduled = false;
+    if (this._seqIntervalId !== null) {
+      clearInterval(this._seqIntervalId);
+      this._seqIntervalId = null;
+    }
+    this._seqUiTimers.forEach((id) => clearTimeout(id));
+    this._seqUiTimers.clear();
+  }
+
   dispose() {
     this.stopAll();
     this.stopMetronome();
+    this.stopCustomProgression();
     this.bufferCache.clear();
     if (this.ctx && this.ctx.state !== 'closed') {
       this.ctx.close().catch(() => {});

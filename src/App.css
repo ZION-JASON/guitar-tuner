@@ -16,8 +16,30 @@
     margin: 0;
   }
 
-  button {
+  button,
+  a {
     touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  input[type="range"] {
+    touch-action: pan-x;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 9999px;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 9999px;
+    border: none;
+    cursor: pointer;
   }
 
   button:focus-visible,
