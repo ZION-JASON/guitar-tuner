@@ -2121,3 +2121,276 @@ export function getChordFamilyContext(
     progressions,
   };
 }
+
+export const CIRCLE_OF_FIFTHS = [
+  {
+    position: 0,
+    rootPc: 0,
+    majorLabel: 'C',
+    relMinorPc: 9,
+    relMinorLabel: 'Am',
+    preferFlats: false,
+    accidentalsCount: 0,
+    accidentalType: 'none',
+    signatureLabel: '0 sharps / 0 flats',
+    accidentals: [],
+  },
+  {
+    position: 1,
+    rootPc: 7,
+    majorLabel: 'G',
+    relMinorPc: 4,
+    relMinorLabel: 'Em',
+    preferFlats: false,
+    accidentalsCount: 1,
+    accidentalType: 'sharp',
+    signatureLabel: '1 sharp (F#)',
+    accidentals: ['F#'],
+  },
+  {
+    position: 2,
+    rootPc: 2,
+    majorLabel: 'D',
+    relMinorPc: 11,
+    relMinorLabel: 'Bm',
+    preferFlats: false,
+    accidentalsCount: 2,
+    accidentalType: 'sharp',
+    signatureLabel: '2 sharps (F#, C#)',
+    accidentals: ['F#', 'C#'],
+  },
+  {
+    position: 3,
+    rootPc: 9,
+    majorLabel: 'A',
+    relMinorPc: 6,
+    relMinorLabel: 'F#m',
+    preferFlats: false,
+    accidentalsCount: 3,
+    accidentalType: 'sharp',
+    signatureLabel: '3 sharps (F#, C#, G#)',
+    accidentals: ['F#', 'C#', 'G#'],
+  },
+  {
+    position: 4,
+    rootPc: 4,
+    majorLabel: 'E',
+    relMinorPc: 1,
+    relMinorLabel: 'C#m',
+    preferFlats: false,
+    accidentalsCount: 4,
+    accidentalType: 'sharp',
+    signatureLabel: '4 sharps (F#, C#, G#, D#)',
+    accidentals: ['F#', 'C#', 'G#', 'D#'],
+  },
+  {
+    position: 5,
+    rootPc: 11,
+    majorLabel: 'B',
+    relMinorPc: 8,
+    relMinorLabel: 'G#m',
+    preferFlats: false,
+    accidentalsCount: 5,
+    accidentalType: 'sharp',
+    signatureLabel: '5 sharps (F#, C#, G#, D#, A#)',
+    accidentals: ['F#', 'C#', 'G#', 'D#', 'A#'],
+  },
+  {
+    position: 6,
+    rootPc: 6,
+    majorLabel: 'F#/Gb',
+    relMinorPc: 3,
+    relMinorLabel: 'D#m/Ebm',
+    preferFlats: false,
+    accidentalsCount: 6,
+    accidentalType: 'enharmonic',
+    signatureLabel: '6 sharps / 6 flats',
+    accidentals: ['F#', 'C#', 'G#', 'D#', 'A#', 'E# / Bb'],
+  },
+  {
+    position: 7,
+    rootPc: 1,
+    majorLabel: 'Db',
+    relMinorPc: 10,
+    relMinorLabel: 'Bbm',
+    preferFlats: true,
+    accidentalsCount: 5,
+    accidentalType: 'flat',
+    signatureLabel: '5 flats (Bb, Eb, Ab, Db, Gb)',
+    accidentals: ['Bb', 'Eb', 'Ab', 'Db', 'Gb'],
+  },
+  {
+    position: 8,
+    rootPc: 8,
+    majorLabel: 'Ab',
+    relMinorPc: 5,
+    relMinorLabel: 'Fm',
+    preferFlats: true,
+    accidentalsCount: 4,
+    accidentalType: 'flat',
+    signatureLabel: '4 flats (Bb, Eb, Ab, Db)',
+    accidentals: ['Bb', 'Eb', 'Ab', 'Db'],
+  },
+  {
+    position: 9,
+    rootPc: 3,
+    majorLabel: 'Eb',
+    relMinorPc: 0,
+    relMinorLabel: 'Cm',
+    preferFlats: true,
+    accidentalsCount: 3,
+    accidentalType: 'flat',
+    signatureLabel: '3 flats (Bb, Eb, Ab)',
+    accidentals: ['Bb', 'Eb', 'Ab'],
+  },
+  {
+    position: 10,
+    rootPc: 10,
+    majorLabel: 'Bb',
+    relMinorPc: 7,
+    relMinorLabel: 'Gm',
+    preferFlats: true,
+    accidentalsCount: 2,
+    accidentalType: 'flat',
+    signatureLabel: '2 flats (Bb, Eb)',
+    accidentals: ['Bb', 'Eb'],
+  },
+  {
+    position: 11,
+    rootPc: 5,
+    majorLabel: 'F',
+    relMinorPc: 2,
+    relMinorLabel: 'Dm',
+    preferFlats: true,
+    accidentalsCount: 1,
+    accidentalType: 'flat',
+    signatureLabel: '1 flat (Bb)',
+    accidentals: ['Bb'],
+  },
+];
+
+export function getCircleOfFifthsContext(rootPc, instrumentId = 'guitar') {
+  const safeRoot = ((Math.round(Number(rootPc) || 0) % 12) + 12) % 12;
+  const activeIdx = Math.max(
+    0,
+    CIRCLE_OF_FIFTHS.findIndex((entry) => entry.rootPc === safeRoot)
+  );
+  const subdominantIdx = (activeIdx + 11) % 12;
+  const dominantIdx = (activeIdx + 1) % 12;
+
+  const entry = CIRCLE_OF_FIFTHS[activeIdx];
+  const ivEntry = CIRCLE_OF_FIFTHS[subdominantIdx];
+  const vEntry = CIRCLE_OF_FIFTHS[dominantIdx];
+
+  const preferFlats = entry.preferFlats;
+  const scaleOffsets = [0, 2, 4, 5, 7, 9, 11];
+  const scaleNotes = scaleOffsets.map((semi, idx) => ({
+    degree: idx + 1,
+    pc: (safeRoot + semi) % 12,
+    name: getNoteName((safeRoot + semi) % 12, preferFlats),
+  }));
+
+  const tonicChord = getChordVoicings(entry.rootPc, 'major', entry.preferFlats, instrumentId);
+  const subdominantChord = getChordVoicings(
+    ivEntry.rootPc,
+    'major',
+    ivEntry.preferFlats,
+    instrumentId
+  );
+  const dominantChord = getChordVoicings(
+    vEntry.rootPc,
+    'major',
+    vEntry.preferFlats,
+    instrumentId
+  );
+  const relMinorChord = getChordVoicings(
+    entry.relMinorPc,
+    'minor',
+    entry.preferFlats,
+    instrumentId
+  );
+
+  return {
+    activeIdx,
+    subdominantIdx,
+    dominantIdx,
+    entry,
+    ivEntry,
+    vEntry,
+    scaleNotes,
+    primaryChords: [
+      { role: 'IV (Subdominant)', num: '4', chord: subdominantChord },
+      { role: 'I (Tonic)', num: '1', chord: tonicChord },
+      { role: 'V (Dominant)', num: '5', chord: dominantChord },
+      { role: 'vi (Rel. Minor)', num: '6m', chord: relMinorChord },
+    ],
+  };
+}
+
+export const NASHVILLE_CHARTS = [
+  {
+    id: 'pop_anthem',
+    name: 'Modern Pop & Worship Loop',
+    feel: '4/4 · Straight Eighth Strumming',
+    summary: 'The classic 4-chord progression used across thousands of acoustic & studio sessions.',
+    bars: [
+      { nashville: '1', offset: 0, qualityId: 'major', mark: '◇ (Ring)' },
+      { nashville: '5', offset: 7, qualityId: 'major', mark: '' },
+      { nashville: '6m', offset: 9, qualityId: 'minor', mark: '' },
+      { nashville: '4', offset: 5, qualityId: 'major', mark: '' },
+    ],
+  },
+  {
+    id: 'country_walk',
+    name: 'Nashville Country Walkup',
+    feel: '4/4 · Bass Slash Inversion',
+    summary: 'Uses 1/3 (first-inversion bass note on the 3rd degree) to create a smooth rising bass line into 4.',
+    bars: [
+      { nashville: '1', offset: 0, qualityId: 'major', mark: '' },
+      { nashville: '1/3', offset: 0, qualityId: 'major', bassOffset: 4, mark: 'Bass on 3rd' },
+      { nashville: '4', offset: 5, qualityId: 'major', mark: '' },
+      { nashville: '5', offset: 7, qualityId: '7', mark: '^ (Push)' },
+    ],
+  },
+  {
+    id: 'soul_turnaround',
+    name: 'Session R&B / Gospel Turnaround',
+    feel: '4/4 · Warm 7th Voicings',
+    summary: 'Swaps 1–4–5 triads for 2m7 → 5 → 1maj7 → 6m7 to practice smooth voice leading in any key.',
+    bars: [
+      { nashville: '2m7', offset: 2, qualityId: 'm7', mark: '' },
+      { nashville: '5', offset: 7, qualityId: '7', mark: '7sus4→7' },
+      { nashville: '1maj7', offset: 0, qualityId: 'maj7', mark: '◇ (Hold)' },
+      { nashville: '6m7', offset: 9, qualityId: 'm7', mark: '' },
+    ],
+  },
+];
+
+export function buildNashvilleChart(rootPc, chartId = 'pop_anthem', instrumentId = 'guitar') {
+  const safeRoot = ((Math.round(Number(rootPc) || 0) % 12) + 12) % 12;
+  const preferFlats = shouldPreferFlats(safeRoot);
+  const template = NASHVILLE_CHARTS.find((c) => c.id === chartId) || NASHVILLE_CHARTS[0];
+
+  return {
+    ...template,
+    rootPc: safeRoot,
+    keyName: getNoteName(safeRoot, preferFlats),
+    bars: template.bars.map((bar) => {
+      const chordRoot = (safeRoot + bar.offset) % 12;
+      const effectiveQuality = mapQualityForInstrument(bar.qualityId, instrumentId);
+      const chordData = getChordVoicings(chordRoot, effectiveQuality, preferFlats, instrumentId);
+      const bassName =
+        typeof bar.bassOffset === 'number'
+          ? getNoteName((safeRoot + bar.bassOffset) % 12, preferFlats)
+          : null;
+      const displaySymbol = bassName ? `${chordData.symbol}/${bassName}` : chordData.symbol;
+
+      return {
+        ...bar,
+        displaySymbol,
+        chordData,
+      };
+    }),
+  };
+}
+

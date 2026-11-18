@@ -38,7 +38,7 @@ export function normalizeNavSnapshot(raw) {
     return createInitialNavSnapshot();
   }
   const learnRaw = raw.learn && typeof raw.learn === 'object' ? raw.learn : {};
-  const validTab = ['chords', 'scales', 'progressions'].includes(learnRaw.tab)
+  const validTab = ['chords', 'scales', 'progressions', 'theory'].includes(learnRaw.tab)
     ? learnRaw.tab
     : 'chords';
   const validInstrument = VALID_INSTRUMENTS.includes(raw.instrument)
@@ -113,6 +113,10 @@ export function describeNavSnapshot(snap) {
   if (learn.tab === 'progressions') {
     const prog = PROGRESSION_TEMPLATES.find((p) => p.id === learn.progressionId);
     return `${instLabel} ${rootName} ${prog ? prog.name : 'Progressions'}`;
+  }
+
+  if (learn.tab === 'theory') {
+    return `${instLabel} ${rootName} Theory & Guides`;
   }
 
   return `${instLabel} Learn`;

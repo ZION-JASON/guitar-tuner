@@ -11,8 +11,11 @@ import {
   getFretboardMatrix,
   buildProgression,
   getChordFamilyContext,
+  getCircleOfFifthsContext,
   getKeyChordFamily,
   searchChords,
+  CIRCLE_OF_FIFTHS,
+  buildNashvilleChart,
 } from './musicTheory.js';
 
 test('all 12 roots x 25 chord qualities produce valid voicings matching chord pitch classes', () => {
@@ -345,6 +348,53 @@ test('Bass Guitar major and sharp chords default to 1 single Root Note with conn
   const g5 = getChordVoicings(7, '5', null, 'bass');
   assert.equal(g5.voicings[0].midiNotes.length, 2);
 });
+
+test('CIRCLE_OF_FIFTHS and getCircleOfFifthsContext map 12 keys, neighbors, and relative minors accurately', () => {
+  assert.equal(CIRCLE_OF_FIFTHS.length, 12);
+  // Each clockwise step advances by +7 semitones (perfect 5th)
+  for (let i = 0; i < 12; i += 1) {
+    const curr = CIRCLE_OF_FIFTHS[i];
+    const next = CIRCLE_OF_FIFTHS[(i + 1) % 12];
+    assert.equal((curr.rootPc + 7) % 12, next.rootPc);
+  }
+
+  const gCtx = getCircleOfFifthsContext(7, 'guitar');
+  assert.equal(gCtx.entry.majorLabel, 'G');
+  assert.equal(gCtx.entry.relMinorLabel, 'Em');
+  assert.equal(gCtx.ivEntry.majorLabel, 'C');
+  assert.equal(gCtx.vEntry.majorLabel, 'D');
+  assert.deepEqual(
+    gCtx.primaryChords.map((item) => item.chord.symbol),
+    ['C', 'G', 'D', 'Em']
+  );
+
+  const fCtx = getCircleOfFifthsContext(5, 'ukulele');
+  assert.equal(fCtx.entry.majorLabel, 'F');
+  assert.equal(fCtx.ivEntry.majorLabel, 'Bb');
+  assert.equal(fCtx.vEntry.majorLabel, 'C');
+});
+
+test('buildNashvilleChart transposes Pop, Country Slash, and Session charts across keys', () => {
+  const cPop = buildNashvilleChart(0, 'pop_anthem', 'guitar');
+  assert.deepEqual(
+    cPop.bars.map((b) => b.displaySymbol),
+    ['C', 'G', 'Am', 'F']
+  );
+
+  const gPop = buildNashvilleChart(7, 'pop_anthem', 'guitar');
+  assert.deepEqual(
+    gPop.bars.map((b) => b.displaySymbol),
+    ['G', 'D', 'Em', 'C']
+  );
+
+  const gCountry = buildNashvilleChart(7, 'country_walk', 'bass');
+  assert.deepEqual(
+    gCountry.bars.map((b) => b.displaySymbol),
+    ['G', 'G/B', 'C', 'D7']
+  );
+  assert.ok(gCountry.bars.every((b) => b.chordData.voicings.length >= 1));
+});
+
 
 
 

@@ -44,11 +44,13 @@ import ChordDiagramSVG from './ChordDiagramSVG';
 import PracticeMetronomeBar from './PracticeMetronomeBar';
 import FavoriteChordsTray from './FavoriteChordsTray';
 import CustomProgressionSequencer from './CustomProgressionSequencer';
+import TheoryGuidesSection from './TheoryGuidesSection';
 
 const LEARN_TABS = [
   { id: 'chords', label: 'Chords' },
   { id: 'scales', label: 'Scales' },
   { id: 'progressions', label: 'Progressions & Intervals' },
+  { id: 'theory', label: 'Theory & Guides' },
 ];
 
 const CHORD_CATEGORIES = [
@@ -1356,7 +1358,7 @@ const LearnSection = ({
             <div
               role="tablist"
               aria-label="Learn Sections"
-              className="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-1 sm:gap-1.5 glass-recessed rounded-xl p-1 shrink-0"
+              className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1 sm:gap-1.5 glass-recessed rounded-xl p-1 shrink-0"
             >
               {LEARN_TABS.map((tab) => {
                 const active = activeTab === tab.id;
@@ -1372,7 +1374,7 @@ const LearnSection = ({
                         onUpdateLearn({ tab: tab.id, familyModalTarget: null });
                       }
                     }}
-                    className={`min-h-[40px] px-2 sm:px-3.5 py-2 rounded-lg font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
+                    className={`min-h-[40px] px-2.5 sm:px-3.5 py-2 rounded-lg font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
                       active
                         ? 'bg-cyan-400 text-slate-950 shadow-[0_4px_14px_rgba(34,211,238,0.28)]'
                         : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
@@ -2574,6 +2576,28 @@ const LearnSection = ({
             </div>
           </div>
         </section>
+      )}
+
+      {/* TAB 4: THEORY & GUIDES (CIRCLE OF FIFTHS, TABS, NASHVILLE NUMBERS, FUNDAMENTALS) */}
+      {activeTab === 'theory' && (
+        <TheoryGuidesSection
+          instrument={instrument}
+          rootPc={rootPc}
+          refFrequency={refFrequency}
+          playMode={chordPlayMode}
+          onSelectRoot={handleSelectRoot}
+          onNavigateTab={(nextTab, patch = {}) => {
+            stopPlaybackState();
+            onUpdateLearn({
+              tab: nextTab,
+              familyModalTarget: null,
+              ...patch,
+            });
+            if (typeof window !== 'undefined') {
+              window.scrollTo({ top: 0, behavior: 'auto' });
+            }
+          }}
+        />
       )}
 
       <ChordFamilyModal

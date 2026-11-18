@@ -101,4 +101,13 @@ test('normalizeNavSnapshot safely handles invalid or malformed popstate payloads
     learn: { chordPlayMode: 'arpeggio' },
   });
   assert.equal(withArpeggio.learn.chordPlayMode, 'arpeggio');
+
+  const theorySnap = normalizeNavSnapshot({
+    view: 'learn',
+    instrument: 'guitar',
+    learn: { tab: 'theory', rootPc: 7 },
+  });
+  assert.equal(theorySnap.learn.tab, 'theory');
+  assert.equal(describeNavSnapshot(theorySnap), 'Guitar G Theory & Guides');
 });
+
