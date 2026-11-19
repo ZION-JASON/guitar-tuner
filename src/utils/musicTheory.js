@@ -2282,12 +2282,25 @@ export function getCircleOfFifthsContext(rootPc, instrumentId = 'guitar') {
   const ivEntry = CIRCLE_OF_FIFTHS[subdominantIdx];
   const vEntry = CIRCLE_OF_FIFTHS[dominantIdx];
 
+  const instConfig = getInstrumentConfig(instrumentId);
   const preferFlats = entry.preferFlats;
   const scaleOffsets = [0, 2, 4, 5, 7, 9, 11];
   const scaleNotes = scaleOffsets.map((semi, idx) => ({
     degree: idx + 1,
     pc: (safeRoot + semi) % 12,
     name: getNoteName((safeRoot + semi) % 12, preferFlats),
+  }));
+
+  const octaveOffsets = [0, 2, 4, 5, 7, 9, 11, 12];
+  const octaveSteps = ['W', 'W', 'H', 'W', 'W', 'W', 'H', '8ve'];
+  const fullOctaveScale = octaveOffsets.map((semi, idx) => ({
+    degree: idx + 1,
+    semitones: semi,
+    isOctave: idx === 7,
+    pc: (safeRoot + semi) % 12,
+    name: getNoteName((safeRoot + semi) % 12, preferFlats),
+    midi: instConfig.scaleOctaveBase + safeRoot + semi,
+    stepLabel: octaveSteps[idx],
   }));
 
   const tonicChord = getChordVoicings(entry.rootPc, 'major', entry.preferFlats, instrumentId);
@@ -2318,6 +2331,7 @@ export function getCircleOfFifthsContext(rootPc, instrumentId = 'guitar') {
     ivEntry,
     vEntry,
     scaleNotes,
+    fullOctaveScale,
     primaryChords: [
       { role: 'IV (Subdominant)', num: '4', chord: subdominantChord },
       { role: 'I (Tonic)', num: '1', chord: tonicChord },

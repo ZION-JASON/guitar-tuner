@@ -367,6 +367,7 @@ const TheoryGuidesSection = ({
   const [activeTabStepIdx, setActiveTabStepIdx] = useState(null);
   const [isPlayingTabExample, setIsPlayingTabExample] = useState(false);
   const [activeNnsBarIdx, setActiveNnsBarIdx] = useState(null);
+  const [activeCofScaleIdx, setActiveCofScaleIdx] = useState(null);
 
   const timersRef = useRef([]);
   const instMeta = getInstrumentMeta(instrument);
@@ -420,6 +421,7 @@ const TheoryGuidesSection = ({
     setIsPlayingTabExample(false);
     setActiveTabStepIdx(null);
     setActiveNnsBarIdx(null);
+    setActiveCofScaleIdx(null);
   }, [instrument, rootPc, nashvilleChartId]);
 
   const handlePlayTabExample = () => {
@@ -434,6 +436,7 @@ const TheoryGuidesSection = ({
     clearScheduledTimers();
     learnAudio.stopAll();
     setActiveNnsBarIdx(null);
+    setActiveCofScaleIdx(null);
     setIsPlayingTabExample(true);
 
     tabExample.steps.forEach((step, idx) => {
@@ -468,6 +471,7 @@ const TheoryGuidesSection = ({
     clearScheduledTimers();
     setIsPlayingTabExample(false);
     setActiveTabStepIdx(null);
+    setActiveCofScaleIdx(null);
 
     const playableChords = nashvilleChart.bars.map((b) => b.chordData);
     setActiveNnsBarIdx(0);
@@ -479,6 +483,31 @@ const TheoryGuidesSection = ({
       () => setActiveNnsBarIdx(null),
       instrument,
       playMode
+    );
+  };
+
+  const handlePlayFullOctaveScale = () => {
+    if (activeCofScaleIdx !== null) {
+      clearScheduledTimers();
+      learnAudio.stopAll();
+      setActiveCofScaleIdx(null);
+      return;
+    }
+
+    clearScheduledTimers();
+    learnAudio.stopAll();
+    setIsPlayingTabExample(false);
+    setActiveTabStepIdx(null);
+    setActiveNnsBarIdx(null);
+
+    const midiSequence = circleCtx.fullOctaveScale.map((n) => n.midi);
+    learnAudio.playSequence(
+      midiSequence,
+      refFrequency,
+      300,
+      (idx) => setActiveCofScaleIdx(idx),
+      () => setActiveCofScaleIdx(null),
+      instrument
     );
   };
 
@@ -737,7 +766,7 @@ const TheoryGuidesSection = ({
 
             {/* Right Key Inspector & Practical Rules */}
             <div className="flex flex-col gap-3.5">
-              <div className="glass-recessed rounded-xl p-3.5 flex flex-col gap-2.5">
+              <div className="glass-recessed rounded-xl p-3.5 flex flex-col gap-1">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="font-display font-bold text-lg text-white">
                     {circleCtx.entry.majorLabel} Major / {circleCtx.entry.relMinorLabel}
@@ -746,30 +775,9 @@ const TheoryGuidesSection = ({
                     {circleCtx.entry.signatureLabel}
                   </span>
                 </div>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="font-mono text-[11px] text-slate-400 mr-1">
-                    Major Scale:
-                  </span>
-                  {circleCtx.scaleNotes.map((n) => (
-                    <button
-                      key={`cof-note-${n.degree}`}
-                      type="button"
-                      onClick={() =>
-                        learnAudio.playPluckedNote(
-                          instConfig.scaleOctaveBase + n.pc,
-                          refFrequency,
-                          0,
-                          null,
-                          0.55,
-                          instrument
-                        )
-                      }
-                      className="min-h-[34px] px-2.5 py-1 rounded-lg bg-white/[0.06] hover:bg-cyan-400/20 border border-white/12 font-mono text-xs font-semibold text-white cursor-pointer transition-colors"
-                    >
-                      {n.name}
-                    </button>
-                  ))}
-                </div>
+                <p className="font-sans text-xs text-slate-400">
+                  Diatonic IV–I–V–vi neighbor chords for {circleCtx.entry.majorLabel} Major and full 8-note octave scale below.
+                </p>
               </div>
 
               {/* Closest Chord Neighbors: IV - I - V - vi */}
@@ -833,6 +841,90 @@ const TheoryGuidesSection = ({
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Full 8-Note Major Scale (Including Next Octave) Directly Under Circle of Fifths */}
+          <div
+            aria-label={`Full ${circleCtx.entry.majorLabel} Major Scale to Next Octave`}
+            className="glass-recessed rounded-2xl p-3.5 sm:p-4 flex flex-col gap-3 border border-white/10"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <div className="font-display font-bold text-sm sm:text-base text-white">
+                  Full {circleCtx.entry.majorLabel} Major Scale (to Next Octave):{' '}
+                  <span className="font-mono text-cyan-300">
+                    {circleCtx.fullOctaveScale
+                      .map((n) => (n.isOctave ? `${n.name} (next octave)` : n.name))
+                      .join(', ')}
+                  </span>
+                </div>
+                <p className="mt-0.5 font-sans text-xs text-slate-400">
+                  Formula W–W–H–W–W–W–H completes at degree 8 one full octave (+12 semitones) above the root. Tap any note to hear it.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handlePlayFullOctaveScale}
+                className={`min-h-[40px] px-4 py-1.5 rounded-xl border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+                  activeCofScaleIdx !== null
+                    ? 'bg-rose-500/25 text-rose-100 border-rose-300/45'
+                    : 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_3px_14px_rgba(34,211,238,0.26)]'
+                }`}
+              >
+                {activeCofScaleIdx !== null ? 'Stop Scale' : 'Play Full Scale ↑'}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+              {circleCtx.fullOctaveScale.map((n, idx) => {
+                const isActive = activeCofScaleIdx === idx;
+                return (
+                  <button
+                    key={`cof-full-scale-${n.degree}`}
+                    type="button"
+                    onClick={() =>
+                      learnAudio.playPluckedNote(
+                        n.midi,
+                        refFrequency,
+                        0,
+                        null,
+                        0.58,
+                        instrument
+                      )
+                    }
+                    className={`min-h-[66px] p-2 rounded-xl border flex flex-col items-center justify-center gap-0.5 active:scale-[0.97] cursor-pointer transition-all ${
+                      isActive
+                        ? 'bg-emerald-400 text-slate-950 border-emerald-300 shadow-[0_0_18px_rgba(52,211,153,0.45)]'
+                        : n.isOctave || n.degree === 1
+                          ? 'bg-cyan-400/15 hover:bg-cyan-400/25 border-cyan-300/45 text-white'
+                          : 'bg-white/[0.05] hover:bg-white/[0.12] border-white/12 text-white'
+                    }`}
+                  >
+                    <span
+                      className={`font-mono text-[10px] font-semibold ${
+                        isActive ? 'text-slate-900' : 'text-cyan-300'
+                      }`}
+                    >
+                      {n.isOctave ? '8 (8ve)' : `Deg ${n.degree}`}
+                    </span>
+                    <span className="font-display font-bold text-lg leading-tight">
+                      {n.name}
+                    </span>
+                    <span
+                      className={`font-mono text-[10px] ${
+                        isActive
+                          ? 'text-slate-900 font-semibold'
+                          : n.isOctave
+                            ? 'text-cyan-200 font-semibold'
+                            : 'text-amber-300'
+                      }`}
+                    >
+                      {n.isOctave ? 'Next Octave' : `step: ${n.stepLabel}`}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </article>

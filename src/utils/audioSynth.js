@@ -2,28 +2,28 @@ import { midiToFrequency } from './frequencyUtils.js';
 
 const INSTRUMENT_TIMBRE = {
   guitar: {
-    pickPos: 0.17,
-    loopDamping: 0.08,
-    rt60DbPerSec: -9.5,
-    noiseMix: 0.22,
-    noiseCutoffRatio: 0.25,
-    pluckRoundFrac: 0.015, // crisp steel-string pluck corner
-    bodyTapMix: 0.08,
-    bodyTapHz: 118,
-    bodyLowHz: 108,
-    bodyLowGainDb: 4.0,
-    bodyMidHz: 225,
-    bodyMidGainDb: 2.2,
-    presenceHz: 2100,
-    presenceGainDb: 1.0,
-    attackCutoffHz: 5400,
-    sustainCutoffHz: 2300,
-    brightnessDecaySec: 0.65,
-    roomWetMix: 0.22,
-    roomDecaySec: 0.28,
-    strumStepSec: 0.025,
-    defaultNoteDuration: 1.8,
-    defaultChordDuration: 2.5,
+    pickPos: 0.19,
+    loopDamping: 0.125,
+    rt60DbPerSec: -7.8,
+    noiseMix: 0.11,
+    noiseCutoffRatio: 0.09,
+    pluckRoundFrac: 0.032, // rounded bevel plectrum transient without harsh synth buzz
+    bodyTapMix: 0.09,
+    bodyTapHz: 102,
+    bodyLowHz: 100,
+    bodyLowGainDb: 4.5,
+    bodyMidHz: 205,
+    bodyMidGainDb: 2.8,
+    presenceHz: 2550,
+    presenceGainDb: 0.9,
+    attackCutoffHz: 4100,
+    sustainCutoffHz: 1620,
+    brightnessDecaySec: 0.44,
+    roomWetMix: 0.27,
+    roomDecaySec: 0.34,
+    strumStepSec: 0.028,
+    defaultNoteDuration: 2.0,
+    defaultChordDuration: 2.75,
   },
   bass: {
     pickPos: 0.28,
@@ -79,11 +79,26 @@ export function getInstrumentTimbre(instrumentId = 'guitar') {
   return INSTRUMENT_TIMBRE[instrumentId] || INSTRUMENT_TIMBRE.guitar;
 }
 
+function createBodyBandpassCoeffs(f0, q, sampleRate) {
+  const safeFreq = Math.max(30, Math.min(sampleRate * 0.42, f0));
+  const w0 = (2 * Math.PI * safeFreq) / sampleRate;
+  const sinW0 = Math.sin(w0);
+  const cosW0 = Math.cos(w0);
+  const alpha = sinW0 / (2 * Math.max(0.5, q));
+  const a0 = 1 + alpha;
+  return {
+    b0: alpha / a0,
+    b2: -alpha / a0,
+    a1: (-2 * cosW0) / a0,
+    a2: (1 - alpha) / a0,
+  };
+}
+
 /**
- * Pure-JS Physical String Synthesis (Plucked-Triangle + Thiran Allpass + 3-Tap Symmetric Loop).
- * Models realistic initial string displacement (not raw static noise), finger/nylon compliance
- * smoothing, 1st-order Thiran Allpass fractional delay (flat magnitude across all pitches),
- * pitch-normalized RT60 sustain, and subtle wooden body attack resonance.
+ * Pure-JS Physical String Synthesis (Plucked-Triangle + Thiran Allpass + 3-Tap Symmetric Loop
+ * + Coupled Wooden Acoustic Soundboard Resonators).
+ * Models realistic initial string displacement, plectrum compliance smoothing, 1st-order Thiran
+ * Allpass fractional delay, pitch-normalized RT60 sustain, pick transient, and multi-mode spruce/mahogany body resonance.
  */
 export function synthesizePluckedStringSamples({
   freq,
@@ -130,7 +145,7 @@ export function synthesizePluckedStringSamples({
     exc[i] = tri;
   }
 
-  // Round corners proportionally to period length so low bass strings are as smooth as treble strings
+  // Round corners proportionally to period length so low strings sound warm, never raspy
   const roundWindow = Math.max(1, Math.min(24, Math.round(excLen * profile.pluckRoundFrac)));
   for (let pass = 0; pass < roundWindow; pass++) {
     const tmp = new Float32Array(excLen);
@@ -143,7 +158,7 @@ export function synthesizePluckedStringSamples({
     exc.set(tmp);
   }
 
-  // 2. Band-limited noise burst for organic pluck transient
+  // 2. Band-limited noise burst for organic string excitation
   const noise = new Float32Array(excLen);
   for (let i = 0; i < excLen; i++) {
     noise[i] = nextRand();
@@ -160,7 +175,7 @@ export function synthesizePluckedStringSamples({
     noise.set(tmp);
   }
 
-  // Blend displacement + soft noise, center to zero mean, normalize safely below 0.86 peak
+  // Blend displacement + warm texture, center to zero mean, normalize safely below 0.85 peak
   let sum = 0;
   for (let i = 0; i < excLen; i++) {
     exc[i] = exc[i] * (1 - profile.noiseMix) + noise[i] * profile.noiseMix;
@@ -173,14 +188,14 @@ export function synthesizePluckedStringSamples({
     if (Math.abs(exc[i]) > maxAbs) maxAbs = Math.abs(exc[i]);
   }
   for (let i = 0; i < excLen; i++) {
-    delayLine[i] = (exc[i] / maxAbs) * 0.86;
+    delayLine[i] = (exc[i] / maxAbs) * 0.85;
   }
 
-  // Pitch-normalized per-cycle gain so bass, guitar, and high ukulele notes all sustain naturally
+  // Pitch-normalized per-cycle gain so low and treble strings sustain organically
   const gainPerSec = Math.pow(10, profile.rt60DbPerSec / 20);
-  const loopGain = Math.min(0.9992, Math.pow(gainPerSec, 1 / freq));
-  // Gentle extra damping at higher pitches for authentic string air/internal friction
-  const b = Math.min(0.24, profile.loopDamping + Math.min(0.04, (freq / 1200) * 0.04));
+  const loopGain = Math.min(0.9993, Math.pow(gainPerSec, 1 / freq));
+  // Gentle extra damping at higher pitches for authentic internal string friction
+  const b = Math.min(0.24, profile.loopDamping + Math.min(0.05, (freq / 1000) * 0.045));
 
   let writeIdx = excLen % bufLen;
   let prevApIn = 0;
@@ -190,10 +205,32 @@ export function synthesizePluckedStringSamples({
   let dcPrevIn = 0;
   let dcPrevOut = 0;
 
-  // Short damped acoustic soundboard/body knock at attack (no white-noise hiss!)
-  const bodyTapLen = Math.min(totalSamples, Math.round(sampleRate * 0.045));
+  // Coupled wooden acoustic body resonators (Helmholtz soundhole air + top plate + upper bout)
+  const isGuitar = instrument === 'guitar';
+  const airC = isGuitar ? createBodyBandpassCoeffs(98, 5.2, sampleRate) : null;
+  const topC = isGuitar ? createBodyBandpassCoeffs(198, 4.5, sampleRate) : null;
+  const woodC = isGuitar ? createBodyBandpassCoeffs(412, 3.8, sampleRate) : null;
+  let airX1 = 0;
+  let airX2 = 0;
+  let airY1 = 0;
+  let airY2 = 0;
+  let topX1 = 0;
+  let topX2 = 0;
+  let topY1 = 0;
+  let topY2 = 0;
+  let woodX1 = 0;
+  let woodX2 = 0;
+  let woodY1 = 0;
+  let woodY2 = 0;
+
+  // Brief plectrum brush transient on acoustic guitar attack (~10ms)
+  const pickNoiseLen = isGuitar ? Math.min(totalSamples, Math.round(sampleRate * 0.011)) : 0;
+  let pickLp = 0;
+
+  // Short damped acoustic soundboard/body knock at attack
+  const bodyTapLen = Math.min(totalSamples, Math.round(sampleRate * 0.048));
   const bodyOmega = (2 * Math.PI * profile.bodyTapHz) / sampleRate;
-  const bodyDecayPerSample = Math.exp(-85 / sampleRate);
+  const bodyDecayPerSample = Math.exp(-82 / sampleRate);
   let bodyAmp = profile.bodyTapMix;
 
   const fadeSamples = Math.min(totalSamples, Math.round(sampleRate * 0.065));
@@ -216,11 +253,46 @@ export function synthesizePluckedStringSamples({
     delayLine[writeIdx] = feedback;
     writeIdx = (writeIdx + 1) % bufLen;
 
-    // Add soft woody body thump during the first ~45ms
     let sample = feedback;
+
+    // Drive coupled spruce/mahogany soundboard modes with string energy
+    if (isGuitar && airC && topC && woodC) {
+      const airY = airC.b0 * feedback + airC.b2 * airX2 - airC.a1 * airY1 - airC.a2 * airY2;
+      airX2 = airX1;
+      airX1 = feedback;
+      airY2 = airY1;
+      airY1 = airY;
+
+      const topY = topC.b0 * feedback + topC.b2 * topX2 - topC.a1 * topY1 - topC.a2 * topY2;
+      topX2 = topX1;
+      topX1 = feedback;
+      topY2 = topY1;
+      topY1 = topY;
+
+      const woodY = woodC.b0 * feedback + woodC.b2 * woodX2 - woodC.a1 * woodY1 - woodC.a2 * woodY2;
+      woodX2 = woodX1;
+      woodX1 = feedback;
+      woodY2 = woodY1;
+      woodY1 = woodY;
+
+      sample = feedback * 0.72 + airY * 0.32 + topY * 0.28 + woodY * 0.16;
+
+      if (i < pickNoiseLen) {
+        const tFrac = 1 - i / pickNoiseLen;
+        pickLp = 0.28 * nextRand() + 0.72 * pickLp;
+        sample += pickLp * tFrac * tFrac * 0.085;
+      }
+    }
+
+    // Add soft woody body thump during the first ~48ms
     if (i < bodyTapLen) {
       sample += bodyAmp * Math.sin(bodyOmega * i);
       bodyAmp *= bodyDecayPerSample;
+    }
+
+    // Gentle saddle warmth saturation for natural chord compression
+    if (isGuitar) {
+      sample = Math.tanh(sample * 1.12) / 1.12;
     }
 
     // Clean 1st-order DC blocker (R = 0.997)

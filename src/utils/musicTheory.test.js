@@ -358,6 +358,15 @@ test('CIRCLE_OF_FIFTHS and getCircleOfFifthsContext map 12 keys, neighbors, and 
     assert.equal((curr.rootPc + 7) % 12, next.rootPc);
   }
 
+  const cCtx = getCircleOfFifthsContext(0, 'guitar');
+  assert.equal(cCtx.fullOctaveScale.length, 8);
+  assert.deepEqual(
+    cCtx.fullOctaveScale.map((n) => n.name),
+    ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'C']
+  );
+  assert.equal(cCtx.fullOctaveScale[7].isOctave, true);
+  assert.equal(cCtx.fullOctaveScale[7].midi - cCtx.fullOctaveScale[0].midi, 12);
+
   const gCtx = getCircleOfFifthsContext(7, 'guitar');
   assert.equal(gCtx.entry.majorLabel, 'G');
   assert.equal(gCtx.entry.relMinorLabel, 'Em');
@@ -366,6 +375,10 @@ test('CIRCLE_OF_FIFTHS and getCircleOfFifthsContext map 12 keys, neighbors, and 
   assert.deepEqual(
     gCtx.primaryChords.map((item) => item.chord.symbol),
     ['C', 'G', 'D', 'Em']
+  );
+  assert.deepEqual(
+    gCtx.fullOctaveScale.map((n) => n.name),
+    ['G', 'A', 'B', 'C', 'D', 'E', 'F#', 'G']
   );
 
   const fCtx = getCircleOfFifthsContext(5, 'ukulele');
