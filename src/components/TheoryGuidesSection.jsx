@@ -516,7 +516,7 @@ const TheoryGuidesSection = ({
   return (
     <section aria-label="Music Theory, Tabs, Circle of Fifths, and Nashville Numbers" className="flex flex-col gap-5">
       {/* Sub-Navigation Filter */}
-      <div className="glass-panel rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+      <div className="glass-panel rounded-[4px] p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
         <div>
           <h2 className="font-display font-bold text-base sm:text-lg text-white">
             Theory, Tabs &amp; Studio Guides
@@ -539,7 +539,7 @@ const TheoryGuidesSection = ({
                 type="button"
                 aria-pressed={active}
                 onClick={() => setTopicFilter(topic.id)}
-                className={`min-h-[40px] px-3 py-1.5 rounded-xl border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+                className={`min-h-[40px] px-3 py-1.5 rounded-[2px] border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
                   active
                     ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_2px_12px_rgba(34,211,238,0.28)]'
                     : 'bg-white/[0.05] text-slate-300 border-white/12 hover:bg-white/[0.12] hover:text-white'
@@ -556,7 +556,7 @@ const TheoryGuidesSection = ({
       {showSection('circle') && (
         <article
           aria-label="Interactive Circle of Fifths"
-          className="glass-panel rounded-2xl p-4 sm:p-6 flex flex-col gap-5"
+          className="glass-panel rounded-[4px] p-4 sm:p-6 flex flex-col gap-5"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
@@ -568,15 +568,15 @@ const TheoryGuidesSection = ({
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3 font-mono text-[11px] shrink-0">
-              <span className="text-cyan-300 font-semibold">● I Tonic</span>
-              <span className="text-emerald-300 font-semibold">● IV Subdominant (-1 step)</span>
-              <span className="text-amber-300 font-semibold">● V Dominant (+1 step)</span>
+              <span className="text-cyan-300 font-semibold">■ I Tonic</span>
+              <span className="text-emerald-300 font-semibold">■ IV Subdominant (-1 step)</span>
+              <span className="text-amber-300 font-semibold">■ V Dominant (+1 step)</span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(300px,420px)_1fr] gap-5 items-center">
             {/* Left Interactive Wheel */}
-            <div className="glass-recessed rounded-2xl p-3 sm:p-4 flex flex-col items-center gap-2">
+            <div className="glass-recessed rounded-[3px] p-3 sm:p-4 flex flex-col items-center gap-2">
               <div className="w-full flex items-center justify-between font-mono text-[11px] text-slate-400 px-1">
                 <span>← Counter-Clockwise (+♭ / IV)</span>
                 <span>Clockwise (+♯ / V) →</span>
@@ -766,7 +766,7 @@ const TheoryGuidesSection = ({
 
             {/* Right Key Inspector & Practical Rules */}
             <div className="flex flex-col gap-3.5">
-              <div className="glass-recessed rounded-xl p-3.5 flex flex-col gap-1">
+              <div className="glass-recessed rounded-[3px] p-3.5 flex flex-col gap-1">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="font-display font-bold text-lg text-white">
                     {circleCtx.entry.majorLabel} Major / {circleCtx.entry.relMinorLabel}
@@ -796,7 +796,7 @@ const TheoryGuidesSection = ({
                         );
                       }
                     }}
-                    className="min-h-[72px] p-2.5 rounded-xl glass-recessed hover:bg-white/[0.1] border border-white/12 flex flex-col items-start justify-between gap-1 text-left active:scale-[0.97] cursor-pointer transition-colors"
+                    className="min-h-[72px] p-2.5 rounded-[3px] glass-recessed hover:bg-white/[0.1] border border-white/12 flex flex-col items-start justify-between gap-1 text-left active:scale-[0.97] cursor-pointer transition-colors"
                   >
                     <span className="font-mono text-[10px] text-cyan-300 font-semibold">
                       {item.role}
@@ -811,7 +811,7 @@ const TheoryGuidesSection = ({
                 ))}
               </div>
 
-              <div className="glass-recessed rounded-xl p-3.5 flex flex-col gap-1.5 font-sans text-xs text-slate-300 leading-relaxed">
+              <div className="glass-recessed rounded-[3px] p-3.5 flex flex-col gap-1.5 font-sans text-xs text-slate-300 leading-relaxed">
                 <p>
                   <strong className="text-white">1. Instant Songwriting Compass:</strong> Pick any key (`I`). Its neighbor counter-clockwise is <span className="text-emerald-300 font-semibold">IV ({circleCtx.ivEntry.majorLabel})</span>, clockwise is <span className="text-amber-300 font-semibold">V ({circleCtx.vEntry.majorLabel})</span>, and inner ring is <span className="text-cyan-300 font-semibold">vi ({circleCtx.entry.relMinorLabel})</span>.
                 </p>
@@ -828,14 +828,14 @@ const TheoryGuidesSection = ({
                   <button
                     type="button"
                     onClick={() => onNavigateTab('chords')}
-                    className="min-h-[40px] px-3.5 py-1.5 rounded-xl border border-cyan-300/40 bg-cyan-400/15 hover:bg-cyan-400/25 text-cyan-200 font-mono text-xs font-semibold cursor-pointer transition-colors"
+                    className="min-h-[40px] px-3.5 py-1.5 rounded-[2px] border border-cyan-300/40 bg-cyan-400/15 hover:bg-cyan-400/25 text-cyan-200 font-mono text-xs font-semibold cursor-pointer transition-colors"
                   >
                     View {circleCtx.entry.majorLabel} Chords
                   </button>
                   <button
                     type="button"
                     onClick={() => onNavigateTab('scales')}
-                    className="min-h-[40px] px-3.5 py-1.5 rounded-xl border border-white/15 bg-white/[0.06] hover:bg-white/[0.14] text-slate-200 font-mono text-xs font-semibold cursor-pointer transition-colors"
+                    className="min-h-[40px] px-3.5 py-1.5 rounded-[2px] border border-white/15 bg-white/[0.06] hover:bg-white/[0.14] text-slate-200 font-mono text-xs font-semibold cursor-pointer transition-colors"
                   >
                     Open {circleCtx.entry.majorLabel} Scale Fretboard
                   </button>
@@ -847,7 +847,7 @@ const TheoryGuidesSection = ({
           {/* Full 8-Note Major Scale (Including Next Octave) Directly Under Circle of Fifths */}
           <div
             aria-label={`Full ${circleCtx.entry.majorLabel} Major Scale to Next Octave`}
-            className="glass-recessed rounded-2xl p-3.5 sm:p-4 flex flex-col gap-3 border border-white/10"
+            className="glass-recessed rounded-[3px] p-3.5 sm:p-4 flex flex-col gap-3 border border-white/10"
           >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
@@ -866,7 +866,7 @@ const TheoryGuidesSection = ({
               <button
                 type="button"
                 onClick={handlePlayFullOctaveScale}
-                className={`min-h-[40px] px-4 py-1.5 rounded-xl border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+                className={`min-h-[40px] px-4 py-1.5 rounded-[2px] border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
                   activeCofScaleIdx !== null
                     ? 'bg-rose-500/25 text-rose-100 border-rose-300/45'
                     : 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_3px_14px_rgba(34,211,238,0.26)]'
@@ -893,7 +893,7 @@ const TheoryGuidesSection = ({
                         instrument
                       )
                     }
-                    className={`min-h-[66px] p-2 rounded-xl border flex flex-col items-center justify-center gap-0.5 active:scale-[0.97] cursor-pointer transition-all ${
+                    className={`min-h-[66px] p-2 rounded-[2px] border flex flex-col items-center justify-center gap-0.5 active:scale-[0.97] cursor-pointer transition-all ${
                       isActive
                         ? 'bg-emerald-400 text-slate-950 border-emerald-300 shadow-[0_0_18px_rgba(52,211,153,0.45)]'
                         : n.isOctave || n.degree === 1
@@ -934,7 +934,7 @@ const TheoryGuidesSection = ({
       {showSection('tabs') && (
         <article
           aria-label="How to Read Guitar, Bass, and Ukulele Tabs"
-          className="glass-panel rounded-2xl p-4 sm:p-6 flex flex-col gap-4"
+          className="glass-panel rounded-[4px] p-4 sm:p-6 flex flex-col gap-4"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div>
@@ -948,7 +948,7 @@ const TheoryGuidesSection = ({
             <button
               type="button"
               onClick={handlePlayTabExample}
-              className={`min-h-[42px] px-4 py-2 rounded-xl border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+              className={`min-h-[42px] px-4 py-2 rounded-[2px] border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
                 isPlayingTabExample
                   ? 'bg-rose-500/25 text-rose-100 border-rose-300/45'
                   : 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_4px_16px_rgba(34,211,238,0.28)]'
@@ -960,7 +960,7 @@ const TheoryGuidesSection = ({
 
           {/* 4 Core Rules of Tablature */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-            <div className="glass-recessed rounded-xl p-3">
+            <div className="glass-recessed rounded-[3px] p-3">
               <div className="font-mono text-xs font-bold text-cyan-300">
                 01. Top Line = Thinnest String
               </div>
@@ -968,7 +968,7 @@ const TheoryGuidesSection = ({
                 The top line is the highest-pitched string ({tabExample.strings[0]}); the bottom line is the thickest string ({tabExample.strings[tabExample.strings.length - 1]}).
               </p>
             </div>
-            <div className="glass-recessed rounded-xl p-3">
+            <div className="glass-recessed rounded-[3px] p-3">
               <div className="font-mono text-xs font-bold text-cyan-300">
                 02. Numbers = Frets
               </div>
@@ -976,7 +976,7 @@ const TheoryGuidesSection = ({
                 <span className="font-mono text-white font-semibold">0</span> = open string, <span className="font-mono text-white font-semibold">3</span> = 3rd fret. Numbers tell you where to press, not which finger to use.
               </p>
             </div>
-            <div className="glass-recessed rounded-xl p-3">
+            <div className="glass-recessed rounded-[3px] p-3">
               <div className="font-mono text-xs font-bold text-cyan-300">
                 03. Left → Right = Melody
               </div>
@@ -984,7 +984,7 @@ const TheoryGuidesSection = ({
                 Read horizontally from left to right. Notes placed one after another are picked one by one.
               </p>
             </div>
-            <div className="glass-recessed rounded-xl p-3">
+            <div className="glass-recessed rounded-[3px] p-3">
               <div className="font-mono text-xs font-bold text-cyan-300">
                 04. Stacked = Strum Chord
               </div>
@@ -995,7 +995,7 @@ const TheoryGuidesSection = ({
           </div>
 
           {/* Interactive Playable TAB Staff */}
-          <div className="glass-recessed rounded-2xl p-3.5 sm:p-4 flex flex-col gap-3">
+          <div className="glass-recessed rounded-[3px] p-3.5 sm:p-4 flex flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-mono text-xs font-semibold text-white">
                 {tabExample.title}
@@ -1046,7 +1046,7 @@ const TheoryGuidesSection = ({
                           );
                         }
                       }}
-                      className={`rounded-xl py-2 px-1 flex flex-col justify-between transition-colors cursor-pointer ${
+                      className={`rounded-[2px] py-2 px-1 flex flex-col justify-between transition-colors cursor-pointer ${
                         isActive
                           ? 'bg-emerald-400/20 ring-1 ring-emerald-300/75'
                           : 'hover:bg-white/[0.06]'
@@ -1063,7 +1063,7 @@ const TheoryGuidesSection = ({
                           />
                           {val !== null && (
                             <span
-                              className={`relative z-10 px-1.5 py-0.5 rounded font-mono text-xs font-bold ${
+                              className={`relative z-10 px-1.5 py-0.5 rounded-[2px] font-mono text-xs font-bold ${
                                 isActive
                                   ? 'bg-emerald-400 text-slate-950'
                                   : 'bg-[#0f172a] text-white border border-white/20'
@@ -1088,7 +1088,7 @@ const TheoryGuidesSection = ({
             </div>
 
             {activeTabStepIdx !== null && tabExample.steps[activeTabStepIdx] && (
-              <div className="rounded-xl bg-white/[0.05] border border-cyan-300/30 px-3 py-2 font-mono text-xs text-cyan-200">
+              <div className="rounded-[2px] bg-white/[0.05] border border-cyan-300/30 px-3 py-2 font-mono text-xs text-cyan-200">
                 Step {activeTabStepIdx + 1} ({tabExample.steps[activeTabStepIdx].label}):{' '}
                 <span className="text-slate-200 font-sans">
                   {tabExample.steps[activeTabStepIdx].caption}
@@ -1110,7 +1110,7 @@ const TheoryGuidesSection = ({
                     learnAudio.playPluckedNote(item.demoMidi[0], refFrequency, 0, null, 0.55, instrument);
                   }
                 }}
-                className="glass-recessed rounded-xl p-3 border border-white/10 hover:border-cyan-300/40 hover:bg-white/[0.06] text-left flex flex-col gap-1 cursor-pointer transition-colors"
+                className="glass-recessed rounded-[3px] p-3 border border-white/10 hover:border-cyan-300/40 hover:bg-white/[0.06] text-left flex flex-col gap-1 cursor-pointer transition-colors"
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono text-sm font-bold text-cyan-300">
@@ -1134,7 +1134,7 @@ const TheoryGuidesSection = ({
       {showSection('nashville') && (
         <article
           aria-label="How the Nashville Number System Works"
-          className="glass-panel rounded-2xl p-4 sm:p-6 flex flex-col gap-4"
+          className="glass-panel rounded-[4px] p-4 sm:p-6 flex flex-col gap-4"
         >
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
             <div>
@@ -1149,7 +1149,7 @@ const TheoryGuidesSection = ({
             <button
               type="button"
               onClick={handlePlayNashvilleChart}
-              className={`min-h-[42px] px-4 py-2 rounded-xl border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+              className={`min-h-[42px] px-4 py-2 rounded-[2px] border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
                 activeNnsBarIdx !== null
                   ? 'bg-rose-500/25 text-rose-100 border-rose-300/45'
                   : 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_4px_16px_rgba(34,211,238,0.28)]'
@@ -1160,7 +1160,7 @@ const TheoryGuidesSection = ({
           </div>
 
           {/* Interactive Chart Selector + Key Switcher */}
-          <div className="glass-recessed rounded-2xl p-3.5 sm:p-4 flex flex-col gap-3.5">
+          <div className="glass-recessed rounded-[3px] p-3.5 sm:p-4 flex flex-col gap-3.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-1.5">
                 {NASHVILLE_CHARTS.map((chart) => {
@@ -1171,7 +1171,7 @@ const TheoryGuidesSection = ({
                       type="button"
                       aria-pressed={active}
                       onClick={() => setNashvilleChartId(chart.id)}
-                      className={`min-h-[38px] px-3 py-1.5 rounded-xl border font-mono text-xs font-semibold cursor-pointer transition-colors ${
+                      className={`min-h-[38px] px-3 py-1.5 rounded-[2px] border font-mono text-xs font-semibold cursor-pointer transition-colors ${
                         active
                           ? 'bg-white/20 text-white border-white/35'
                           : 'bg-white/[0.04] text-slate-300 border-white/10 hover:bg-white/[0.1]'
@@ -1209,7 +1209,7 @@ const TheoryGuidesSection = ({
                         );
                       }
                     }}
-                    className={`min-h-[108px] rounded-xl p-3 border text-left flex flex-col justify-between gap-1.5 active:scale-[0.97] transition-all cursor-pointer ${
+                    className={`min-h-[108px] rounded-[3px] p-3 border text-left flex flex-col justify-between gap-1.5 active:scale-[0.97] transition-all cursor-pointer ${
                       isBarActive
                         ? 'bg-emerald-400/20 border-emerald-300 shadow-[0_0_18px_rgba(52,211,153,0.3)]'
                         : 'bg-slate-950/45 hover:bg-slate-950/65 border-white/12'
@@ -1243,7 +1243,7 @@ const TheoryGuidesSection = ({
             {NASHVILLE_DECODER.map((item) => (
               <div
                 key={item.token}
-                className="glass-recessed rounded-xl p-3 border border-white/10 flex flex-col gap-1"
+                className="glass-recessed rounded-[3px] p-3 border border-white/10 flex flex-col gap-1"
               >
                 <div className="font-mono text-sm font-bold text-cyan-300">
                   {item.token}
@@ -1264,7 +1264,7 @@ const TheoryGuidesSection = ({
       {showSection('fundamentals') && (
         <article
           aria-label="Essential Guitar Music Theory"
-          className="glass-panel rounded-2xl p-4 sm:p-6 flex flex-col gap-4"
+          className="glass-panel rounded-[4px] p-4 sm:p-6 flex flex-col gap-4"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div>
@@ -1279,7 +1279,7 @@ const TheoryGuidesSection = ({
             <div
               role="tablist"
               aria-label="Core Theory Topics"
-              className="flex items-center gap-1 glass-recessed rounded-xl p-1 overflow-x-auto no-scrollbar shrink-0"
+              className="flex items-center gap-1 glass-recessed rounded-[3px] p-1 overflow-x-auto no-scrollbar shrink-0"
             >
               {[
                 { id: 'fretboard', label: 'Fretboard & Steps' },
@@ -1295,7 +1295,7 @@ const TheoryGuidesSection = ({
                     role="tab"
                     aria-selected={active}
                     onClick={() => setTheorySubTab(sub.id)}
-                    className={`min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                    className={`min-h-[38px] px-3 py-1 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
                       active
                         ? 'bg-white/20 text-white'
                         : 'text-slate-400 hover:text-slate-200'
@@ -1310,7 +1310,7 @@ const TheoryGuidesSection = ({
 
           {theorySubTab === 'fretboard' && (
             <div className="flex flex-col gap-4">
-              <div className="glass-recessed rounded-xl p-3.5 sm:p-4 flex flex-col gap-3">
+              <div className="glass-recessed rounded-[3px] p-3.5 sm:p-4 flex flex-col gap-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h4 className="font-display font-bold text-base text-white">
                     The 12-Note Chromatic Alphabet (1 Fret = 1 Half-Step)
@@ -1337,7 +1337,7 @@ const TheoryGuidesSection = ({
                             instrument
                           )
                         }
-                        className={`min-h-[48px] p-1.5 rounded-lg border flex flex-col items-center justify-center font-mono text-xs font-semibold cursor-pointer transition-colors ${
+                        className={`min-h-[48px] p-1.5 rounded-[2px] border flex flex-col items-center justify-center font-mono text-xs font-semibold cursor-pointer transition-colors ${
                           isRoot
                             ? 'bg-cyan-400 text-slate-950 border-cyan-300'
                             : isHalfStepGap
@@ -1355,7 +1355,7 @@ const TheoryGuidesSection = ({
                 </div>
               </div>
 
-              <div className="glass-recessed rounded-xl p-3.5 sm:p-4 flex flex-col gap-3">
+              <div className="glass-recessed rounded-[3px] p-3.5 sm:p-4 flex flex-col gap-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h4 className="font-display font-bold text-base text-white">
                     Major Scale Formula in {selectedRootName}: W – W – H – W – W – W – H
@@ -1379,7 +1379,7 @@ const TheoryGuidesSection = ({
                           instrument
                         )
                       }
-                      className="min-h-[58px] p-2 rounded-xl bg-white/[0.05] hover:bg-cyan-400/18 border border-white/12 flex flex-col items-center justify-center gap-0.5 cursor-pointer transition-colors"
+                      className="min-h-[58px] p-2 rounded-[2px] bg-white/[0.05] hover:bg-cyan-400/18 border border-white/12 flex flex-col items-center justify-center gap-0.5 cursor-pointer transition-colors"
                     >
                       <span className="font-mono text-[10px] text-cyan-300">
                         Deg {step.degree}
@@ -1396,7 +1396,7 @@ const TheoryGuidesSection = ({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-                <div className="glass-recessed rounded-xl p-3">
+                <div className="glass-recessed rounded-[3px] p-3">
                   <div className="font-mono text-xs font-bold text-cyan-300">
                     12th Fret Octave Reset
                   </div>
@@ -1404,7 +1404,7 @@ const TheoryGuidesSection = ({
                     Every open string repeats one full octave higher at fret 12 (the double-dot marker), so frets 13–24 mirror frets 1–12.
                   </p>
                 </div>
-                <div className="glass-recessed rounded-xl p-3">
+                <div className="glass-recessed rounded-[3px] p-3">
                   <div className="font-mono text-xs font-bold text-cyan-300">
                     The Guitar B-String Shift
                   </div>
@@ -1412,7 +1412,7 @@ const TheoryGuidesSection = ({
                     Guitar strings are tuned in 4ths (5 frets apart) except G→B, which is a Major 3rd (4 frets). Shapes moving onto the B string shift up +1 fret.
                   </p>
                 </div>
-                <div className="glass-recessed rounded-xl p-3">
+                <div className="glass-recessed rounded-[3px] p-3">
                   <div className="font-mono text-xs font-bold text-cyan-300">
                     Instant Octave Finder
                   </div>
@@ -1442,7 +1442,7 @@ const TheoryGuidesSection = ({
                         );
                       }
                     }}
-                    className="glass-recessed rounded-xl p-3.5 border border-white/12 hover:border-cyan-300/45 hover:bg-white/[0.06] text-left flex flex-col justify-between gap-2 active:scale-[0.98] cursor-pointer transition-all"
+                    className="glass-recessed rounded-[3px] p-3.5 border border-white/12 hover:border-cyan-300/45 hover:bg-white/[0.06] text-left flex flex-col justify-between gap-2 active:scale-[0.98] cursor-pointer transition-all"
                   >
                     <div className="flex items-baseline justify-between gap-2">
                       <span className="font-display font-bold text-lg text-white">
@@ -1475,7 +1475,7 @@ const TheoryGuidesSection = ({
                       type="button"
                       aria-pressed={active}
                       onClick={() => setSelectedCagedLetter(shape.letter)}
-                      className={`min-h-[42px] px-4 py-1.5 rounded-xl border font-display font-bold text-base cursor-pointer transition-colors ${
+                      className={`min-h-[42px] px-4 py-1.5 rounded-[2px] border font-display font-bold text-base cursor-pointer transition-colors ${
                         active
                           ? 'bg-cyan-400 text-slate-950 border-cyan-300'
                           : 'bg-white/[0.05] text-white border-white/12 hover:bg-white/[0.12]'
@@ -1491,7 +1491,7 @@ const TheoryGuidesSection = ({
                 const activeShape =
                   CAGED_SHAPES.find((s) => s.letter === selectedCagedLetter) || CAGED_SHAPES[0];
                 return (
-                  <div className="glass-recessed rounded-xl p-4 flex flex-col gap-2.5">
+                  <div className="glass-recessed rounded-[3px] p-4 flex flex-col gap-2.5">
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
                       <h4 className="font-display font-bold text-lg text-white">
                         {activeShape.title}
@@ -1518,7 +1518,7 @@ const TheoryGuidesSection = ({
 
           {theorySubTab === 'modes' && (
             <div className="flex flex-col gap-3">
-              <div className="glass-recessed rounded-xl p-3.5 font-sans text-xs sm:text-sm text-slate-300">
+              <div className="glass-recessed rounded-[3px] p-3.5 font-sans text-xs sm:text-sm text-slate-300">
                 <strong className="text-white">The Relative Major / Minor Rule:</strong>{' '}
                 Every Major key shares its exact 7 notes with its <span className="text-cyan-300 font-semibold">Relative Minor (6th degree / 3 frets lower)</span>. For {circleCtx.entry.majorLabel} Major, its relative minor is <span className="text-cyan-300 font-semibold">{circleCtx.entry.relMinorLabel}</span>. Modes simply shift which of those 7 notes feels like &ldquo;home.&rdquo;
               </div>
@@ -1527,7 +1527,7 @@ const TheoryGuidesSection = ({
                 {MODE_CHEATSHEET.map((m) => (
                   <div
                     key={m.id}
-                    className="glass-recessed rounded-xl p-3 border border-white/10 flex flex-col justify-between gap-2"
+                    className="glass-recessed rounded-[3px] p-3 border border-white/10 flex flex-col justify-between gap-2"
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2 font-mono text-[11px]">
@@ -1543,7 +1543,7 @@ const TheoryGuidesSection = ({
                       <button
                         type="button"
                         onClick={() => onNavigateTab('scales', { scaleId: m.id })}
-                        className="min-h-[36px] px-3 py-1 rounded-lg bg-white/[0.06] hover:bg-cyan-400/18 border border-white/12 font-mono text-[11px] font-semibold text-cyan-200 cursor-pointer transition-colors"
+                        className="min-h-[36px] px-3 py-1 rounded-[2px] bg-white/[0.06] hover:bg-cyan-400/18 border border-white/12 font-mono text-[11px] font-semibold text-cyan-200 cursor-pointer transition-colors"
                       >
                         Explore {selectedRootName} {m.name} →
                       </button>

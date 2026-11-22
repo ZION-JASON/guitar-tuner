@@ -285,7 +285,7 @@ const CustomProgressionSequencer = ({
   return (
     <section
       aria-label="Custom Chord Progression Rhythm Sequencer"
-      className="glass-panel rounded-2xl p-3.5 sm:p-5 border border-cyan-300/30 flex flex-col gap-4"
+      className="glass-panel rounded-[4px] p-3.5 sm:p-5 border border-cyan-300/35 flex flex-col gap-4"
     >
       {/* Top Header & Transport */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
@@ -310,13 +310,13 @@ const CustomProgressionSequencer = ({
         {/* Transport & Rhythm Options */}
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           {/* Quick Tempo Synced with Practice Metronome */}
-          <div className="flex items-center gap-1 glass-recessed rounded-xl p-1">
+          <div className="flex items-center gap-1 glass-recessed rounded-[3px] p-1">
             <button
               type="button"
               onClick={() => onBpmChange && onBpmChange(clampBpm(bpm - 5))}
               disabled={bpm <= MIN_BPM}
               aria-label="Decrease sequence BPM by 5"
-              className="min-h-[38px] sm:min-h-[34px] px-2 rounded-lg font-mono text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.08] disabled:opacity-35 cursor-pointer transition-colors"
+              className="min-h-[38px] sm:min-h-[34px] px-2 rounded-[2px] font-mono text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.08] disabled:opacity-35 cursor-pointer transition-colors"
             >
               -5
             </button>
@@ -328,7 +328,7 @@ const CustomProgressionSequencer = ({
               onClick={() => onBpmChange && onBpmChange(clampBpm(bpm + 5))}
               disabled={bpm >= MAX_BPM}
               aria-label="Increase sequence BPM by 5"
-              className="min-h-[38px] sm:min-h-[34px] px-2 rounded-lg font-mono text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.08] disabled:opacity-35 cursor-pointer transition-colors"
+              className="min-h-[38px] sm:min-h-[34px] px-2 rounded-[2px] font-mono text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.08] disabled:opacity-35 cursor-pointer transition-colors"
             >
               +5
             </button>
@@ -339,10 +339,10 @@ const CustomProgressionSequencer = ({
             type="button"
             onClick={onToggleWithClick}
             aria-pressed={withClick}
-            className={`min-h-[40px] sm:min-h-[38px] px-3 py-1.5 rounded-xl border font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+            className={`min-h-[40px] sm:min-h-[38px] px-3 py-1.5 rounded-[2px] border font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
               withClick
-                ? 'bg-cyan-400/18 text-cyan-200 border-cyan-300/40 hover:bg-cyan-400/28'
-                : 'bg-white/[0.05] text-slate-400 border-white/12 hover:text-slate-200'
+                ? 'bg-cyan-400/18 text-cyan-200 border-cyan-300/50 hover:bg-cyan-400/28'
+                : 'bg-white/[0.05] text-slate-400 border-white/14 hover:text-slate-200'
             }`}
           >
             Click: {withClick ? 'On' : 'Off'}
@@ -353,10 +353,10 @@ const CustomProgressionSequencer = ({
             type="button"
             onClick={onToggleLoop}
             aria-pressed={loop}
-            className={`min-h-[40px] sm:min-h-[38px] px-3 py-1.5 rounded-xl border font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+            className={`min-h-[40px] sm:min-h-[38px] px-3 py-1.5 rounded-[2px] border font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
               loop
-                ? 'bg-white/20 text-white border-white/30'
-                : 'bg-white/[0.05] text-slate-400 border-white/12 hover:text-slate-200'
+                ? 'bg-white/20 text-white border-white/35'
+                : 'bg-white/[0.05] text-slate-400 border-white/14 hover:text-slate-200'
             }`}
           >
             Loop: {loop ? 'On' : 'Off'}
@@ -367,13 +367,13 @@ const CustomProgressionSequencer = ({
             <div
               role="group"
               aria-label="Sequence Playback Style"
-              className="flex items-center gap-1 glass-recessed rounded-xl p-1"
+              className="flex items-center gap-1 glass-recessed rounded-[3px] p-1"
             >
               <button
                 type="button"
                 onClick={() => onChangePlayMode('strum')}
                 aria-pressed={playMode === 'strum'}
-                className={`min-h-[36px] sm:min-h-[32px] px-2.5 py-1 rounded-lg font-mono text-[11px] font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                className={`min-h-[36px] sm:min-h-[32px] px-2.5 py-1 rounded-[2px] font-mono text-[11px] font-semibold whitespace-nowrap cursor-pointer transition-colors ${
                   playMode === 'strum'
                     ? 'bg-white/20 text-white'
                     : 'text-slate-400 hover:text-slate-200'
@@ -385,7 +385,7 @@ const CustomProgressionSequencer = ({
                 type="button"
                 onClick={() => onChangePlayMode('arpeggio')}
                 aria-pressed={playMode === 'arpeggio'}
-                className={`min-h-[36px] sm:min-h-[32px] px-2.5 py-1 rounded-lg font-mono text-[11px] font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                className={`min-h-[36px] sm:min-h-[32px] px-2.5 py-1 rounded-[2px] font-mono text-[11px] font-semibold whitespace-nowrap cursor-pointer transition-colors ${
                   playMode === 'arpeggio'
                     ? 'bg-white/20 text-white'
                     : 'text-slate-400 hover:text-slate-200'
@@ -401,10 +401,10 @@ const CustomProgressionSequencer = ({
             type="button"
             onClick={() => onTogglePlay && onTogglePlay(resolvedSteps)}
             disabled={resolvedSteps.length === 0}
-            className={`min-h-[42px] sm:min-h-[40px] px-4 py-1.5 rounded-xl border font-mono text-xs font-semibold whitespace-nowrap active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-[transform,background-color,border-color,color] duration-150 ${
+            className={`min-h-[42px] sm:min-h-[40px] px-4 py-1.5 rounded-[2px] border font-mono text-xs font-semibold whitespace-nowrap active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-[transform,background-color,border-color,color] duration-150 ${
               isPlaying
-                ? 'bg-rose-500/25 text-rose-100 border-rose-300/45 hover:bg-rose-500/35'
-                : 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_4px_16px_rgba(34,211,238,0.28)] hover:bg-cyan-300'
+                ? 'bg-rose-500/25 text-rose-100 border-rose-400/55 hover:bg-rose-500/35'
+                : 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_2px_12px_rgba(34,211,238,0.28)] hover:bg-cyan-300'
             }`}
           >
             {isPlaying ? 'Stop Sequence' : 'Play Sequence'}
@@ -414,7 +414,7 @@ const CustomProgressionSequencer = ({
             <button
               type="button"
               onClick={onClearSequence}
-              className="min-h-[40px] sm:min-h-[38px] px-3 py-1.5 rounded-xl border border-rose-300/25 bg-rose-500/10 hover:bg-rose-500/20 text-rose-200 font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors"
+              className="min-h-[40px] sm:min-h-[38px] px-3 py-1.5 rounded-[2px] border border-rose-400/35 bg-rose-500/10 hover:bg-rose-500/20 text-rose-200 font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors"
             >
               Clear
             </button>
@@ -424,7 +424,7 @@ const CustomProgressionSequencer = ({
             <button
               type="button"
               onClick={onClose}
-              className="min-h-[40px] sm:min-h-[38px] px-3 py-1.5 rounded-xl border border-white/15 bg-white/[0.06] hover:bg-white/[0.14] text-slate-200 font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors"
+              className="min-h-[40px] sm:min-h-[38px] px-3 py-1.5 rounded-[2px] border border-white/18 bg-white/[0.06] hover:bg-white/[0.14] text-slate-200 font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors"
             >
               Hide
             </button>
@@ -434,7 +434,7 @@ const CustomProgressionSequencer = ({
 
       {/* Sequence Steps Timeline */}
       {resolvedSteps.length === 0 ? (
-        <div className="glass-recessed rounded-xl p-4 sm:p-5 text-center flex flex-col items-center gap-2.5">
+        <div className="glass-recessed rounded-[3px] p-4 sm:p-5 text-center flex flex-col items-center gap-2.5">
           <p className="font-sans text-xs sm:text-sm text-slate-200">
             Your custom progression sequence is empty.
           </p>
@@ -448,7 +448,7 @@ const CustomProgressionSequencer = ({
               <button
                 type="button"
                 onClick={onQueueAllFavorites}
-                className="min-h-[40px] px-3.5 py-1.5 rounded-xl border border-cyan-300/45 bg-cyan-400/15 hover:bg-cyan-400/25 text-cyan-200 font-mono text-xs font-semibold cursor-pointer transition-colors"
+                className="min-h-[40px] px-3.5 py-1.5 rounded-[2px] border border-cyan-300/50 bg-cyan-400/15 hover:bg-cyan-400/25 text-cyan-200 font-mono text-xs font-semibold cursor-pointer transition-colors"
               >
                 Load All Saved Chords ({resolvedFavorites.length})
               </button>
@@ -457,7 +457,7 @@ const CustomProgressionSequencer = ({
               <button
                 type="button"
                 onClick={onBrowseChords}
-                className="min-h-[40px] px-3.5 py-1.5 rounded-xl border border-cyan-300/45 bg-cyan-400/15 hover:bg-cyan-400/25 text-cyan-200 font-mono text-xs font-semibold cursor-pointer transition-colors"
+                className="min-h-[40px] px-3.5 py-1.5 rounded-[2px] border border-cyan-300/50 bg-cyan-400/15 hover:bg-cyan-400/25 text-cyan-200 font-mono text-xs font-semibold cursor-pointer transition-colors"
               >
                 Browse Chord Library
               </button>
@@ -489,14 +489,14 @@ const CustomProgressionSequencer = ({
                 }}
                 draggable={false}
                 onPointerDown={(e) => beginPendingDrag(e, step.uid, displayIdx, false)}
-                className={`rounded-xl p-2.5 sm:p-3 border flex flex-col justify-between gap-2 transition-[background-color,border-color,box-shadow,opacity] duration-150 ${
+                className={`rounded-[3px] p-2.5 sm:p-3 border flex flex-col justify-between gap-2 transition-[background-color,border-color,box-shadow,opacity] duration-150 ${
                   isBeingDragged
-                    ? 'border-dashed border-2 border-cyan-300/75 bg-cyan-400/10 shadow-[inset_0_0_24px_rgba(34,211,238,0.14)]'
+                    ? 'border-dashed border-2 border-cyan-300/80 bg-cyan-400/10 shadow-[inset_0_0_20px_rgba(34,211,238,0.14)]'
                     : isActiveStep
-                      ? 'bg-emerald-400/14 border-emerald-300/75 shadow-[0_0_24px_rgba(52,211,153,0.22)]'
+                      ? 'bg-emerald-400/14 border-emerald-300/80 shadow-[0_0_20px_rgba(52,211,153,0.22)]'
                       : canDrag
-                        ? 'glass-recessed border-white/12 sm:cursor-grab'
-                        : 'glass-recessed border-white/12'
+                        ? 'glass-recessed border-white/14 sm:cursor-grab'
+                        : 'glass-recessed border-white/14'
                 }`}
               >
                 <div
@@ -515,9 +515,9 @@ const CustomProgressionSequencer = ({
                         onKeyDown={(e) => handleHandleKeyDown(e, originalIndex)}
                         aria-label={`Drag to reorder step ${displayIdx + 1} (${chordData.symbol}), or use arrow keys`}
                         title={canDrag ? 'Drag to reorder chord' : 'Add another chord to reorder'}
-                        className={`touch-none min-h-[34px] px-1.5 rounded-lg border flex items-center gap-1 shrink-0 transition-colors ${
+                        className={`touch-none min-h-[34px] px-1.5 rounded-[2px] border flex items-center gap-1 shrink-0 transition-colors ${
                           canDrag
-                            ? 'border-white/12 bg-white/[0.04] hover:bg-white/[0.12] hover:border-cyan-300/40 text-slate-300 hover:text-cyan-200 cursor-grab active:cursor-grabbing'
+                            ? 'border-white/14 bg-white/[0.04] hover:bg-white/[0.12] hover:border-cyan-300/45 text-slate-300 hover:text-cyan-200 cursor-grab active:cursor-grabbing'
                             : 'border-transparent bg-transparent text-slate-400 cursor-default'
                         }`}
                       >
@@ -526,14 +526,14 @@ const CustomProgressionSequencer = ({
                             aria-hidden="true"
                             viewBox="0 0 12 16"
                             fill="currentColor"
-                            className="w-2.5 h-3.5 opacity-75 shrink-0"
+                            className="w-2.5 h-3.5 opacity-80 shrink-0"
                           >
-                            <circle cx="3.5" cy="3" r="1.25" />
-                            <circle cx="8.5" cy="3" r="1.25" />
-                            <circle cx="3.5" cy="8" r="1.25" />
-                            <circle cx="8.5" cy="8" r="1.25" />
-                            <circle cx="3.5" cy="13" r="1.25" />
-                            <circle cx="8.5" cy="13" r="1.25" />
+                            <rect x="2.2" y="1.8" width="2.5" height="2.5" />
+                            <rect x="7.2" y="1.8" width="2.5" height="2.5" />
+                            <rect x="2.2" y="6.8" width="2.5" height="2.5" />
+                            <rect x="7.2" y="6.8" width="2.5" height="2.5" />
+                            <rect x="2.2" y="11.8" width="2.5" height="2.5" />
+                            <rect x="7.2" y="11.8" width="2.5" height="2.5" />
                           </svg>
                         )}
                         <span
@@ -555,9 +555,9 @@ const CustomProgressionSequencer = ({
                           return (
                             <span
                               key={`led-${step.uid}-${bIdx}`}
-                              className={`w-1.5 h-1.5 rounded-full transition-transform duration-75 ${
+                              className={`w-2 h-1.5 rounded-[1px] transition-transform duration-75 ${
                                 isBeatLit
-                                  ? 'bg-emerald-300 scale-125 shadow-[0_0_6px_rgba(110,231,183,0.9)]'
+                                  ? 'bg-emerald-300 scale-115 shadow-[0_0_6px_rgba(110,231,183,0.9)]'
                                   : isPastBeat
                                     ? 'bg-emerald-300/50'
                                     : 'bg-white/20'
@@ -578,7 +578,7 @@ const CustomProgressionSequencer = ({
                       data-no-drag="true"
                       onClick={() => onRemoveStep(step.uid)}
                       aria-label={`Remove step ${displayIdx + 1} (${chordData.symbol})`}
-                      className="min-h-[34px] min-w-[34px] rounded-lg border border-white/12 bg-white/[0.04] hover:bg-rose-500/20 hover:border-rose-300/40 text-slate-300 hover:text-rose-200 font-mono text-xs flex items-center justify-center shrink-0 cursor-pointer transition-colors"
+                      className="min-h-[34px] min-w-[34px] rounded-[2px] border border-white/14 bg-white/[0.04] hover:bg-rose-500/20 hover:border-rose-300/50 text-slate-300 hover:text-rose-200 font-mono text-xs flex items-center justify-center shrink-0 cursor-pointer transition-colors"
                       title="Remove step"
                     >
                       ×
@@ -595,7 +595,7 @@ const CustomProgressionSequencer = ({
                         onPreviewStep(voicing.midiNotes, refFrequency, step.instrument, playMode);
                       }
                     }}
-                    className={`text-left rounded-lg bg-slate-950/35 hover:bg-slate-950/55 p-2 flex flex-col gap-1.5 active:scale-[0.98] transition-[transform,background-color] ${
+                    className={`text-left rounded-[2px] bg-slate-950/45 hover:bg-slate-950/65 p-2 flex flex-col gap-1.5 active:scale-[0.98] transition-[transform,background-color] ${
                       canDrag ? 'cursor-pointer sm:cursor-grab' : 'cursor-pointer'
                     }`}
                     aria-label={`Audition ${chordData.symbol} (${instMeta.shortLabel})`}
@@ -624,7 +624,7 @@ const CustomProgressionSequencer = ({
                   {/* Beats Duration Stepper */}
                   <div
                     data-no-drag="true"
-                    className="flex items-center justify-between gap-1 rounded-lg bg-white/[0.04] border border-white/10 p-0.5"
+                    className="flex items-center justify-between gap-1 rounded-[2px] bg-white/[0.04] border border-white/12 p-0.5"
                   >
                     <button
                       type="button"
@@ -632,7 +632,7 @@ const CustomProgressionSequencer = ({
                       onClick={() => onChangeStepBeats(step.uid, stepBeats - 1)}
                       disabled={stepBeats <= MIN_STEP_BEATS}
                       aria-label={`Decrease beats for step ${displayIdx + 1}`}
-                      className="min-h-[34px] min-w-[32px] rounded-md font-mono text-xs font-bold text-slate-200 hover:bg-white/[0.1] disabled:opacity-30 cursor-pointer transition-colors"
+                      className="min-h-[34px] min-w-[32px] rounded-[2px] font-mono text-xs font-bold text-slate-200 hover:bg-white/[0.1] disabled:opacity-30 cursor-pointer transition-colors"
                     >
                       −
                     </button>
@@ -645,7 +645,7 @@ const CustomProgressionSequencer = ({
                       onClick={() => onChangeStepBeats(step.uid, stepBeats + 1)}
                       disabled={stepBeats >= MAX_STEP_BEATS}
                       aria-label={`Increase beats for step ${displayIdx + 1}`}
-                      className="min-h-[34px] min-w-[32px] rounded-md font-mono text-xs font-bold text-slate-200 hover:bg-white/[0.1] disabled:opacity-30 cursor-pointer transition-colors"
+                      className="min-h-[34px] min-w-[32px] rounded-[2px] font-mono text-xs font-bold text-slate-200 hover:bg-white/[0.1] disabled:opacity-30 cursor-pointer transition-colors"
                     >
                       +
                     </button>
@@ -659,7 +659,7 @@ const CustomProgressionSequencer = ({
                       onClick={() => onMoveStep(originalIndex, originalIndex - 1)}
                       disabled={originalIndex === 0}
                       aria-label={`Move step ${displayIdx + 1} left`}
-                      className="min-h-[34px] rounded-lg border border-white/12 bg-white/[0.04] hover:bg-white/[0.12] text-slate-200 font-mono text-xs disabled:opacity-30 cursor-pointer transition-colors"
+                      className="min-h-[34px] rounded-[2px] border border-white/14 bg-white/[0.04] hover:bg-white/[0.12] text-slate-200 font-mono text-xs disabled:opacity-30 cursor-pointer transition-colors"
                       title="Move earlier"
                     >
                       ◀
@@ -669,7 +669,7 @@ const CustomProgressionSequencer = ({
                       data-no-drag="true"
                       onClick={() => onDuplicateStep(step.uid)}
                       aria-label={`Duplicate step ${displayIdx + 1}`}
-                      className="min-h-[34px] rounded-lg border border-white/12 bg-white/[0.04] hover:bg-white/[0.12] text-slate-300 hover:text-white font-mono text-[10px] font-semibold cursor-pointer transition-colors"
+                      className="min-h-[34px] rounded-[2px] border border-white/14 bg-white/[0.04] hover:bg-white/[0.12] text-slate-300 hover:text-white font-mono text-[10px] font-semibold cursor-pointer transition-colors"
                       title="Repeat chord"
                     >
                       Copy
@@ -680,7 +680,7 @@ const CustomProgressionSequencer = ({
                       onClick={() => onMoveStep(originalIndex, originalIndex + 1)}
                       disabled={originalIndex === resolvedSteps.length - 1}
                       aria-label={`Move step ${displayIdx + 1} right`}
-                      className="min-h-[34px] rounded-lg border border-white/12 bg-white/[0.04] hover:bg-white/[0.12] text-slate-200 font-mono text-xs disabled:opacity-30 cursor-pointer transition-colors"
+                      className="min-h-[34px] rounded-[2px] border border-white/14 bg-white/[0.04] hover:bg-white/[0.12] text-slate-200 font-mono text-xs disabled:opacity-30 cursor-pointer transition-colors"
                       title="Move later"
                     >
                       ▶
@@ -695,7 +695,7 @@ const CustomProgressionSequencer = ({
 
       {/* Quick-Append Saved Chords Picker */}
       {resolvedFavorites.length > 0 && (
-        <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
+        <div className="flex flex-col gap-2 pt-2 border-t border-white/12">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="font-mono text-[11px] text-slate-300">
               Tap a saved chord to append ({defaultStepBeats}{' '}
@@ -705,7 +705,7 @@ const CustomProgressionSequencer = ({
               <button
                 type="button"
                 onClick={onQueueAllFavorites}
-                className="min-h-[34px] px-2.5 py-1 rounded-lg border border-cyan-300/35 bg-cyan-400/10 hover:bg-cyan-400/20 text-cyan-200 font-mono text-[11px] font-semibold cursor-pointer transition-colors"
+                className="min-h-[34px] px-2.5 py-1 rounded-[2px] border border-cyan-300/45 bg-cyan-400/10 hover:bg-cyan-400/20 text-cyan-200 font-mono text-[11px] font-semibold cursor-pointer transition-colors"
               >
                 + Append All ({resolvedFavorites.length})
               </button>
@@ -718,7 +718,7 @@ const CustomProgressionSequencer = ({
                 key={`pick-${fav.id}`}
                 type="button"
                 onClick={() => onAddFavoriteStep && onAddFavoriteStep(fav)}
-                className="min-h-[40px] px-3 py-1.5 rounded-xl border border-amber-300/30 bg-amber-400/10 hover:bg-amber-400/22 text-amber-100 font-mono text-xs font-semibold whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 active:scale-[0.96] cursor-pointer transition-colors"
+                className="min-h-[40px] px-3 py-1.5 rounded-[2px] border border-amber-300/35 bg-amber-400/10 hover:bg-amber-400/22 text-amber-100 font-mono text-xs font-semibold whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 active:scale-[0.97] cursor-pointer transition-colors"
               >
                 <span aria-hidden="true" className="text-cyan-300">
                   +
@@ -746,11 +746,11 @@ const CustomProgressionSequencer = ({
               height: dragUi.cardHeight,
               transform: `translate3d(${dragUi.clientX - dragUi.offsetX}px, ${
                 dragUi.clientY - dragUi.offsetY
-              }px, 0) scale(1.03) rotate(1deg)`,
+              }px, 0) scale(1.02)`,
               pointerEvents: 'none',
               zIndex: 70,
             }}
-            className="rounded-xl p-2.5 sm:p-3 border-2 border-cyan-300 bg-slate-900/95 backdrop-blur-md shadow-[0_24px_48px_rgba(2,6,23,0.75)] flex flex-col justify-between gap-2 select-none"
+            className="rounded-[3px] p-2.5 sm:p-3 border-2 border-cyan-300 bg-slate-900/95 backdrop-blur-md shadow-[0_20px_44px_rgba(2,6,23,0.8)] flex flex-col justify-between gap-2 select-none"
           >
             <div className="flex items-center justify-between gap-1.5">
               <span className="font-mono text-[11px] font-bold text-cyan-300 tabular-nums">
@@ -761,7 +761,7 @@ const CustomProgressionSequencer = ({
               </span>
             </div>
 
-            <div className="rounded-lg bg-slate-950/55 p-2 flex flex-col gap-1.5 flex-1 justify-center">
+            <div className="rounded-[2px] bg-slate-950/60 p-2 flex flex-col gap-1.5 flex-1 justify-center">
               <div className="flex items-baseline justify-between gap-1.5">
                 <span className="font-display font-bold text-base sm:text-lg text-white truncate">
                   {draggedStepData.chordData.symbol}

@@ -117,24 +117,22 @@ function App() {
   };
 
   return (
-    <div className="relative min-h-dvh bg-[#090e1a] text-slate-50 flex flex-col overflow-x-hidden">
-      {/* Ambient Animated Acoustic Mesh Orbs */}
+    <div className="relative min-h-dvh bg-[#070b14] text-slate-50 flex flex-col overflow-x-hidden">
+      {/* Crisp Architectural Studio Grid & Directional Top Accent */}
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 overflow-hidden z-0"
+        className="pointer-events-none fixed inset-0 z-0 studio-grid-bg"
       >
-        <div className="absolute -top-32 -left-24 w-[420px] h-[420px] sm:w-[560px] sm:h-[560px] rounded-full bg-cyan-500/20 blur-[110px] animate-orb-a" />
-        <div className="absolute -bottom-36 -right-24 w-[440px] h-[440px] sm:w-[600px] sm:h-[600px] rounded-full bg-indigo-500/22 blur-[120px] animate-orb-b" />
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[320px] h-[320px] rounded-full bg-teal-400/10 blur-[100px]" />
+        <div className="absolute inset-x-0 top-0 h-[360px] bg-[radial-gradient(ellipse_75%_55%_at_50%_0%,rgba(34,211,238,0.11),transparent)]" />
       </div>
 
-      {/* 3-Zone Single-Row Frosted Header */}
-      <header className="relative z-20 glass-bar border-b border-white/12">
-        <div className="max-w-[1280px] mx-auto px-3 sm:px-6 py-2 sm:py-3.5 flex items-center justify-between gap-1.5 sm:gap-8">
+      {/* 3-Zone Single-Row Precision Header */}
+      <header className="relative z-20 glass-bar border-b border-white/14">
+        <div className="max-w-[1280px] mx-auto px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-2 sm:gap-8">
           <button
             type="button"
             onClick={() => switchView('tuner')}
-            className="inline-flex items-center gap-1.5 sm:gap-2.5 font-display font-bold text-[14px] sm:text-xl tracking-tight text-white whitespace-nowrap shrink-0 cursor-pointer text-left min-h-[40px]"
+            className="inline-flex items-center gap-2 sm:gap-2.5 font-display font-bold text-[15px] sm:text-xl tracking-tight text-white whitespace-nowrap shrink-0 cursor-pointer text-left min-h-[40px]"
           >
             <ChromaTunerLogo className="w-5 h-5 sm:w-7 sm:h-7 shrink-0" />
             <span>ChromaTuner</span>
@@ -143,15 +141,15 @@ function App() {
           {/* Top-Level Navigation: Tuner | Learn */}
           <nav
             aria-label="Primary Navigation"
-            className="flex items-center gap-1 sm:gap-1.5 glass-recessed rounded-xl p-1"
+            className="flex items-center gap-1 glass-recessed rounded-[3px] p-1"
           >
             <button
               type="button"
               onClick={() => switchView('tuner')}
               aria-pressed={activeView === 'tuner'}
-              className={`min-h-[38px] px-2.5 sm:px-4 py-1.5 rounded-lg font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
+              className={`min-h-[38px] px-3 sm:px-5 py-1.5 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.98] transition-[transform,background-color,color] duration-150 cursor-pointer ${
                 activeView === 'tuner'
-                  ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_12px_rgba(34,211,238,0.28)]'
+                  ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_10px_rgba(34,211,238,0.28)]'
                   : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
               }`}
             >
@@ -161,9 +159,9 @@ function App() {
               type="button"
               onClick={() => switchView('learn')}
               aria-pressed={activeView === 'learn'}
-              className={`min-h-[38px] px-2.5 sm:px-4 py-1.5 rounded-lg font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
+              className={`min-h-[38px] px-3 sm:px-5 py-1.5 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.98] transition-[transform,background-color,color] duration-150 cursor-pointer ${
                 activeView === 'learn'
-                  ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_12px_rgba(34,211,238,0.28)]'
+                  ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_10px_rgba(34,211,238,0.28)]'
                   : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
               }`}
             >
@@ -175,10 +173,10 @@ function App() {
             <button
               type="button"
               onClick={isListening ? stopTuner : startTuner}
-              className={`min-h-[38px] sm:min-h-[40px] px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl border font-mono text-xs font-semibold tracking-wide active:scale-[0.97] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color] duration-200 cursor-pointer ${
+              className={`min-h-[38px] sm:min-h-[40px] px-3 sm:px-4 py-1.5 rounded-[2px] border font-mono text-xs font-semibold tracking-wide active:scale-[0.98] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer ${
                 isListening
-                  ? 'bg-rose-500/20 text-rose-100 border-rose-300/40 hover:bg-rose-500/30'
-                  : 'bg-white/[0.08] text-slate-100 border-white/15 hover:bg-white/[0.16]'
+                  ? 'bg-rose-500/20 text-rose-100 border-rose-400/55 hover:bg-rose-500/30'
+                  : 'bg-white/[0.08] text-slate-100 border-white/18 hover:bg-white/[0.16]'
               }`}
             >
               <span className="sm:hidden">{isListening ? 'Mic On' : 'Mic Off'}</span>
@@ -193,7 +191,7 @@ function App() {
       {/* Main Workspace */}
       <main
         id="main-workspace"
-        className={`relative z-10 flex-1 w-full max-w-[1280px] mx-auto px-3 sm:px-6 pt-3 lg:py-8 flex flex-col gap-3.5 sm:gap-6 ${
+        className={`relative z-10 flex-1 w-full max-w-[1280px] mx-auto px-3 sm:px-6 pt-3 lg:py-6 flex flex-col gap-3.5 sm:gap-5 ${
           activeView === 'tuner'
             ? 'pb-[calc(5.75rem+env(safe-area-inset-bottom))] lg:pb-10'
             : 'pb-[calc(2.5rem+env(safe-area-inset-bottom))] lg:pb-10'
@@ -201,11 +199,11 @@ function App() {
       >
         {/* Instrument & Tuning Preset Workspace Bar (Tuner View) */}
         {activeView === 'tuner' && (
-          <div className="glass-panel rounded-2xl p-2 sm:px-4 sm:py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
+          <div className="glass-panel rounded-[4px] p-2 sm:px-3.5 sm:py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
             <div
               role="group"
               aria-label="Instrument Selector"
-              className="grid grid-cols-3 sm:flex items-center gap-1 glass-recessed rounded-xl p-1 shrink-0"
+              className="grid grid-cols-3 sm:flex items-center gap-1 glass-recessed rounded-[3px] p-1 shrink-0"
             >
               {INSTRUMENTS.map((inst) => {
                 const active = inst.id === activeInstrument;
@@ -215,7 +213,7 @@ function App() {
                     type="button"
                     onClick={() => selectInstrument(inst.id)}
                     aria-pressed={active}
-                    className={`min-h-[40px] sm:min-h-[36px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
+                    className={`min-h-[40px] sm:min-h-[36px] px-3 py-1 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.98] transition-[transform,background-color,color] duration-150 cursor-pointer ${
                       active
                         ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_10px_rgba(34,211,238,0.28)]'
                         : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
@@ -234,7 +232,7 @@ function App() {
 
             <nav
               aria-label="Tuning Presets"
-              className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar min-w-0 flex-1"
+              className="flex items-center gap-1.5 overflow-x-auto no-scrollbar min-w-0 flex-1"
             >
               {visiblePresets.map((preset) => {
                 const active = preset.id === activePreset.id;
@@ -244,10 +242,10 @@ function App() {
                     type="button"
                     onClick={() => setPresetId(preset.id)}
                     aria-pressed={active}
-                    className={`min-h-[40px] sm:min-h-[36px] px-3 sm:px-3.5 py-1.5 rounded-xl border font-mono text-xs font-semibold active:scale-[0.97] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer ${
+                    className={`min-h-[40px] sm:min-h-[36px] px-3 sm:px-3.5 py-1.5 rounded-[2px] border font-mono text-xs font-semibold active:scale-[0.98] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer ${
                       active
-                        ? 'bg-white/20 text-white border-white/30'
-                        : 'bg-white/[0.05] text-slate-300 border-white/10 hover:bg-white/[0.1]'
+                        ? 'bg-white/20 text-white border-cyan-300/60'
+                        : 'bg-white/[0.05] text-slate-300 border-white/12 hover:bg-white/[0.1]'
                     }`}
                   >
                     {preset.label}
@@ -261,7 +259,7 @@ function App() {
         {micError && (
           <div
             role="alert"
-            className="animate-glass-enter glass-panel rounded-2xl border-rose-400/40 bg-rose-500/12 px-4 py-3.5 sm:px-5 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4"
+            className="animate-glass-enter glass-panel rounded-[4px] border-rose-400/50 bg-rose-500/12 px-4 py-3.5 sm:px-5 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4"
           >
             <div>
               <p className="font-display font-bold text-sm text-rose-100">
@@ -275,14 +273,14 @@ function App() {
               <button
                 type="button"
                 onClick={startTuner}
-                className="min-h-[44px] px-4 py-2 rounded-xl border border-cyan-300/60 bg-cyan-400 text-slate-950 font-mono text-xs font-semibold active:scale-[0.97] whitespace-nowrap cursor-pointer hover:bg-cyan-300 transition-[transform,background-color] duration-200"
+                className="min-h-[42px] px-4 py-2 rounded-[2px] border border-cyan-300/70 bg-cyan-400 text-slate-950 font-mono text-xs font-semibold active:scale-[0.98] whitespace-nowrap cursor-pointer hover:bg-cyan-300 transition-[transform,background-color] duration-150"
               >
                 Retry Mic
               </button>
               <button
                 type="button"
                 onClick={clearMicError}
-                className="min-h-[44px] px-4 py-2 rounded-xl border border-white/15 bg-white/10 text-slate-100 font-mono text-xs font-semibold active:scale-[0.97] whitespace-nowrap cursor-pointer hover:bg-white/20 transition-[transform,background-color] duration-200"
+                className="min-h-[42px] px-4 py-2 rounded-[2px] border border-white/18 bg-white/10 text-slate-100 font-mono text-xs font-semibold active:scale-[0.98] whitespace-nowrap cursor-pointer hover:bg-white/20 transition-[transform,background-color] duration-150"
               >
                 Dismiss
               </button>
@@ -291,7 +289,7 @@ function App() {
         )}
 
         {activeView === 'tuner' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-start">
             <div className="lg:col-span-8">
               <TunerDisplay
                 data={displayData}
@@ -338,16 +336,16 @@ function App() {
         )}
       </main>
 
-      {/* Mobile Sticky Bottom Frosted Thumb-Zone Control Bar (Tuner View) */}
+      {/* Mobile Sticky Bottom Thumb-Zone Control Bar (Tuner View) */}
       {activeView === 'tuner' && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 glass-bar border-t border-white/15 px-3.5 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] flex items-center gap-2.5">
           <button
             type="button"
             onClick={isListening ? stopTuner : startTuner}
-            className={`flex-1 min-h-[48px] px-4 py-2.5 rounded-xl border font-display font-bold text-sm tracking-wide whitespace-nowrap cursor-pointer active:scale-[0.98] transition-[transform,background-color,border-color,box-shadow] duration-200 ${
+            className={`flex-1 min-h-[46px] px-4 py-2 rounded-[2px] border font-display font-bold text-sm tracking-wide whitespace-nowrap cursor-pointer active:scale-[0.98] transition-[transform,background-color,border-color,box-shadow] duration-150 ${
               isListening
-                ? 'bg-rose-500/25 text-rose-100 border-rose-300/40'
-                : 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_6px_20px_rgba(34,211,238,0.28)]'
+                ? 'bg-rose-500/25 text-rose-100 border-rose-400/50'
+                : 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_4px_16px_rgba(34,211,238,0.28)]'
             }`}
           >
             {isListening ? 'Stop Microphone' : 'Activate Microphone'}
@@ -357,7 +355,7 @@ function App() {
             <button
               type="button"
               onClick={stopReferenceTone}
-              className="min-h-[48px] px-4 py-2.5 rounded-xl border border-amber-300/45 bg-amber-400/20 text-amber-100 font-mono text-xs font-semibold active:scale-[0.97] whitespace-nowrap shrink-0 cursor-pointer transition-[transform,background-color] duration-200"
+              className="min-h-[46px] px-4 py-2 rounded-[2px] border border-amber-300/50 bg-amber-400/20 text-amber-100 font-mono text-xs font-semibold active:scale-[0.98] whitespace-nowrap shrink-0 cursor-pointer transition-[transform,background-color] duration-150"
             >
               Mute Tone
             </button>

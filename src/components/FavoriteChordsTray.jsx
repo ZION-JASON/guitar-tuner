@@ -71,7 +71,7 @@ const FavoriteChordsTray = ({
   return (
     <section
       aria-label="Saved Favorite Chords for Practice"
-      className="glass-panel rounded-2xl p-4 sm:p-5 border border-amber-300/30 flex flex-col gap-3.5"
+      className="glass-panel rounded-[4px] p-4 sm:p-5 border border-amber-300/35 flex flex-col gap-3.5"
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
         <div className="flex flex-wrap items-baseline gap-2.5">
@@ -88,12 +88,12 @@ const FavoriteChordsTray = ({
 
         <div className="flex flex-wrap items-center gap-2">
           {hasMultipleInstruments && (
-            <div className="flex items-center gap-1 glass-recessed rounded-xl p-1">
+            <div className="flex items-center gap-1 glass-recessed rounded-[3px] p-1">
               <button
                 type="button"
                 onClick={() => setScope('all')}
                 aria-pressed={scope === 'all'}
-                className={`min-h-[34px] px-2.5 py-1 rounded-lg font-mono text-[11px] font-semibold cursor-pointer transition-colors ${
+                className={`min-h-[34px] px-2.5 py-1 rounded-[2px] font-mono text-[11px] font-semibold cursor-pointer transition-colors ${
                   scope === 'all'
                     ? 'bg-white/20 text-white'
                     : 'text-slate-400 hover:text-slate-200'
@@ -105,7 +105,7 @@ const FavoriteChordsTray = ({
                 type="button"
                 onClick={() => setScope('current')}
                 aria-pressed={scope === 'current'}
-                className={`min-h-[34px] px-2.5 py-1 rounded-lg font-mono text-[11px] font-semibold cursor-pointer transition-colors ${
+                className={`min-h-[34px] px-2.5 py-1 rounded-[2px] font-mono text-[11px] font-semibold cursor-pointer transition-colors ${
                   scope === 'current'
                     ? 'bg-white/20 text-white'
                     : 'text-slate-400 hover:text-slate-200'
@@ -120,7 +120,7 @@ const FavoriteChordsTray = ({
             <button
               type="button"
               onClick={() => onQueueAllFavorites(visibleItems.map((item) => item.fav))}
-              className="min-h-[36px] px-3 py-1 rounded-xl border border-cyan-300/35 bg-cyan-400/12 hover:bg-cyan-400/22 text-cyan-200 font-mono text-[11px] font-semibold cursor-pointer transition-colors"
+              className="min-h-[36px] px-3 py-1 rounded-[2px] border border-cyan-300/45 bg-cyan-400/12 hover:bg-cyan-400/22 text-cyan-200 font-mono text-[11px] font-semibold cursor-pointer transition-colors"
             >
               + Sequence All ({visibleItems.length})
             </button>
@@ -130,7 +130,7 @@ const FavoriteChordsTray = ({
             <button
               type="button"
               onClick={onClearAll}
-              className="min-h-[36px] px-3 py-1 rounded-xl border border-rose-300/25 bg-rose-500/10 hover:bg-rose-500/20 text-rose-200 font-mono text-[11px] font-semibold cursor-pointer transition-colors"
+              className="min-h-[36px] px-3 py-1 rounded-[2px] border border-rose-400/35 bg-rose-500/10 hover:bg-rose-500/20 text-rose-200 font-mono text-[11px] font-semibold cursor-pointer transition-colors"
             >
               Clear All
             </button>
@@ -140,7 +140,7 @@ const FavoriteChordsTray = ({
             <button
               type="button"
               onClick={onClose}
-              className="min-h-[36px] px-3 py-1 rounded-xl border border-white/15 bg-white/[0.06] hover:bg-white/[0.14] text-slate-200 font-mono text-[11px] font-semibold cursor-pointer transition-colors"
+              className="min-h-[36px] px-3 py-1 rounded-[2px] border border-white/18 bg-white/[0.06] hover:bg-white/[0.14] text-slate-200 font-mono text-[11px] font-semibold cursor-pointer transition-colors"
             >
               Hide
             </button>
@@ -149,7 +149,7 @@ const FavoriteChordsTray = ({
       </div>
 
       {visibleItems.length === 0 ? (
-        <div className="glass-recessed rounded-xl p-4 sm:p-5 text-center flex flex-col items-center gap-1.5">
+        <div className="glass-recessed rounded-[3px] p-4 sm:p-5 text-center flex flex-col items-center gap-1.5">
           <p className="font-sans text-xs sm:text-sm text-slate-200">
             {favorites.length === 0
               ? 'No favorite chords saved yet.'
@@ -170,7 +170,7 @@ const FavoriteChordsTray = ({
             return (
               <article
                 key={fav.id}
-                className="glass-recessed rounded-xl p-2.5 sm:p-3 border border-white/12 flex flex-col justify-between gap-2"
+                className="glass-recessed rounded-[3px] p-2.5 sm:p-3 border border-white/14 flex flex-col justify-between gap-2"
               >
                 <div className="flex items-start justify-between gap-1.5">
                   <div className="min-w-0">
@@ -191,14 +191,14 @@ const FavoriteChordsTray = ({
                     type="button"
                     onClick={() => onRemoveFavorite(fav.id)}
                     aria-label={`Remove ${chordData.symbol} (${instMeta.label}) from favorites`}
-                    className="min-h-[38px] min-w-[38px] sm:min-h-[34px] sm:min-w-[34px] rounded-lg border border-amber-300/35 bg-amber-400/15 hover:bg-rose-500/20 hover:border-rose-300/40 text-amber-300 hover:text-rose-200 font-mono text-xs flex items-center justify-center shrink-0 cursor-pointer transition-colors"
+                    className="min-h-[38px] min-w-[38px] sm:min-h-[34px] sm:min-w-[34px] rounded-[2px] border border-amber-300/45 bg-amber-400/15 hover:bg-rose-500/20 hover:border-rose-300/50 text-amber-300 hover:text-rose-200 font-mono text-xs flex items-center justify-center shrink-0 cursor-pointer transition-colors"
                     title="Remove from favorites"
                   >
                     ★
                   </button>
                 </div>
 
-                <div className="rounded-lg bg-slate-950/35 py-1.5 px-1">
+                <div className="rounded-[2px] bg-slate-950/45 py-1.5 px-1">
                   <ChordDiagramSVG
                     voicing={voicing}
                     rootPc={chordData.rootPc}
@@ -221,12 +221,12 @@ const FavoriteChordsTray = ({
                         refFrequency
                       )
                     }
-                    className={`min-h-[40px] sm:min-h-[34px] px-2 py-1 rounded-lg border font-mono text-[11px] sm:text-[10px] font-semibold cursor-pointer transition-colors ${
+                    className={`min-h-[40px] sm:min-h-[34px] px-2 py-1 rounded-[2px] border font-mono text-[11px] sm:text-[10px] font-semibold cursor-pointer transition-colors ${
                       isStrumActive
                         ? 'bg-cyan-400 text-slate-950 border-cyan-300'
                         : playMode === 'strum'
-                          ? 'bg-white/[0.1] text-white border-white/20 hover:bg-white/[0.18]'
-                          : 'bg-white/[0.05] text-slate-200 border-white/10 hover:bg-white/[0.14]'
+                          ? 'bg-white/[0.1] text-white border-white/22 hover:bg-white/[0.18]'
+                          : 'bg-white/[0.05] text-slate-200 border-white/12 hover:bg-white/[0.14]'
                     }`}
                   >
                     {isSingleNote ? 'Pluck' : 'Strum'}
@@ -242,12 +242,12 @@ const FavoriteChordsTray = ({
                         refFrequency
                       )
                     }
-                    className={`min-h-[40px] sm:min-h-[34px] px-2 py-1 rounded-lg border font-mono text-[11px] sm:text-[10px] font-semibold cursor-pointer transition-colors ${
+                    className={`min-h-[40px] sm:min-h-[34px] px-2 py-1 rounded-[2px] border font-mono text-[11px] sm:text-[10px] font-semibold cursor-pointer transition-colors ${
                       isArpActive
                         ? 'bg-cyan-400 text-slate-950 border-cyan-300'
                         : playMode === 'arpeggio'
-                          ? 'bg-cyan-400/18 text-cyan-200 border-cyan-300/35 hover:bg-cyan-400/28'
-                          : 'bg-white/[0.05] text-slate-200 border-white/10 hover:bg-white/[0.14]'
+                          ? 'bg-cyan-400/18 text-cyan-200 border-cyan-300/45 hover:bg-cyan-400/28'
+                          : 'bg-white/[0.05] text-slate-200 border-white/12 hover:bg-white/[0.14]'
                     }`}
                   >
                     Arp
@@ -257,7 +257,7 @@ const FavoriteChordsTray = ({
                       type="button"
                       onClick={() => onAddToSequence(fav)}
                       aria-label={`Add ${chordData.symbol} (${instMeta.label}) to rhythm sequence`}
-                      className="min-h-[38px] sm:min-h-[34px] px-2 py-1 rounded-lg border border-cyan-300/30 bg-cyan-400/10 hover:bg-cyan-400/22 text-cyan-200 font-mono text-[11px] sm:text-[10px] font-semibold cursor-pointer transition-colors"
+                      className="min-h-[38px] sm:min-h-[34px] px-2 py-1 rounded-[2px] border border-cyan-300/40 bg-cyan-400/10 hover:bg-cyan-400/22 text-cyan-200 font-mono text-[11px] sm:text-[10px] font-semibold cursor-pointer transition-colors"
                     >
                       + Seq
                     </button>
@@ -268,7 +268,7 @@ const FavoriteChordsTray = ({
                     aria-label={`Open ${chordData.symbol} diagram`}
                     className={`${
                       onAddToSequence ? '' : 'col-span-2'
-                    } min-h-[38px] sm:min-h-[34px] px-2 py-1 rounded-lg border border-white/12 bg-white/[0.04] hover:bg-white/[0.14] text-slate-300 hover:text-white font-mono text-[11px] sm:text-[10px] font-semibold cursor-pointer transition-colors`}
+                    } min-h-[38px] sm:min-h-[34px] px-2 py-1 rounded-[2px] border border-white/14 bg-white/[0.04] hover:bg-white/[0.14] text-slate-300 hover:text-white font-mono text-[11px] sm:text-[10px] font-semibold cursor-pointer transition-colors`}
                   >
                     Open
                   </button>

@@ -197,10 +197,10 @@ const ChordFamilyModal = ({
         }
       }}
     >
-      <div className="glass-panel rounded-t-3xl sm:rounded-2xl border border-cyan-300/35 shadow-[0_24px_64px_rgba(2,6,23,0.75)] w-full max-w-4xl max-h-[88dvh] sm:max-h-[90dvh] overflow-y-auto p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-6 flex flex-col gap-4 sm:gap-5">
+      <div className="glass-panel rounded-t-[4px] sm:rounded-[4px] border border-cyan-300/35 shadow-[0_24px_64px_rgba(2,6,23,0.75)] w-full max-w-4xl max-h-[88dvh] sm:max-h-[90dvh] overflow-y-auto p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-6 flex flex-col gap-4 sm:gap-5">
         <div
           aria-hidden="true"
-          className="w-10 h-1 rounded-full bg-white/25 mx-auto sm:hidden shrink-0"
+          className="w-10 h-1 rounded-[1px] bg-white/25 mx-auto sm:hidden shrink-0"
         />
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
@@ -227,7 +227,7 @@ const ChordFamilyModal = ({
               learnAudio.stopAll();
               onClose();
             }}
-            className="min-h-[40px] px-3.5 py-1.5 rounded-xl border border-white/15 bg-white/[0.08] hover:bg-white/[0.16] font-mono text-xs font-semibold text-white shrink-0 cursor-pointer transition-colors"
+            className="min-h-[40px] px-3.5 py-1.5 rounded-[2px] border border-white/15 bg-white/[0.08] hover:bg-white/[0.16] font-mono text-xs font-semibold text-white shrink-0 cursor-pointer transition-colors"
           >
             Close
           </button>
@@ -249,7 +249,7 @@ const ChordFamilyModal = ({
             {familyCtx.familyChords.map((fc) => (
               <div
                 key={`modal-fam-${fc.roman}-${fc.symbol}`}
-                className={`rounded-xl p-2.5 border flex flex-col justify-between gap-1.5 ${
+                className={`rounded-[3px] p-2.5 border flex flex-col justify-between gap-1.5 ${
                   fc.isSelected
                     ? 'bg-cyan-400/20 border-cyan-300/60 shadow-[0_0_16px_rgba(34,211,238,0.2)]'
                     : ['I', 'IV', 'V'].includes(fc.roman)
@@ -277,7 +277,7 @@ const ChordFamilyModal = ({
                         );
                       }
                     }}
-                    className="flex-1 min-h-[38px] sm:min-h-[34px] px-1.5 py-1 rounded-lg bg-white/[0.08] hover:bg-white/[0.18] font-mono text-[11px] sm:text-[10px] font-semibold text-white cursor-pointer transition-colors"
+                    className="flex-1 min-h-[38px] sm:min-h-[34px] px-1.5 py-1 rounded-[2px] bg-white/[0.08] hover:bg-white/[0.18] font-mono text-[11px] sm:text-[10px] font-semibold text-white cursor-pointer transition-colors"
                   >
                     {fc.voicings[0]?.midiNotes?.length === 1
                       ? 'Pluck'
@@ -291,7 +291,7 @@ const ChordFamilyModal = ({
                       learnAudio.stopAll();
                       onLookupChord(fc.symbol);
                     }}
-                    className="min-h-[38px] sm:min-h-[34px] px-2 sm:px-1.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.14] font-mono text-[11px] sm:text-[10px] text-slate-300 cursor-pointer transition-colors"
+                    className="min-h-[38px] sm:min-h-[34px] px-2 sm:px-1.5 py-1 rounded-[2px] bg-white/[0.04] hover:bg-white/[0.14] font-mono text-[11px] sm:text-[10px] text-slate-300 cursor-pointer transition-colors"
                     aria-label={`Inspect ${fc.symbol} diagram`}
                   >
                     View
@@ -314,7 +314,7 @@ const ChordFamilyModal = ({
               return (
                 <div
                   key={prog.id}
-                  className="glass-recessed rounded-xl p-3.5 border border-white/12 flex flex-col gap-3"
+                  className="glass-recessed rounded-[3px] p-3.5 border border-white/12 flex flex-col gap-3"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
@@ -336,7 +336,7 @@ const ChordFamilyModal = ({
                     <button
                       type="button"
                       onClick={() => handleToggleProgression(prog)}
-                      className={`min-h-[40px] px-3.5 py-1.5 rounded-xl border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+                      className={`min-h-[40px] px-3.5 py-1.5 rounded-[2px] border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
                         isPlaying
                           ? 'bg-rose-500/25 text-rose-100 border-rose-300/40'
                           : 'bg-cyan-400 text-slate-950 border-cyan-300'
@@ -366,7 +366,7 @@ const ChordFamilyModal = ({
                               );
                             }
                           }}
-                          className={`min-h-[54px] px-3 py-2 rounded-xl border text-left flex items-center justify-between gap-2 active:scale-[0.97] transition-all cursor-pointer ${
+                          className={`min-h-[54px] px-3 py-2 rounded-[2px] border text-left flex items-center justify-between gap-2 active:scale-[0.97] transition-all cursor-pointer ${
                             isStepActive
                               ? 'bg-emerald-400/25 border-emerald-300 shadow-[0_0_16px_rgba(52,211,153,0.35)]'
                               : isSearchedChord
@@ -410,7 +410,7 @@ const ChordFamilyModal = ({
               learnAudio.stopAll();
               onOpenProgressionsTab(familyCtx.parentMajorPc);
             }}
-            className="min-h-[42px] px-4 py-2 rounded-xl border border-cyan-300/40 bg-cyan-400/15 hover:bg-cyan-400/25 text-cyan-200 font-mono text-xs font-semibold cursor-pointer transition-colors"
+            className="min-h-[42px] px-4 py-2 rounded-[2px] border border-cyan-300/40 bg-cyan-400/15 hover:bg-cyan-400/25 text-cyan-200 font-mono text-xs font-semibold cursor-pointer transition-colors"
           >
             Open {familyCtx.parentMajorName} in Progressions Tab
           </button>
@@ -458,9 +458,9 @@ const SpotlightChordPanel = ({
   return (
     <article
       aria-label={`Chord Diagram Lookup Result for ${chordData.symbol}`}
-      className="glass-panel rounded-2xl p-4 sm:p-5 border border-cyan-300/35 shadow-[0_8px_32px_rgba(34,211,238,0.12)] flex flex-col md:flex-row items-center md:items-stretch gap-5"
+      className="glass-panel rounded-[4px] p-4 sm:p-5 border border-cyan-300/35 shadow-[0_8px_32px_rgba(34,211,238,0.12)] flex flex-col md:flex-row items-center md:items-stretch gap-5"
     >
-      <div className="glass-recessed rounded-2xl p-4 flex flex-col items-center justify-center w-full md:w-[230px] shrink-0">
+      <div className="glass-recessed rounded-[3px] p-4 flex flex-col items-center justify-center w-full md:w-[230px] shrink-0">
         <ChordDiagramSVG
           voicing={activeVoicing}
           rootPc={chordData.rootPc}
@@ -501,7 +501,7 @@ const SpotlightChordPanel = ({
                   learnAudio.playChordStrum(activeVoicing.midiNotes, refFrequency, instrument);
                 }
               }}
-              className={`min-h-[42px] px-4 py-2 rounded-xl border font-mono text-xs font-semibold active:scale-[0.96] transition-transform cursor-pointer ${
+              className={`min-h-[42px] px-4 py-2 rounded-[2px] border font-mono text-xs font-semibold active:scale-[0.96] transition-transform cursor-pointer ${
                 playMode === 'strum'
                   ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_4px_16px_rgba(34,211,238,0.28)]'
                   : 'bg-white/[0.08] text-slate-100 border-white/15 hover:bg-white/[0.16]'
@@ -523,7 +523,7 @@ const SpotlightChordPanel = ({
                   );
                 }
               }}
-              className={`min-h-[42px] px-3.5 py-2 rounded-xl border font-mono text-xs font-semibold active:scale-[0.96] transition-colors cursor-pointer ${
+              className={`min-h-[42px] px-3.5 py-2 rounded-[2px] border font-mono text-xs font-semibold active:scale-[0.96] transition-colors cursor-pointer ${
                 playMode === 'arpeggio'
                   ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_4px_16px_rgba(34,211,238,0.28)]'
                   : 'bg-white/[0.08] text-slate-100 border-white/15 hover:bg-white/[0.16]'
@@ -536,7 +536,7 @@ const SpotlightChordPanel = ({
                 type="button"
                 onClick={() => onToggleFavorite(chordData, safeIdx)}
                 aria-pressed={isFavorite}
-                className={`min-h-[42px] px-3.5 py-2 rounded-xl border font-mono text-xs font-semibold inline-flex items-center gap-1.5 active:scale-[0.96] transition-colors cursor-pointer ${
+                className={`min-h-[42px] px-3.5 py-2 rounded-[2px] border font-mono text-xs font-semibold inline-flex items-center gap-1.5 active:scale-[0.96] transition-colors cursor-pointer ${
                   isFavorite
                     ? 'border-amber-300/50 bg-amber-400/20 text-amber-200 hover:bg-amber-400/30'
                     : 'border-white/15 bg-white/[0.06] text-slate-200 hover:bg-white/[0.14]'
@@ -551,7 +551,7 @@ const SpotlightChordPanel = ({
             <button
               type="button"
               onClick={() => onShowFamily(chordData)}
-              className="min-h-[42px] px-3.5 py-2 rounded-xl border border-cyan-300/40 bg-cyan-400/15 hover:bg-cyan-400/25 text-cyan-200 font-mono text-xs font-semibold active:scale-[0.96] transition-colors cursor-pointer"
+              className="min-h-[42px] px-3.5 py-2 rounded-[2px] border border-cyan-300/40 bg-cyan-400/15 hover:bg-cyan-400/25 text-cyan-200 font-mono text-xs font-semibold active:scale-[0.96] transition-colors cursor-pointer"
             >
               Family &amp; Progressions
             </button>
@@ -559,7 +559,7 @@ const SpotlightChordPanel = ({
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-          <div className="glass-recessed rounded-xl px-3 py-2.5">
+          <div className="glass-recessed rounded-[3px] px-3 py-2.5">
             <div className="font-mono text-[10px] uppercase tracking-wider text-slate-400">
               Chord Tones
             </div>
@@ -567,7 +567,7 @@ const SpotlightChordPanel = ({
               {chordData.notes.join(' · ')}
             </div>
           </div>
-          <div className="glass-recessed rounded-xl px-3 py-2.5">
+          <div className="glass-recessed rounded-[3px] px-3 py-2.5">
             <div className="font-mono text-[10px] uppercase tracking-wider text-slate-400">
               Formula Degrees
             </div>
@@ -575,7 +575,7 @@ const SpotlightChordPanel = ({
               {chordData.quality.degrees.join(' – ')}
             </div>
           </div>
-          <div className="glass-recessed rounded-xl px-3 py-2.5 col-span-2 sm:col-span-1">
+          <div className="glass-recessed rounded-[3px] px-3 py-2.5 col-span-2 sm:col-span-1">
             <div className="font-mono text-[10px] uppercase tracking-wider text-slate-400">
               Voicings Available
             </div>
@@ -592,7 +592,7 @@ const SpotlightChordPanel = ({
                 type="button"
                 onClick={() => setShowVariations(true)}
                 aria-expanded={false}
-                className="min-h-[38px] px-3.5 py-1.5 rounded-xl border border-cyan-300/35 bg-cyan-400/12 hover:bg-cyan-400/22 text-cyan-200 font-mono text-xs font-semibold transition-colors cursor-pointer"
+                className="min-h-[38px] px-3.5 py-1.5 rounded-[2px] border border-cyan-300/35 bg-cyan-400/12 hover:bg-cyan-400/22 text-cyan-200 font-mono text-xs font-semibold transition-colors cursor-pointer"
               >
                 More Variations (+{chordData.voicings.length - 1})
               </button>
@@ -610,7 +610,7 @@ const SpotlightChordPanel = ({
                       learnAudio.playChord(v.midiNotes, refFrequency, instrument, playMode);
                     }}
                     aria-pressed={idx === safeIdx}
-                    className={`min-h-[42px] sm:min-h-[38px] px-3 py-1.5 rounded-xl border font-mono text-xs font-medium transition-colors cursor-pointer ${
+                    className={`min-h-[42px] sm:min-h-[38px] px-3 py-1.5 rounded-[2px] border font-mono text-xs font-medium transition-colors cursor-pointer ${
                       idx === safeIdx
                         ? 'bg-white/20 text-white border-white/35'
                         : 'bg-white/[0.04] text-slate-300 border-white/10 hover:bg-white/[0.1]'
@@ -624,7 +624,7 @@ const SpotlightChordPanel = ({
                     type="button"
                     onClick={() => setShowVariations(false)}
                     aria-expanded={true}
-                    className="min-h-[38px] px-3 py-1.5 rounded-xl border border-white/15 bg-white/[0.04] hover:bg-white/[0.1] text-slate-300 font-mono text-xs cursor-pointer transition-colors"
+                    className="min-h-[38px] px-3 py-1.5 rounded-[2px] border border-white/15 bg-white/[0.04] hover:bg-white/[0.1] text-slate-300 font-mono text-xs cursor-pointer transition-colors"
                   >
                     Hide Variations
                   </button>
@@ -638,7 +638,7 @@ const SpotlightChordPanel = ({
               <button
                 type="button"
                 onClick={() => onSyncRoot(chordData.rootPc)}
-                className="min-h-[38px] px-3 py-1.5 rounded-xl border border-cyan-300/35 bg-cyan-400/15 text-cyan-200 hover:bg-cyan-400/25 font-mono text-xs font-semibold cursor-pointer transition-colors"
+                className="min-h-[38px] px-3 py-1.5 rounded-[2px] border border-cyan-300/35 bg-cyan-400/15 text-cyan-200 hover:bg-cyan-400/25 font-mono text-xs font-semibold cursor-pointer transition-colors"
               >
                 Set Active Key to {chordData.rootName}
               </button>
@@ -646,7 +646,7 @@ const SpotlightChordPanel = ({
             <button
               type="button"
               onClick={onClearSearch}
-              className="min-h-[38px] px-3 py-1.5 rounded-xl border border-white/12 bg-white/[0.04] text-slate-300 hover:text-white font-mono text-xs cursor-pointer transition-colors"
+              className="min-h-[38px] px-3 py-1.5 rounded-[2px] border border-white/12 bg-white/[0.04] text-slate-300 hover:text-white font-mono text-xs cursor-pointer transition-colors"
             >
               Show All Chords
             </button>
@@ -693,7 +693,7 @@ const ChordCard = ({
   const strumActionLabel = isSingleNote ? 'Pluck' : 'Strum';
 
   return (
-    <article className="glass-panel rounded-2xl p-2.5 sm:p-4 flex flex-col justify-between gap-2 sm:gap-3 transition-[border-color,transform] duration-200 hover:border-white/25">
+    <article className="glass-panel rounded-[4px] p-2.5 sm:p-4 flex flex-col justify-between gap-2 sm:gap-3 transition-[border-color,transform] duration-200 hover:border-white/25">
       <div className="flex flex-col gap-2">
         <div className="flex items-start justify-between gap-1.5">
           <div className="min-w-0">
@@ -731,7 +731,7 @@ const ChordCard = ({
                   : `Save ${chordData.symbol} to favorites`
               }
               title={isFavorite ? 'Remove from Practice Favorites' : 'Save to Practice Favorites'}
-              className={`min-h-[38px] min-w-[38px] sm:min-h-[34px] sm:min-w-[34px] rounded-lg border font-mono text-sm flex items-center justify-center shrink-0 active:scale-[0.93] cursor-pointer transition-colors ${
+              className={`min-h-[38px] min-w-[38px] sm:min-h-[34px] sm:min-w-[34px] rounded-[2px] border font-mono text-sm flex items-center justify-center shrink-0 active:scale-[0.93] cursor-pointer transition-colors ${
                 isFavorite
                   ? 'bg-amber-400/20 text-amber-300 border-amber-300/45'
                   : 'bg-white/[0.04] text-slate-400 border-white/12 hover:text-amber-200 hover:border-amber-300/35'
@@ -746,7 +746,7 @@ const ChordCard = ({
           <button
             type="button"
             onClick={() => onShowFamily(chordData)}
-            className="order-3 col-span-2 sm:order-1 sm:col-span-1 min-h-[38px] sm:min-h-[36px] px-2 sm:px-2.5 py-1 rounded-xl border border-cyan-300/30 bg-cyan-400/10 hover:bg-cyan-400/20 text-cyan-200 font-mono text-[11px] font-semibold active:scale-[0.96] transition-colors whitespace-nowrap cursor-pointer"
+            className="order-3 col-span-2 sm:order-1 sm:col-span-1 min-h-[38px] sm:min-h-[36px] px-2 sm:px-2.5 py-1 rounded-[2px] border border-cyan-300/30 bg-cyan-400/10 hover:bg-cyan-400/20 text-cyan-200 font-mono text-[11px] font-semibold active:scale-[0.96] transition-colors whitespace-nowrap cursor-pointer"
             aria-label={`Show chord family and progressions for ${chordData.symbol}`}
           >
             Family
@@ -758,7 +758,7 @@ const ChordCard = ({
                 onStrum(cardId, activeVoicing.midiNotes, 'strum');
               }
             }}
-            className={`order-1 sm:order-2 min-h-[40px] sm:min-h-[36px] px-2 sm:px-2.5 py-1 rounded-xl border font-mono text-xs font-semibold active:scale-[0.96] transition-[transform,background-color,border-color,color] duration-200 whitespace-nowrap cursor-pointer ${
+            className={`order-1 sm:order-2 min-h-[40px] sm:min-h-[36px] px-2 sm:px-2.5 py-1 rounded-[2px] border font-mono text-xs font-semibold active:scale-[0.96] transition-[transform,background-color,border-color,color] duration-200 whitespace-nowrap cursor-pointer ${
               isStrumActive
                 ? 'bg-cyan-400 text-slate-950 border-cyan-300'
                 : playMode === 'strum' && !isArpActive && activeStrumId === null
@@ -780,7 +780,7 @@ const ChordCard = ({
                 );
               }
             }}
-            className={`order-2 sm:order-3 min-h-[40px] sm:min-h-[36px] px-2 sm:px-2.5 py-1 rounded-xl border font-mono text-xs font-semibold active:scale-[0.96] transition-[transform,background-color,border-color,color] duration-200 whitespace-nowrap cursor-pointer ${
+            className={`order-2 sm:order-3 min-h-[40px] sm:min-h-[36px] px-2 sm:px-2.5 py-1 rounded-[2px] border font-mono text-xs font-semibold active:scale-[0.96] transition-[transform,background-color,border-color,color] duration-200 whitespace-nowrap cursor-pointer ${
               isArpActive
                 ? 'bg-cyan-400 text-slate-950 border-cyan-300'
                 : playMode === 'arpeggio'
@@ -794,7 +794,7 @@ const ChordCard = ({
         </div>
       </div>
 
-      <div className="glass-recessed rounded-xl py-2 px-1 sm:py-3 sm:px-2">
+      <div className="glass-recessed rounded-[3px] py-2 px-1 sm:py-3 sm:px-2">
         <ChordDiagramSVG
           voicing={activeVoicing}
           rootPc={chordData.rootPc}
@@ -830,7 +830,7 @@ const ChordCard = ({
                       learnAudio.playChord(v.midiNotes, refFrequency, instrument, playMode);
                     }}
                     aria-pressed={idx === safeIdx}
-                    className={`min-h-[38px] sm:min-h-[34px] px-2 py-1 rounded-lg border font-mono text-[10px] font-medium transition-colors cursor-pointer ${
+                    className={`min-h-[38px] sm:min-h-[34px] px-2 py-1 rounded-[2px] border font-mono text-[10px] font-medium transition-colors cursor-pointer ${
                       idx === safeIdx
                         ? 'bg-white/20 text-white border-white/35'
                         : 'bg-white/[0.04] text-slate-300 border-white/10 hover:text-white hover:bg-white/[0.1]'
@@ -844,7 +844,7 @@ const ChordCard = ({
                 type="button"
                 onClick={() => setShowVariations(false)}
                 aria-expanded={true}
-                className="min-h-[38px] sm:min-h-[34px] px-2.5 py-1 rounded-lg border border-white/12 bg-white/[0.04] hover:bg-white/[0.1] text-slate-300 font-mono text-[10px] font-semibold cursor-pointer transition-colors"
+                className="min-h-[38px] sm:min-h-[34px] px-2.5 py-1 rounded-[2px] border border-white/12 bg-white/[0.04] hover:bg-white/[0.1] text-slate-300 font-mono text-[10px] font-semibold cursor-pointer transition-colors"
               >
                 Hide Variations
               </button>
@@ -854,7 +854,7 @@ const ChordCard = ({
               type="button"
               onClick={() => setShowVariations(true)}
               aria-expanded={false}
-              className="min-h-[40px] sm:min-h-[36px] px-2.5 py-1 rounded-lg border border-cyan-300/30 bg-cyan-400/10 hover:bg-cyan-400/20 text-cyan-200 font-mono text-[11px] font-semibold cursor-pointer transition-colors"
+              className="min-h-[40px] sm:min-h-[36px] px-2.5 py-1 rounded-[2px] border border-cyan-300/30 bg-cyan-400/10 hover:bg-cyan-400/20 text-cyan-200 font-mono text-[11px] font-semibold cursor-pointer transition-colors"
             >
               More Variations (+{chordData.voicings.length - 1})
             </button>
@@ -874,7 +874,7 @@ const ChordCard = ({
                     learnAudio.playChord(v.midiNotes, refFrequency, instrument, playMode);
                   }}
                   aria-pressed={idx === safeIdx}
-                  className={`min-h-[38px] sm:min-h-[34px] px-2.5 py-1 rounded-lg border font-mono text-[11px] font-medium transition-colors cursor-pointer ${
+                  className={`min-h-[38px] sm:min-h-[34px] px-2.5 py-1 rounded-[2px] border font-mono text-[11px] font-medium transition-colors cursor-pointer ${
                     idx === safeIdx
                       ? 'bg-white/20 text-white border-white/35'
                       : 'bg-white/[0.04] text-slate-400 border-white/10 hover:text-slate-200'
@@ -1295,7 +1295,7 @@ const LearnSection = ({
       {/* Dynamic Root Note & Sub-Module Toolbar */}
       <section
         aria-label="Learn Root Note and Section Selector"
-        className="glass-panel rounded-2xl p-3.5 sm:p-5 flex flex-col gap-3 sm:gap-4"
+        className="glass-panel rounded-[4px] p-3.5 sm:p-5 flex flex-col gap-3 sm:gap-4"
       >
         {canGoBack && prevLabel && (
           <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-white/10">
@@ -1306,7 +1306,7 @@ const LearnSection = ({
                 if (onGoBack) onGoBack();
               }}
               aria-label={`Back to ${prevLabel}`}
-              className="min-h-[40px] px-3.5 py-1.5 rounded-xl border border-white/15 bg-white/[0.08] hover:bg-white/[0.16] text-slate-100 font-mono text-xs font-semibold inline-flex items-center gap-2 active:scale-[0.97] transition-[transform,background-color] duration-150 cursor-pointer max-w-full"
+              className="min-h-[40px] px-3.5 py-1.5 rounded-[2px] border border-white/15 bg-white/[0.08] hover:bg-white/[0.16] text-slate-100 font-mono text-xs font-semibold inline-flex items-center gap-2 active:scale-[0.97] transition-[transform,background-color] duration-150 cursor-pointer max-w-full"
             >
               <span aria-hidden="true">←</span>
               <span className="truncate">Back to {prevLabel}</span>
@@ -1328,7 +1328,7 @@ const LearnSection = ({
             <div
               role="group"
               aria-label="Learn Instrument Selector"
-              className="grid grid-cols-3 sm:flex items-center gap-1 glass-recessed rounded-xl p-1 shrink-0"
+              className="grid grid-cols-3 sm:flex items-center gap-1 glass-recessed rounded-[3px] p-1 shrink-0"
             >
               {INSTRUMENTS.map((inst) => {
                 const active = instrument === inst.id;
@@ -1343,7 +1343,7 @@ const LearnSection = ({
                         if (onSelectInstrument) onSelectInstrument(inst.id);
                       }
                     }}
-                    className={`min-h-[40px] px-3 py-1.5 rounded-lg font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
+                    className={`min-h-[40px] px-3 py-1.5 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
                       active
                         ? 'bg-cyan-400 text-slate-950 shadow-[0_4px_14px_rgba(34,211,238,0.28)]'
                         : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
@@ -1358,7 +1358,7 @@ const LearnSection = ({
             <div
               role="tablist"
               aria-label="Learn Sections"
-              className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1 sm:gap-1.5 glass-recessed rounded-xl p-1 shrink-0"
+              className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1 sm:gap-1.5 glass-recessed rounded-[3px] p-1 shrink-0"
             >
               {LEARN_TABS.map((tab) => {
                 const active = activeTab === tab.id;
@@ -1374,7 +1374,7 @@ const LearnSection = ({
                         onUpdateLearn({ tab: tab.id, familyModalTarget: null });
                       }
                     }}
-                    className={`min-h-[40px] px-2.5 sm:px-3.5 py-2 rounded-lg font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
+                    className={`min-h-[40px] px-2.5 sm:px-3.5 py-2 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
                       active
                         ? 'bg-cyan-400 text-slate-950 shadow-[0_4px_14px_rgba(34,211,238,0.28)]'
                         : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
@@ -1416,7 +1416,7 @@ const LearnSection = ({
                   type="button"
                   onClick={() => handleSelectRoot(note.index)}
                   aria-pressed={active}
-                  className={`min-h-[44px] min-w-[56px] sm:min-w-0 shrink-0 px-2.5 sm:px-2 py-2 rounded-xl border font-mono text-xs font-semibold active:scale-[0.96] transition-transform duration-100 whitespace-nowrap cursor-pointer ${
+                  className={`min-h-[44px] min-w-[56px] sm:min-w-0 shrink-0 px-2.5 sm:px-2 py-2 rounded-[2px] border font-mono text-xs font-semibold active:scale-[0.96] transition-transform duration-100 whitespace-nowrap cursor-pointer ${
                     active
                       ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_4px_16px_rgba(34,211,238,0.3)]'
                       : 'bg-white/[0.06] text-slate-200 border-white/12 hover:bg-white/[0.14]'
@@ -1511,7 +1511,7 @@ const LearnSection = ({
       {activeTab === 'chords' && (
         <section aria-label="Chord Diagrams Library" className="flex flex-col gap-4">
           {/* Chord Diagram Search Bar */}
-          <div className="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col gap-3">
+          <div className="glass-panel rounded-[4px] p-4 sm:p-5 flex flex-col gap-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <label
                 htmlFor="chord-diagram-search"
@@ -1538,7 +1538,7 @@ const LearnSection = ({
                     d="M14.5 14.5L18 18M16.5 9.5a7 7 0 11-14 0 7 7 0 0114 0z"
                     stroke="currentColor"
                     strokeWidth="1.75"
-                    strokeLinecap="round"
+                    strokeLinecap="square"
                   />
                 </svg>
                 <input
@@ -1562,13 +1562,13 @@ const LearnSection = ({
                       : 'Look up chord diagram (e.g. F#dim, Bbsus4, E7#9, Am11, Cdim7)...'
                   }
                   aria-label="Search chord diagram"
-                  className="w-full min-h-[48px] sm:min-h-[46px] pl-10 pr-20 py-2.5 rounded-xl glass-recessed border border-white/15 focus:border-cyan-300/60 focus:outline-none font-mono text-base sm:text-sm text-white placeholder:text-slate-400 transition-colors"
+                  className="w-full min-h-[48px] sm:min-h-[46px] pl-10 pr-20 py-2.5 rounded-[2px] glass-recessed border border-white/15 focus:border-cyan-300/60 focus:outline-none font-mono text-base sm:text-sm text-white placeholder:text-slate-400 transition-colors"
                 />
                 {chordQuery && (
                   <button
                     type="button"
                     onClick={() => onUpdateLearn({ chordQuery: '' })}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[36px] sm:min-h-[32px] px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 font-mono text-xs cursor-pointer transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 min-h-[36px] sm:min-h-[32px] px-2.5 py-1 rounded-[2px] bg-white/10 hover:bg-white/20 text-slate-200 font-mono text-xs cursor-pointer transition-colors"
                   >
                     Clear
                   </button>
@@ -1579,7 +1579,7 @@ const LearnSection = ({
                 <div
                   role="group"
                   aria-label="Chord Playback Style"
-                  className="grid grid-cols-2 sm:flex items-center gap-1 glass-recessed rounded-xl p-1"
+                  className="grid grid-cols-2 sm:flex items-center gap-1 glass-recessed rounded-[3px] p-1"
                 >
                   <button
                     type="button"
@@ -1589,7 +1589,7 @@ const LearnSection = ({
                       }
                     }}
                     aria-pressed={chordPlayMode === 'strum'}
-                    className={`min-h-[40px] sm:min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                    className={`min-h-[40px] sm:min-h-[38px] px-3 py-1 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
                       chordPlayMode === 'strum'
                         ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_10px_rgba(34,211,238,0.28)]'
                         : 'text-slate-400 hover:text-slate-200'
@@ -1605,7 +1605,7 @@ const LearnSection = ({
                       }
                     }}
                     aria-pressed={chordPlayMode === 'arpeggio'}
-                    className={`min-h-[40px] sm:min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                    className={`min-h-[40px] sm:min-h-[38px] px-3 py-1 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
                       chordPlayMode === 'arpeggio'
                         ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_10px_rgba(34,211,238,0.28)]'
                         : 'text-slate-400 hover:text-slate-200'
@@ -1615,7 +1615,7 @@ const LearnSection = ({
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 sm:flex items-center gap-1.5 glass-recessed rounded-xl p-1">
+                <div className="grid grid-cols-2 sm:flex items-center gap-1.5 glass-recessed rounded-[3px] p-1">
                   <button
                     type="button"
                     onClick={() => {
@@ -1624,7 +1624,7 @@ const LearnSection = ({
                       }
                     }}
                     aria-pressed={chordLabelMode === 'fingers'}
-                    className={`min-h-[40px] sm:min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                    className={`min-h-[40px] sm:min-h-[38px] px-3 py-1 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
                       chordLabelMode === 'fingers'
                         ? 'bg-white/20 text-white'
                         : 'text-slate-400 hover:text-slate-200'
@@ -1640,7 +1640,7 @@ const LearnSection = ({
                       }
                     }}
                     aria-pressed={chordLabelMode === 'notes'}
-                    className={`min-h-[40px] sm:min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                    className={`min-h-[40px] sm:min-h-[38px] px-3 py-1 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
                       chordLabelMode === 'notes'
                         ? 'bg-white/20 text-white'
                         : 'text-slate-400 hover:text-slate-200'
@@ -1666,7 +1666,7 @@ const LearnSection = ({
                       onUpdateLearn({ chordQuery: sample });
                     }
                   }}
-                  className={`min-h-[40px] px-3 py-1.5 rounded-lg border font-mono text-xs whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                  className={`min-h-[40px] px-3 py-1.5 rounded-[2px] border font-mono text-xs whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
                     chordQuery.trim().toLowerCase() === sample.toLowerCase()
                       ? 'bg-cyan-400/20 text-cyan-200 border-cyan-300/45'
                       : 'bg-white/[0.04] text-slate-300 border-white/10 hover:bg-white/[0.12] hover:text-white'
@@ -1752,7 +1752,7 @@ const LearnSection = ({
                 )}
               </>
             ) : (
-              <div className="glass-panel rounded-2xl p-6 text-center flex flex-col items-center gap-3">
+              <div className="glass-panel rounded-[4px] p-6 text-center flex flex-col items-center gap-3">
                 <p className="font-display font-semibold text-base text-white">
                   No chord matched &ldquo;{chordQuery.trim()}&rdquo;
                 </p>
@@ -1767,7 +1767,7 @@ const LearnSection = ({
                 <button
                   type="button"
                   onClick={() => onUpdateLearn({ chordQuery: '' })}
-                  className="min-h-[40px] px-4 py-2 rounded-xl border border-white/15 bg-white/[0.08] text-white font-mono text-xs font-semibold cursor-pointer hover:bg-white/[0.15]"
+                  className="min-h-[40px] px-4 py-2 rounded-[2px] border border-white/15 bg-white/[0.08] text-white font-mono text-xs font-semibold cursor-pointer hover:bg-white/[0.15]"
                 >
                   Reset Search
                 </button>
@@ -1775,7 +1775,7 @@ const LearnSection = ({
             )
           ) : (
             <>
-              <div className="glass-panel rounded-2xl p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-2">
+              <div className="glass-panel rounded-[4px] p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar">
                   {CHORD_CATEGORIES.map((cat) => {
                     const active = chordCategory === cat;
@@ -1789,7 +1789,7 @@ const LearnSection = ({
                           }
                         }}
                         aria-pressed={active}
-                        className={`min-h-[40px] px-3 py-1.5 rounded-xl border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+                        className={`min-h-[40px] px-3 py-1.5 rounded-[2px] border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
                           active
                             ? 'bg-white/20 text-white border-white/30'
                             : 'bg-white/[0.04] text-slate-300 border-white/10 hover:bg-white/[0.1]'
@@ -1803,7 +1803,7 @@ const LearnSection = ({
                     type="button"
                     onClick={() => setShowFavoritesTray((prev) => !prev)}
                     aria-pressed={showFavoritesTray}
-                    className={`min-h-[40px] px-3 py-1.5 rounded-xl border font-mono text-xs font-semibold whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 cursor-pointer transition-colors ${
+                    className={`min-h-[40px] px-3 py-1.5 rounded-[2px] border font-mono text-xs font-semibold whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 cursor-pointer transition-colors ${
                       showFavoritesTray
                         ? 'bg-amber-400/20 text-amber-200 border-amber-300/45'
                         : 'bg-white/[0.04] text-amber-200/90 border-amber-300/20 hover:bg-amber-400/12'
@@ -1952,7 +1952,7 @@ const LearnSection = ({
       {activeTab === 'scales' && (
         <section aria-label="Scale Explorer" className="flex flex-col gap-4">
           {/* Scale Selector & Playback Controls */}
-          <div className="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col gap-4">
+          <div className="glass-panel rounded-[4px] p-4 sm:p-5 flex flex-col gap-4">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div>
                 <h2 className="font-display font-bold text-xl text-white">
@@ -1967,7 +1967,7 @@ const LearnSection = ({
                 <button
                   type="button"
                   onClick={handlePlayScale}
-                  className={`min-h-[44px] px-4 py-2 rounded-xl border font-mono text-xs font-semibold active:scale-[0.97] whitespace-nowrap cursor-pointer transition-[transform,background-color,border-color,color] duration-200 ${
+                  className={`min-h-[44px] px-4 py-2 rounded-[2px] border font-mono text-xs font-semibold active:scale-[0.97] whitespace-nowrap cursor-pointer transition-[transform,background-color,border-color,color] duration-200 ${
                     isPlayingScale
                       ? 'bg-rose-500/25 text-rose-100 border-rose-300/40'
                       : 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_4px_16px_rgba(34,211,238,0.28)]'
@@ -1976,7 +1976,7 @@ const LearnSection = ({
                   {isPlayingScale ? 'Stop Scale' : 'Play Ascending Scale'}
                 </button>
 
-                <div className="flex items-center gap-1 glass-recessed rounded-xl p-1">
+                <div className="flex items-center gap-1 glass-recessed rounded-[3px] p-1">
                   <button
                     type="button"
                     onClick={() => {
@@ -1985,7 +1985,7 @@ const LearnSection = ({
                       }
                     }}
                     aria-pressed={scaleLabelMode === 'notes'}
-                    className={`min-h-[36px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                    className={`min-h-[36px] px-3 py-1 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
                       scaleLabelMode === 'notes'
                         ? 'bg-white/20 text-white'
                         : 'text-slate-400 hover:text-slate-200'
@@ -2001,7 +2001,7 @@ const LearnSection = ({
                       }
                     }}
                     aria-pressed={scaleLabelMode === 'degrees'}
-                    className={`min-h-[36px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                    className={`min-h-[36px] px-3 py-1 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
                       scaleLabelMode === 'degrees'
                         ? 'bg-white/20 text-white'
                         : 'text-slate-400 hover:text-slate-200'
@@ -2027,7 +2027,7 @@ const LearnSection = ({
                       onUpdateLearn({ scaleId: sc.id });
                     }}
                     aria-pressed={active}
-                    className={`min-h-[42px] px-3.5 py-2 rounded-xl border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+                    className={`min-h-[42px] px-3.5 py-2 rounded-[2px] border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
                       active
                         ? 'bg-white/20 text-white border-white/35'
                         : 'bg-white/[0.04] text-slate-300 border-white/10 hover:bg-white/[0.1]'
@@ -2058,7 +2058,7 @@ const LearnSection = ({
                         instrument
                       )
                     }
-                    className={`min-h-[54px] p-2 rounded-xl border flex flex-col items-center justify-center gap-0.5 active:scale-[0.96] transition-[transform,background-color,border-color,box-shadow] duration-150 cursor-pointer ${
+                    className={`min-h-[54px] p-2 rounded-[3px] border flex flex-col items-center justify-center gap-0.5 active:scale-[0.96] transition-[transform,background-color,border-color,box-shadow] duration-150 cursor-pointer ${
                       isSounding
                         ? 'bg-emerald-400 text-slate-950 border-emerald-300 shadow-[0_0_20px_rgba(52,211,153,0.45)]'
                         : isRoot
@@ -2079,7 +2079,7 @@ const LearnSection = ({
           </div>
 
           {/* Interactive 15-Fret Fretboard */}
-          <div className="glass-panel rounded-2xl p-3.5 sm:p-5 flex flex-col gap-3 sm:gap-4">
+          <div className="glass-panel rounded-[4px] p-3.5 sm:p-5 flex flex-col gap-3 sm:gap-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
               <div className="flex items-center justify-between gap-2">
                 <span className="font-mono text-xs font-semibold text-slate-300">
@@ -2103,7 +2103,7 @@ const LearnSection = ({
                         }
                       }}
                       aria-pressed={active}
-                      className={`min-h-[36px] px-2.5 py-1 rounded-lg border font-mono text-[11px] font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+                      className={`min-h-[36px] px-2.5 py-1 rounded-[2px] border font-mono text-[11px] font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
                         active
                           ? 'bg-white/20 text-white border-white/30'
                           : 'bg-white/[0.04] text-slate-300 border-white/10 hover:bg-white/[0.1]'
@@ -2117,10 +2117,10 @@ const LearnSection = ({
             </div>
 
             <div ref={fretboardScrollRef} className="overflow-x-auto pb-2">
-              <div className="min-w-[780px] glass-recessed rounded-xl p-3 sm:p-4">
+              <div className="min-w-[780px] glass-recessed rounded-[3px] p-3 sm:p-4">
                 {/* Fret Numbers Header */}
                 <div className="grid grid-cols-[44px_repeat(16,minmax(0,1fr))] items-center gap-1 mb-2">
-                  <div className="sticky left-0 z-20 bg-[#0c1426]/95 backdrop-blur-sm py-1 rounded font-mono text-[10px] text-slate-400 text-center">
+                  <div className="sticky left-0 z-20 bg-[#0c1426]/95 backdrop-blur-sm py-1 rounded-[2px] font-mono text-[10px] text-slate-400 text-center">
                     STR
                   </div>
                   {Array.from({ length: 16 }).map((_, fret) => (
@@ -2144,7 +2144,7 @@ const LearnSection = ({
                       key={row.label}
                       className="grid grid-cols-[44px_repeat(16,minmax(0,1fr))] items-center gap-1"
                     >
-                      <div className="sticky left-0 z-20 bg-[#0c1426]/95 backdrop-blur-sm py-1.5 rounded font-mono text-xs font-semibold text-slate-300 text-center">
+                      <div className="sticky left-0 z-20 bg-[#0c1426]/95 backdrop-blur-sm py-1.5 rounded-[2px] font-mono text-xs font-semibold text-slate-300 text-center">
                         {row.label}
                       </div>
 
@@ -2157,7 +2157,7 @@ const LearnSection = ({
                         return (
                           <div
                             key={`${row.label}-${cell.fret}`}
-                            className={`relative h-11 sm:h-10 flex items-center justify-center rounded-md ${
+                            className={`relative h-11 sm:h-10 flex items-center justify-center rounded-[2px] ${
                               cell.fret === 0
                                 ? 'border-r-2 border-white/50 bg-white/[0.04]'
                                 : 'border-r border-white/12'
@@ -2183,7 +2183,7 @@ const LearnSection = ({
                                   )
                                 }
                                 aria-label={`${row.label} fret ${cell.fret} ${cell.noteName}`}
-                                className={`relative z-10 w-9 h-9 sm:w-8 sm:h-8 rounded-full font-mono text-[11px] font-bold flex items-center justify-center active:scale-90 transition-[transform,opacity,background-color,box-shadow] duration-150 cursor-pointer ${
+                                className={`relative z-10 w-9 h-9 sm:w-8 sm:h-8 rounded-[2px] font-mono text-[11px] font-bold flex items-center justify-center active:scale-90 transition-[transform,opacity,background-color,box-shadow] duration-150 cursor-pointer ${
                                   !inBox
                                     ? 'opacity-20 bg-white/15 text-slate-300'
                                     : isSounding
@@ -2202,7 +2202,7 @@ const LearnSection = ({
                               row.stringNum === (instrument === 'guitar' ? 3 : 2) && (
                                 <span
                                   aria-hidden="true"
-                                  className="w-2 h-2 rounded-full bg-white/15 pointer-events-none"
+                                  className="w-2 h-2 rotate-45 rounded-[1px] bg-white/15 pointer-events-none"
                                 />
                               )
                             )}
@@ -2218,7 +2218,7 @@ const LearnSection = ({
 
           {/* Diatonic Chords in Selected Key & Scale */}
           {fretboardData.details.diatonicChords.length > 0 && (
-            <div className="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col gap-3">
+            <div className="glass-panel rounded-[4px] p-4 sm:p-5 flex flex-col gap-3">
               <h3 className="font-display font-bold text-base text-white">
                 Diatonic Chords in {selectedRootName} {fretboardData.details.scale.name}
               </h3>
@@ -2240,7 +2240,7 @@ const LearnSection = ({
                           );
                         }
                       }}
-                      className="min-h-[68px] p-3 rounded-xl glass-recessed hover:bg-white/[0.1] border border-white/12 flex flex-col items-center justify-center gap-1 active:scale-[0.97] transition-[transform,background-color] duration-150 cursor-pointer"
+                      className="min-h-[68px] p-3 rounded-[3px] glass-recessed hover:bg-white/[0.1] border border-white/12 flex flex-col items-center justify-center gap-1 active:scale-[0.97] transition-[transform,background-color] duration-150 cursor-pointer"
                     >
                       <span className="font-mono text-[11px] text-cyan-300">
                         {dc.roman}
@@ -2271,7 +2271,7 @@ const LearnSection = ({
           className="flex flex-col gap-5"
         >
           {/* Dynamic Chord Progressions */}
-          <div className="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col gap-4">
+          <div className="glass-panel rounded-[4px] p-4 sm:p-5 flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h2 className="font-display font-bold text-xl text-white">
@@ -2291,7 +2291,7 @@ const LearnSection = ({
                 <div
                   role="group"
                   aria-label="Progression Playback Style"
-                  className="flex items-center gap-1 glass-recessed rounded-xl p-1"
+                  className="flex items-center gap-1 glass-recessed rounded-[3px] p-1"
                 >
                   <button
                     type="button"
@@ -2301,7 +2301,7 @@ const LearnSection = ({
                       }
                     }}
                     aria-pressed={chordPlayMode === 'strum'}
-                    className={`min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                    className={`min-h-[38px] px-3 py-1 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
                       chordPlayMode === 'strum'
                         ? 'bg-white/20 text-white'
                         : 'text-slate-400 hover:text-slate-200'
@@ -2317,7 +2317,7 @@ const LearnSection = ({
                       }
                     }}
                     aria-pressed={chordPlayMode === 'arpeggio'}
-                    className={`min-h-[38px] px-3 py-1 rounded-lg font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                    className={`min-h-[38px] px-3 py-1 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
                       chordPlayMode === 'arpeggio'
                         ? 'bg-white/20 text-white'
                         : 'text-slate-400 hover:text-slate-200'
@@ -2330,7 +2330,7 @@ const LearnSection = ({
                 <button
                   type="button"
                   onClick={handlePlayProgression}
-                  className={`min-h-[44px] px-4 py-2 rounded-xl border font-mono text-xs font-semibold active:scale-[0.97] whitespace-nowrap shrink-0 cursor-pointer transition-[transform,background-color,border-color,color] duration-200 ${
+                  className={`min-h-[44px] px-4 py-2 rounded-[2px] border font-mono text-xs font-semibold active:scale-[0.97] whitespace-nowrap shrink-0 cursor-pointer transition-[transform,background-color,border-color,color] duration-200 ${
                     activeProgStep !== null
                       ? 'bg-rose-500/25 text-rose-100 border-rose-300/40'
                       : 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_4px_16px_rgba(34,211,238,0.28)]'
@@ -2354,7 +2354,7 @@ const LearnSection = ({
                     type="button"
                     onClick={() => handleSelectRoot(fam.pc)}
                     aria-pressed={active}
-                    className={`min-h-[40px] px-3 py-1.5 rounded-xl border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+                    className={`min-h-[40px] px-3 py-1.5 rounded-[2px] border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
                       active
                         ? 'bg-cyan-400/20 text-cyan-200 border-cyan-300/45'
                         : 'bg-white/[0.04] text-slate-300 border-white/10 hover:bg-white/[0.1]'
@@ -2379,7 +2379,7 @@ const LearnSection = ({
                       onUpdateLearn({ progressionId: tpl.id });
                     }}
                     aria-pressed={active}
-                    className={`min-h-[40px] px-3 py-1.5 rounded-xl border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+                    className={`min-h-[40px] px-3 py-1.5 rounded-[2px] border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
                       active
                         ? 'bg-white/20 text-white border-white/30'
                         : 'bg-white/[0.04] text-slate-300 border-white/10 hover:bg-white/[0.1]'
@@ -2415,7 +2415,7 @@ const LearnSection = ({
                         );
                       }
                     }}
-                    className={`p-2.5 sm:p-4 rounded-2xl border text-left flex flex-col gap-2 sm:gap-3 active:scale-[0.98] transition-[transform,background-color,border-color,box-shadow] duration-200 cursor-pointer ${
+                    className={`p-2.5 sm:p-4 rounded-[3px] border text-left flex flex-col gap-2 sm:gap-3 active:scale-[0.98] transition-[transform,background-color,border-color,box-shadow] duration-200 cursor-pointer ${
                       isActiveStep
                         ? 'bg-cyan-400/15 border-cyan-300/60 shadow-[0_0_24px_rgba(34,211,238,0.25)]'
                         : 'glass-recessed border-white/12 hover:bg-white/[0.08]'
@@ -2446,7 +2446,7 @@ const LearnSection = ({
           </div>
 
           {/* Complete Key Chord Family (I - ii - iii - IV - V - vi) */}
-          <div className="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col gap-3">
+          <div className="glass-panel rounded-[4px] p-4 sm:p-5 flex flex-col gap-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h2 className="font-display font-bold text-lg text-white">
@@ -2467,7 +2467,7 @@ const LearnSection = ({
                 return (
                   <div
                     key={`${fc.roman}-${fc.symbol}`}
-                    className={`rounded-xl p-3 border flex flex-col justify-between gap-2 ${
+                    className={`rounded-[3px] p-3 border flex flex-col justify-between gap-2 ${
                       isPrimaryTriad
                         ? 'bg-cyan-400/10 border-cyan-300/35'
                         : 'glass-recessed border-white/12'
@@ -2497,7 +2497,7 @@ const LearnSection = ({
                             );
                           }
                         }}
-                        className="flex-1 min-h-[40px] px-2 py-1.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.16] border border-white/12 font-mono text-[11px] font-semibold text-white cursor-pointer transition-colors"
+                        className="flex-1 min-h-[40px] px-2 py-1.5 rounded-[2px] bg-white/[0.08] hover:bg-white/[0.16] border border-white/12 font-mono text-[11px] font-semibold text-white cursor-pointer transition-colors"
                       >
                         {fc.voicings[0]?.midiNotes?.length === 1
                           ? 'Pluck'
@@ -2518,7 +2518,7 @@ const LearnSection = ({
                             window.scrollTo({ top: 0, behavior: 'auto' });
                           }
                         }}
-                        className="min-h-[40px] px-2.5 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.12] border border-white/10 font-mono text-[11px] text-slate-300 cursor-pointer transition-colors"
+                        className="min-h-[40px] px-2.5 py-1.5 rounded-[2px] bg-white/[0.04] hover:bg-white/[0.12] border border-white/10 font-mono text-[11px] text-slate-300 cursor-pointer transition-colors"
                         aria-label={`View ${fc.symbol} chord diagram`}
                       >
                         Diagram
@@ -2531,7 +2531,7 @@ const LearnSection = ({
           </div>
 
           {/* 12-Semitone Interval Matrix from Selected Root */}
-          <div className="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col gap-3">
+          <div className="glass-panel rounded-[4px] p-4 sm:p-5 flex flex-col gap-3">
             <h2 className="font-display font-bold text-lg text-white">
               Intervals from {selectedRootName}
             </h2>
@@ -2554,7 +2554,7 @@ const LearnSection = ({
                         instrument
                       )
                     }
-                    className="min-h-[68px] p-3 rounded-xl glass-recessed hover:bg-white/[0.1] border border-white/12 flex flex-col items-start justify-between gap-1 text-left active:scale-[0.97] transition-[transform,background-color] duration-150 cursor-pointer"
+                    className="min-h-[68px] p-3 rounded-[3px] glass-recessed hover:bg-white/[0.1] border border-white/12 flex flex-col items-start justify-between gap-1 text-left active:scale-[0.97] transition-[transform,background-color] duration-150 cursor-pointer"
                   >
                     <div className="w-full flex items-center justify-between font-mono text-xs">
                       <span className="text-cyan-300 font-semibold">

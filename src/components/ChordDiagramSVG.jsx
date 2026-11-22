@@ -63,7 +63,7 @@ const ChordDiagramSVG = ({
             y2={y}
             stroke={isNut ? '#f8fafc' : 'rgba(255,255,255,0.24)'}
             strokeWidth={isNut ? 4.5 : 1.25}
-            strokeLinecap="round"
+            strokeLinecap="square"
           />
         );
       })}
@@ -94,9 +94,9 @@ const ChordDiagramSVG = ({
           y={FRET_START_Y + (barre.fret - startFret + 0.5) * FRET_GAP - 7}
           width={stringX[barre.toString] - stringX[barre.fromString] + 16}
           height={14}
-          rx={7}
+          rx={2}
           fill="rgba(248, 250, 252, 0.22)"
-          stroke="rgba(255, 255, 255, 0.45)"
+          stroke="rgba(255, 255, 255, 0.5)"
           strokeWidth={1}
         />
       )}

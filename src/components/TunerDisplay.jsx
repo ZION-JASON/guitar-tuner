@@ -37,19 +37,19 @@ const TunerDisplay = ({
   if (isListening && !hasSignal) {
     directionLabel = 'Listening · Pluck string';
     directionClasses =
-      'bg-cyan-400/15 text-cyan-200 border-cyan-300/35';
+      'bg-cyan-400/15 text-cyan-200 border-cyan-300/45';
   } else if (inTune) {
-    directionLabel = 'In tune · Locked';
+    directionLabel = '◆ In tune · Locked';
     directionClasses =
-      'bg-emerald-400 text-emerald-950 border-emerald-300 shadow-[0_0_24px_rgba(52,211,153,0.4)]';
+      'bg-emerald-400 text-emerald-950 border-emerald-300 shadow-[0_0_20px_rgba(52,211,153,0.4)]';
   } else if (isFlat) {
-    directionLabel = 'Flat · Tune up';
+    directionLabel = '▲ Flat · Tune up';
     directionClasses =
-      'bg-rose-400/20 text-rose-200 border-rose-400/40';
+      'bg-rose-400/20 text-rose-200 border-rose-400/50';
   } else if (isSharp) {
-    directionLabel = 'Sharp · Tune down';
+    directionLabel = '▼ Sharp · Tune down';
     directionClasses =
-      'bg-amber-400/20 text-amber-200 border-amber-400/40';
+      'bg-amber-400/20 text-amber-200 border-amber-400/50';
   }
 
   const inputPercent = Math.min(100, Math.round((rms / 0.12) * 100));
@@ -58,10 +58,10 @@ const TunerDisplay = ({
   return (
     <section
       aria-label="Primary Pitch Meter"
-      className="glass-panel rounded-2xl overflow-hidden flex flex-col justify-between transition-colors duration-300"
+      className="glass-panel rounded-[4px] overflow-hidden flex flex-col justify-between transition-colors duration-200"
     >
       {/* Top Status Strip */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 sm:px-6 sm:py-4 border-b border-white/12 bg-white/[0.03]">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 sm:px-5 sm:py-3.5 border-b border-white/14 bg-white/[0.03]">
         <div className="flex flex-wrap items-center gap-2.5 min-w-0">
           <span className="font-mono text-xs font-medium tracking-wider text-slate-300 truncate">
             {presetLabel}
@@ -79,7 +79,7 @@ const TunerDisplay = ({
             <button
               type="button"
               onClick={onClearLock}
-              className="min-h-[38px] sm:min-h-[32px] px-3 py-1 rounded-lg border border-amber-300/40 bg-amber-400/15 text-amber-200 font-mono text-xs font-semibold hover:bg-amber-400/25 active:scale-[0.98] transition-[transform,background-color] duration-200 whitespace-nowrap shrink-0 cursor-pointer"
+              className="min-h-[38px] sm:min-h-[32px] px-3 py-1 rounded-[2px] border border-amber-300/50 bg-amber-400/15 text-amber-200 font-mono text-xs font-semibold hover:bg-amber-400/25 active:scale-[0.98] transition-[transform,background-color] duration-150 whitespace-nowrap shrink-0 cursor-pointer"
             >
               String {lockedStringNum} Locked · Unlock
             </button>
@@ -87,7 +87,7 @@ const TunerDisplay = ({
         </div>
 
         <div
-          className={`px-3 py-1 rounded-lg border font-mono text-xs font-semibold tracking-wide whitespace-nowrap shrink-0 transition-[background-color,border-color,color,box-shadow] duration-200 ${directionClasses}`}
+          className={`px-3 py-1 rounded-[2px] border font-mono text-xs font-semibold tracking-wide whitespace-nowrap shrink-0 transition-[background-color,border-color,color,box-shadow] duration-150 ${directionClasses}`}
           data-testid="tuning-status"
         >
           {directionLabel}
@@ -95,21 +95,27 @@ const TunerDisplay = ({
       </div>
 
       {/* Central Note & Meter Stage */}
-      <div className="px-3.5 py-4 sm:px-8 sm:py-9 flex flex-col items-center gap-4 sm:gap-7">
-        {/* Frosted Note + Cents Stage */}
+      <div className="px-3.5 py-4 sm:px-7 sm:py-7 flex flex-col items-center gap-4 sm:gap-6">
+        {/* Sharp Note + Cents Readout Bay */}
         <div
-          className={`relative w-full flex flex-row items-center justify-between gap-4 glass-recessed rounded-2xl px-4 py-3.5 sm:p-8 overflow-hidden transition-[border-color,box-shadow] duration-300 ${
+          className={`relative w-full flex flex-row items-center justify-between gap-4 glass-recessed rounded-[3px] px-4 py-3.5 sm:p-7 overflow-hidden transition-[border-color,box-shadow] duration-200 ${
             inTune
-              ? 'border-emerald-400/50 shadow-[0_0_40px_rgba(52,211,153,0.16)]'
+              ? 'border-emerald-400/60 shadow-[0_0_32px_rgba(52,211,153,0.16)]'
               : ''
           }`}
         >
-          {/* Subtle animated acoustic halo only while listening or locked */}
+          {/* Crisp horizontal bottom signal rail when listening or locked */}
           {isListening && (
             <div
               aria-hidden="true"
-              className={`pointer-events-none absolute -left-8 top-1/2 -translate-y-1/2 w-40 h-40 rounded-full border transition-colors duration-300 animate-acoustic-wave ${
-                inTune ? 'border-emerald-400/35' : 'border-cyan-400/25'
+              className={`pointer-events-none absolute inset-x-0 bottom-0 h-[2px] transition-colors duration-200 ${
+                inTune
+                  ? 'bg-emerald-400'
+                  : isFlat
+                    ? 'bg-rose-400'
+                    : isSharp
+                      ? 'bg-amber-300'
+                      : 'bg-cyan-400/70'
               }`}
             />
           )}
@@ -117,9 +123,9 @@ const TunerDisplay = ({
           <div className="relative flex items-baseline gap-1.5 sm:gap-2">
             <span
               data-testid="detected-note"
-              className={`font-display font-extrabold leading-none tracking-tight text-5xl sm:text-8xl select-none tabular-nums transition-colors duration-200 ${
+              className={`font-display font-extrabold leading-none tracking-tight text-5xl sm:text-8xl select-none tabular-nums transition-colors duration-150 ${
                 inTune
-                  ? 'text-emerald-300 drop-shadow-[0_0_24px_rgba(52,211,153,0.45)]'
+                  ? 'text-emerald-300 drop-shadow-[0_0_20px_rgba(52,211,153,0.45)]'
                   : hasSignal
                     ? 'text-white'
                     : 'text-slate-300'
@@ -137,7 +143,7 @@ const TunerDisplay = ({
           <div className="relative flex flex-col items-end gap-1 sm:gap-2">
             <div className="flex items-center gap-2">
               {matchedStringNum !== null && (
-                <span className="px-2 py-0.5 rounded-md border border-white/15 bg-white/10 font-mono text-[11px] sm:text-xs font-semibold text-slate-200 whitespace-nowrap">
+                <span className="px-2 py-0.5 rounded-[2px] border border-white/18 bg-white/10 font-mono text-[11px] sm:text-xs font-semibold text-slate-200 whitespace-nowrap">
                   String {matchedStringNum}
                 </span>
               )}
@@ -147,7 +153,7 @@ const TunerDisplay = ({
             </div>
             <div
               data-testid="cents-readout"
-              className={`font-mono font-bold text-2xl sm:text-5xl tabular-nums whitespace-nowrap transition-colors duration-200 ${
+              className={`font-mono font-bold text-2xl sm:text-5xl tabular-nums whitespace-nowrap transition-colors duration-150 ${
                 inTune
                   ? 'text-emerald-300'
                   : isFlat
@@ -169,7 +175,7 @@ const TunerDisplay = ({
           <div className="flex items-center justify-between gap-2 mb-1.5 sm:mb-2 font-mono text-[11px] sm:text-xs font-medium text-slate-300">
             <span className="whitespace-nowrap">-50¢ Flat</span>
             <span
-              className={`whitespace-nowrap transition-colors duration-200 ${
+              className={`whitespace-nowrap transition-colors duration-150 ${
                 inTune ? 'text-emerald-300 font-semibold' : 'text-slate-300'
               }`}
             >
@@ -178,14 +184,24 @@ const TunerDisplay = ({
             <span className="whitespace-nowrap">+50¢ Sharp</span>
           </div>
 
-          <div className="relative h-14 sm:h-20 glass-recessed rounded-xl overflow-hidden select-none">
+          <div className="relative h-14 sm:h-20 glass-recessed rounded-[2px] overflow-hidden select-none">
             {/* In-tune center zone (±3 cents = 6% total width) */}
             <div
-              className={`absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-[6%] border-x transition-[background-color,border-color,box-shadow] duration-200 ${
+              className={`absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-[6%] border-x transition-[background-color,border-color,box-shadow] duration-150 ${
                 inTune
-                  ? 'bg-emerald-400/35 border-emerald-300/80 shadow-[0_0_24px_rgba(52,211,153,0.45)]'
-                  : 'bg-white/[0.06] border-white/20'
+                  ? 'bg-emerald-400/35 border-emerald-300/85 shadow-[0_0_20px_rgba(52,211,153,0.4)]'
+                  : 'bg-white/[0.06] border-white/25'
               }`}
+            />
+
+            {/* Crisp Top & Bottom 0-Cent Alignment Markers */}
+            <div
+              aria-hidden="true"
+              className="absolute top-0 left-1/2 -translate-x-1/2 w-0 h-0 border-x-[5px] border-x-transparent border-t-[6px] border-t-cyan-300/80 pointer-events-none"
+            />
+            <div
+              aria-hidden="true"
+              className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0 border-x-[5px] border-x-transparent border-b-[6px] border-b-cyan-300/80 pointer-events-none"
             />
 
             {/* Ruler tick marks */}
@@ -208,7 +224,7 @@ const TunerDisplay = ({
                   className={`absolute top-0 bottom-0 flex flex-col justify-between py-1.5 pointer-events-none ${posClass}`}
                 >
                   <div
-                    className={`w-[1.5px] rounded-full ${
+                    className={`w-[1.5px] rounded-none ${
                       isLeftEdge || isRightEdge
                         ? 'h-0'
                         : isCenter
@@ -227,7 +243,7 @@ const TunerDisplay = ({
               );
             })}
 
-            {/* Moving Glass Needle Track (GPU-composited transform) */}
+            {/* Moving Sharp Needle Track (GPU-composited transform) */}
             <div
               className="absolute inset-0 pointer-events-none transition-transform duration-100 ease-out"
               style={{
@@ -235,14 +251,14 @@ const TunerDisplay = ({
               }}
             >
               <div
-                className={`absolute top-1.5 bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 rounded-full transition-[background-color,box-shadow,opacity] duration-200 ${
+                className={`absolute top-1 bottom-1 left-1/2 -translate-x-1/2 w-1 rounded-none transition-[background-color,box-shadow,opacity] duration-150 ${
                   !hasSignal
-                    ? 'bg-slate-400/40'
+                    ? 'bg-slate-400/45'
                     : inTune
-                      ? 'bg-emerald-300 shadow-[0_0_16px_rgba(52,211,153,0.9)]'
+                      ? 'bg-emerald-300 shadow-[0_0_14px_rgba(52,211,153,0.95)]'
                       : isFlat
-                        ? 'bg-rose-400 shadow-[0_0_14px_rgba(251,113,133,0.8)]'
-                        : 'bg-amber-300 shadow-[0_0_14px_rgba(252,211,77,0.8)]'
+                        ? 'bg-rose-400 shadow-[0_0_12px_rgba(251,113,133,0.85)]'
+                        : 'bg-amber-300 shadow-[0_0_12px_rgba(252,211,77,0.85)]'
                 }`}
               />
             </div>
@@ -255,7 +271,7 @@ const TunerDisplay = ({
             <button
               type="button"
               onClick={onStartTuner}
-              className="hidden lg:inline-flex items-center justify-center min-h-[48px] px-6 py-3 rounded-xl border border-cyan-300/60 bg-cyan-400 text-slate-950 font-display font-bold text-sm tracking-wide shadow-[0_8px_24px_rgba(34,211,238,0.28)] hover:bg-cyan-300 active:scale-[0.98] transition-[transform,background-color,box-shadow] duration-200 whitespace-nowrap shrink-0 cursor-pointer"
+              className="hidden lg:inline-flex items-center justify-center min-h-[46px] px-6 py-2.5 rounded-[2px] border border-cyan-300/70 bg-cyan-400 text-slate-950 font-display font-bold text-sm tracking-wide shadow-[0_6px_18px_rgba(34,211,238,0.28)] hover:bg-cyan-300 active:scale-[0.98] transition-[transform,background-color,box-shadow] duration-150 whitespace-nowrap shrink-0 cursor-pointer"
             >
               Activate Microphone Tuner
             </button>
@@ -263,22 +279,22 @@ const TunerDisplay = ({
             <button
               type="button"
               onClick={onStopTuner}
-              className="hidden lg:inline-flex items-center justify-center min-h-[48px] px-6 py-3 rounded-xl border border-rose-300/40 bg-rose-500/20 text-rose-100 font-display font-bold text-sm tracking-wide hover:bg-rose-500/30 active:scale-[0.98] transition-[transform,background-color] duration-200 whitespace-nowrap shrink-0 cursor-pointer"
+              className="hidden lg:inline-flex items-center justify-center min-h-[46px] px-6 py-2.5 rounded-[2px] border border-rose-400/50 bg-rose-500/20 text-rose-100 font-display font-bold text-sm tracking-wide hover:bg-rose-500/30 active:scale-[0.98] transition-[transform,background-color] duration-150 whitespace-nowrap shrink-0 cursor-pointer"
             >
               Stop Microphone
             </button>
           )}
 
-          <div className="flex-1 flex flex-col gap-2 glass-recessed rounded-xl px-4 py-3">
+          <div className="flex-1 flex flex-col gap-2 glass-recessed rounded-[3px] px-4 py-2.5">
             <div className="flex items-center justify-between font-mono text-xs font-medium text-slate-300">
               <span>Input Signal (RMS)</span>
               <span className="tabular-nums text-slate-200">
                 {isListening ? `${inputPercent}%` : 'OFF'}
               </span>
             </div>
-            <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
+            <div className="h-2 w-full rounded-[1px] bg-white/10 overflow-hidden">
               <div
-                className={`h-full rounded-full transition-transform duration-100 origin-left ${
+                className={`h-full rounded-none transition-transform duration-100 origin-left ${
                   inTune ? 'bg-emerald-400' : 'bg-cyan-400'
                 }`}
                 style={{ transform: `scaleX(${isListening ? inputPercent / 100 : 0})` }}
@@ -289,7 +305,7 @@ const TunerDisplay = ({
       </div>
 
       {/* 4-Cell Tabular Metric Strip (2x2 on mobile, 4-col on sm+/PC) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 border-t border-white/12 bg-white/[0.03]">
+      <div className="grid grid-cols-2 sm:grid-cols-4 border-t border-white/14 bg-white/[0.02]">
         <div className="p-3 sm:p-4 border-r border-b sm:border-b-0 border-white/12 min-w-0">
           <div className="font-mono text-[11px] sm:text-xs text-slate-400 truncate">
             Detected
