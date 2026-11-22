@@ -16,8 +16,18 @@ import TunerDisplay from './components/TunerDisplay';
 import StringMatrix from './components/StringMatrix';
 import LearnSection from './components/LearnSection';
 import ChromaTunerLogo from './components/ChromaTunerLogo';
+import {
+  applyThemeToDocument,
+  loadTheme,
+  saveTheme,
+  THEME_IDS,
+  toggleThemeValue,
+} from './utils/themeUtils';
 
 function App() {
+  const [theme, setTheme] = useState(() => loadTheme());
+  const isPixelTheme = theme === THEME_IDS.PIXEL;
+
   const [navState, setNavState] = useState(() => createInitialNavSnapshot());
   const navRef = useRef(navState);
   navRef.current = navState;
@@ -58,6 +68,19 @@ function App() {
       window.removeEventListener('popstate', handlePopState);
     };
   }, [stopReferenceTone]);
+
+  useEffect(() => {
+    learnAudio.warmInstrument(activeInstrument);
+  }, [activeInstrument]);
+
+  useEffect(() => {
+    applyThemeToDocument(theme);
+    saveTheme(theme);
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => toggleThemeValue(prev));
+  }, []);
 
   const navigate = useCallback(
     (patch, options = {}) => {
@@ -128,26 +151,29 @@ function App() {
 
       {/* 3-Zone Single-Row Precision Header */}
       <header className="relative z-20 glass-bar border-b border-white/14">
-        <div className="max-w-[1280px] mx-auto px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-2 sm:gap-8">
+        <div className="max-w-[1280px] mx-auto px-2 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-1 sm:gap-8">
           <button
             type="button"
             onClick={() => switchView('tuner')}
-            className="inline-flex items-center gap-2 sm:gap-2.5 font-display font-bold text-[15px] sm:text-xl tracking-tight text-white whitespace-nowrap shrink-0 cursor-pointer text-left min-h-[40px]"
+            className="inline-flex items-center gap-1 sm:gap-2.5 font-display font-bold text-[13px] sm:text-xl tracking-tight text-white whitespace-nowrap shrink-0 cursor-pointer text-left min-h-[38px] sm:min-h-[40px]"
           >
-            <ChromaTunerLogo className="w-5 h-5 sm:w-7 sm:h-7 shrink-0" />
+            <ChromaTunerLogo
+              className="w-[18px] h-[18px] sm:w-7 sm:h-7 shrink-0"
+              pixel={isPixelTheme}
+            />
             <span>ChromaTuner</span>
           </button>
 
           {/* Top-Level Navigation: Tuner | Learn */}
           <nav
             aria-label="Primary Navigation"
-            className="flex items-center gap-1 glass-recessed rounded-[3px] p-1"
+            className="flex items-center gap-0.5 sm:gap-1 glass-recessed rounded-[3px] p-0.5 sm:p-1 shrink-0"
           >
             <button
               type="button"
               onClick={() => switchView('tuner')}
               aria-pressed={activeView === 'tuner'}
-              className={`min-h-[38px] px-3 sm:px-5 py-1.5 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.98] transition-[transform,background-color,color] duration-150 cursor-pointer ${
+              className={`min-h-[34px] sm:min-h-[38px] px-2 sm:px-5 py-1 sm:py-1.5 rounded-[2px] font-mono text-[11px] sm:text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.98] transition-[transform,background-color,color] duration-150 cursor-pointer ${
                 activeView === 'tuner'
                   ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_10px_rgba(34,211,238,0.28)]'
                   : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
@@ -159,7 +185,7 @@ function App() {
               type="button"
               onClick={() => switchView('learn')}
               aria-pressed={activeView === 'learn'}
-              className={`min-h-[38px] px-3 sm:px-5 py-1.5 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.98] transition-[transform,background-color,color] duration-150 cursor-pointer ${
+              className={`min-h-[34px] sm:min-h-[38px] px-2 sm:px-5 py-1 sm:py-1.5 rounded-[2px] font-mono text-[11px] sm:text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.98] transition-[transform,background-color,color] duration-150 cursor-pointer ${
                 activeView === 'learn'
                   ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_10px_rgba(34,211,238,0.28)]'
                   : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
@@ -169,11 +195,52 @@ function App() {
             </button>
           </nav>
 
-          <div className="shrink-0">
+          <div className="shrink-0 flex items-center gap-1 sm:gap-2">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              data-testid="theme-toggle"
+              aria-pressed={isPixelTheme}
+              aria-label={
+                isPixelTheme ? 'Switch to Studio theme' : 'Switch to Pixelated theme'
+              }
+              title={
+                isPixelTheme
+                  ? 'Pixel Theme Active · Click for Studio Theme'
+                  : 'Switch to Pixelated 8-Bit Theme'
+              }
+              className={`min-h-[36px] min-w-[36px] sm:min-h-[40px] sm:min-w-0 px-2 sm:px-3 py-1 sm:py-1.5 rounded-[2px] border font-mono text-[11px] sm:text-xs font-semibold inline-flex items-center justify-center gap-1.5 active:scale-[0.98] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer ${
+                isPixelTheme
+                  ? 'bg-amber-400/20 text-amber-200 border-amber-300/60 hover:bg-amber-400/30'
+                  : 'bg-white/[0.06] text-slate-200 border-white/16 hover:bg-white/[0.14]'
+              }`}
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 12 12"
+                fill="currentColor"
+                shapeRendering="crispEdges"
+                className="w-3.5 h-3.5 shrink-0"
+              >
+                <rect x="1" y="1" width="3" height="3" />
+                <rect x="5" y="1" width="2" height="2" opacity="0.55" />
+                <rect x="8" y="1" width="3" height="3" />
+                <rect x="1" y="5" width="2" height="2" opacity="0.55" />
+                <rect x="4" y="4" width="4" height="4" />
+                <rect x="9" y="5" width="2" height="2" opacity="0.55" />
+                <rect x="1" y="8" width="3" height="3" />
+                <rect x="5" y="9" width="2" height="2" opacity="0.55" />
+                <rect x="8" y="8" width="3" height="3" />
+              </svg>
+              <span className="hidden sm:inline">
+                {isPixelTheme ? 'Pixel' : 'Pixel Theme'}
+              </span>
+            </button>
+
             <button
               type="button"
               onClick={isListening ? stopTuner : startTuner}
-              className={`min-h-[38px] sm:min-h-[40px] px-3 sm:px-4 py-1.5 rounded-[2px] border font-mono text-xs font-semibold tracking-wide active:scale-[0.98] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer ${
+              className={`min-h-[36px] sm:min-h-[40px] px-2 sm:px-4 py-1 sm:py-1.5 rounded-[2px] border font-mono text-[11px] sm:text-xs font-semibold tracking-wide active:scale-[0.98] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer ${
                 isListening
                   ? 'bg-rose-500/20 text-rose-100 border-rose-400/55 hover:bg-rose-500/30'
                   : 'bg-white/[0.08] text-slate-100 border-white/18 hover:bg-white/[0.16]'

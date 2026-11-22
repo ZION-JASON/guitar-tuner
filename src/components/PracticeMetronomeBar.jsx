@@ -121,11 +121,11 @@ const PracticeMetronomeBar = ({
       aria-label="Practice Metronome & Favorites Dock"
       className="glass-panel rounded-[4px] p-3.5 sm:p-4 flex flex-col gap-3"
     >
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
         {/* Left: Title + Live Visual Beat LEDs */}
-        <div className="flex flex-wrap items-center justify-between lg:justify-start gap-3">
+        <div className="flex flex-wrap items-center justify-between lg:justify-start gap-2.5">
           <div className="flex items-center gap-2.5">
-            <span className="font-display font-bold text-sm sm:text-base text-white">
+            <span className="font-display font-bold text-sm sm:text-base text-white whitespace-nowrap">
               Practice Metronome
             </span>
             <div
@@ -160,7 +160,7 @@ const PracticeMetronomeBar = ({
         </div>
 
         {/* Center: BPM Stepper + Slider + Tap Tempo */}
-        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-2.5">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full lg:w-auto">
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <div className="flex-1 sm:flex-none flex items-center justify-between sm:justify-start gap-0.5 sm:gap-1 glass-recessed rounded-[3px] p-1">
               <button
@@ -226,20 +226,20 @@ const PracticeMetronomeBar = ({
             value={bpm}
             onChange={(e) => setBpm(clampBpm(e.target.value))}
             aria-label="Metronome Tempo BPM Slider"
-            className="w-full sm:w-32 h-2 rounded-[1px] accent-cyan-400 cursor-pointer my-1 sm:my-0"
+            className="w-full sm:w-28 h-2 rounded-[1px] accent-cyan-400 cursor-pointer my-1 sm:my-0"
           />
 
           <button
             type="button"
             onClick={handleTapTempo}
-            className="hidden sm:inline-flex items-center justify-center min-h-[38px] px-3 py-1.5 rounded-[2px] border border-white/18 bg-white/[0.06] hover:bg-white/[0.15] text-slate-100 font-mono text-xs font-semibold active:scale-[0.97] cursor-pointer transition-colors"
+            className="hidden sm:inline-flex items-center justify-center min-h-[38px] px-3 py-1.5 rounded-[2px] border border-white/18 bg-white/[0.06] hover:bg-white/[0.15] text-slate-100 font-mono text-xs font-semibold active:scale-[0.97] shrink-0 cursor-pointer transition-colors"
           >
             Tap
           </button>
         </div>
 
         {/* Right: Time Signatures + Start/Stop + Favorites & Sequencer Toggles */}
-        <div className="flex flex-wrap items-center justify-between lg:justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-between lg:justify-end gap-2 w-full xl:w-auto">
           <div
             role="group"
             aria-label="Metronome Time Signature"

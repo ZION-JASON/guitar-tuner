@@ -184,7 +184,7 @@ const TunerDisplay = ({
             <span className="whitespace-nowrap">+50¢ Sharp</span>
           </div>
 
-          <div className="relative h-14 sm:h-20 glass-recessed rounded-[2px] overflow-hidden select-none">
+          <div className="relative h-14 sm:h-20 glass-recessed pixel-ruler-track rounded-[2px] overflow-hidden select-none">
             {/* In-tune center zone (±3 cents = 6% total width) */}
             <div
               className={`absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-[6%] border-x transition-[background-color,border-color,box-shadow] duration-150 ${

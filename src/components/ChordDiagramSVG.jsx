@@ -142,6 +142,17 @@ const ChordDiagramSVG = ({
                 fill={isRoot ? 'rgba(34,211,238,0.2)' : 'none'}
                 stroke={isRoot ? '#22d3ee' : '#cbd5e1'}
                 strokeWidth={1.8}
+                className="studio-only"
+              />
+              <rect
+                x={x - 5.5}
+                y={FRET_START_Y - 21.5}
+                width={11}
+                height={11}
+                fill={isRoot ? 'rgba(34,211,238,0.24)' : 'none'}
+                stroke={isRoot ? '#22d3ee' : '#cbd5e1'}
+                strokeWidth={2}
+                className="pixel-only"
               />
               <text
                 x={x}
@@ -180,6 +191,17 @@ const ChordDiagramSVG = ({
               fill={isRoot ? '#22d3ee' : '#f8fafc'}
               stroke={isRoot ? '#a5f3fc' : 'rgba(15,23,42,0.5)'}
               strokeWidth={1.2}
+              className="studio-only"
+            />
+            <rect
+              x={x - 9.5}
+              y={cy - 9.5}
+              width={19}
+              height={19}
+              fill={isRoot ? '#22d3ee' : '#f8fafc'}
+              stroke={isRoot ? '#083344' : '#020617'}
+              strokeWidth={2}
+              className="pixel-only"
             />
             {dotText && (
               <text

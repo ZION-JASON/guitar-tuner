@@ -1,4 +1,9 @@
 import { midiToFrequency } from './frequencyUtils.js';
+import {
+  findNearestSample,
+  getCoreWarmupSamples,
+  loadSampleBuffer,
+} from './sampleLibrary.js';
 
 const INSTRUMENT_TIMBRE = {
   guitar: {
@@ -19,11 +24,12 @@ const INSTRUMENT_TIMBRE = {
     attackCutoffHz: 4100,
     sustainCutoffHz: 1620,
     brightnessDecaySec: 0.44,
-    roomWetMix: 0.27,
+    roomWetMix: 0.22,
+    sampleRoomWetMix: 0.16,
     roomDecaySec: 0.34,
-    strumStepSec: 0.028,
-    defaultNoteDuration: 2.0,
-    defaultChordDuration: 2.75,
+    strumStepSec: 0.023,
+    defaultNoteDuration: 2.1,
+    defaultChordDuration: 3.1,
   },
   bass: {
     pickPos: 0.28,
@@ -44,10 +50,11 @@ const INSTRUMENT_TIMBRE = {
     sustainCutoffHz: 420, // deep warm woody bass sustain (eliminates low-note buzz)
     brightnessDecaySec: 0.38,
     roomWetMix: 0.12,
+    sampleRoomWetMix: 0.08,
     roomDecaySec: 0.18,
-    strumStepSec: 0.036,
-    defaultNoteDuration: 1.9,
-    defaultChordDuration: 2.3,
+    strumStepSec: 0.032,
+    defaultNoteDuration: 1.95,
+    defaultChordDuration: 2.55,
   },
   ukulele: {
     pickPos: 0.24,
@@ -67,11 +74,12 @@ const INSTRUMENT_TIMBRE = {
     attackCutoffHz: 3600, // gentle nylon sparkle at attack
     sustainCutoffHz: 1550, // sweet mellow koa/mahogany sustain
     brightnessDecaySec: 0.45,
-    roomWetMix: 0.24,
+    roomWetMix: 0.22,
+    sampleRoomWetMix: 0.17,
     roomDecaySec: 0.24,
-    strumStepSec: 0.019,
-    defaultNoteDuration: 1.55,
-    defaultChordDuration: 1.95,
+    strumStepSec: 0.018,
+    defaultNoteDuration: 1.75,
+    defaultChordDuration: 2.35,
   },
 };
 
@@ -442,6 +450,46 @@ export function createInstrumentBodyChain(ctx, instrument = 'guitar', startTime 
   return { input: lowBody, output: airCut };
 }
 
+export function createStudioSampleChain(ctx, instrument = 'guitar', { velocity = 1.0 } = {}) {
+  const highPass = ctx.createBiquadFilter();
+  highPass.type = 'highpass';
+  highPass.frequency.value = instrument === 'bass' ? 32 : instrument === 'ukulele' ? 145 : 68;
+  highPass.Q.value = 0.7;
+
+  const toneWarmth = ctx.createBiquadFilter();
+  toneWarmth.type = 'peaking';
+  if (instrument === 'bass') {
+    toneWarmth.frequency.value = 155;
+    toneWarmth.gain.value = 1.8;
+    toneWarmth.Q.value = 0.9;
+  } else if (instrument === 'ukulele') {
+    toneWarmth.frequency.value = 390;
+    toneWarmth.gain.value = 1.6;
+    toneWarmth.Q.value = 0.95;
+  } else {
+    toneWarmth.frequency.value = 185;
+    toneWarmth.gain.value = 1.1;
+    toneWarmth.Q.value = 0.9;
+  }
+
+  const airFilter = ctx.createBiquadFilter();
+  airFilter.type = 'lowpass';
+  airFilter.Q.value = 0.65;
+  const clampedVel = Math.max(0.5, Math.min(1.25, velocity));
+  if (instrument === 'bass') {
+    airFilter.frequency.value = 2600 + clampedVel * 900;
+  } else if (instrument === 'ukulele') {
+    airFilter.frequency.value = 4600 + clampedVel * 1800;
+  } else {
+    airFilter.frequency.value = 5400 + clampedVel * 3200;
+  }
+
+  highPass.connect(toneWarmth);
+  toneWarmth.connect(airFilter);
+
+  return { input: highPass, output: airFilter };
+}
+
 export class LearnAudioEngine {
   constructor() {
     this.ctx = null;
@@ -452,6 +500,10 @@ export class LearnAudioEngine {
     this.activeNodes = new Set();
     this.timers = new Set();
     this.bufferCache = new Map();
+    this.sampleBuffers = new Map();
+    this.sampleInFlight = new Map();
+    this._warmedInstruments = new Set();
+    this._preferredInstrument = 'guitar';
     this.playGen = 0;
     this._unlocked = false;
     this._gestureListenersBound = false;
@@ -493,12 +545,16 @@ export class LearnAudioEngine {
 
     const handleFirstGesture = () => {
       const { ctx, resumePromise } = this._unlockContextSync();
+      if (ctx) {
+        this._warmInstrumentAsync(ctx, this._preferredInstrument);
+      }
       if (ctx && ctx.state === 'running') {
         cleanup();
       } else if (resumePromise) {
         resumePromise
           .then(() => {
             if (this.ctx && this.ctx.state === 'running') {
+              this._warmInstrumentAsync(this.ctx, this._preferredInstrument);
               cleanup();
             }
           })
@@ -528,18 +584,21 @@ export class LearnAudioEngine {
     if (!this.ctx || this.ctx.state === 'closed') {
       this.ctx = new AudioCtx();
       this.bufferCache.clear();
+      this.sampleBuffers.clear();
+      this.sampleInFlight.clear();
+      this._warmedInstruments.clear();
       this.roomWetGains.clear();
       this._unlocked = false;
 
       const comp = this.ctx.createDynamicsCompressor();
-      comp.threshold.value = -14;
+      comp.threshold.value = -12;
       comp.knee.value = 14;
-      comp.ratio.value = 4;
-      comp.attack.value = 0.004;
-      comp.release.value = 0.16;
+      comp.ratio.value = 3.2;
+      comp.attack.value = 0.005;
+      comp.release.value = 0.18;
 
       const master = this.ctx.createGain();
-      master.gain.value = 1.35;
+      master.gain.value = 1.25;
 
       comp.connect(master);
       master.connect(this.ctx.destination);
@@ -547,7 +606,7 @@ export class LearnAudioEngine {
       this.masterGain = master;
 
       const dry = this.ctx.createGain();
-      dry.gain.value = 0.9;
+      dry.gain.value = 0.92;
       dry.connect(comp);
       this.dryBus = dry;
 
@@ -558,7 +617,7 @@ export class LearnAudioEngine {
           const convolver = this.ctx.createConvolver();
           convolver.buffer = ir;
           const wet = this.ctx.createGain();
-          wet.gain.value = 0.2;
+          wet.gain.value = 0.18;
           convolver.connect(wet);
           wet.connect(comp);
           this.roomWetGains.set('default', { convolver, wet });
@@ -580,21 +639,116 @@ export class LearnAudioEngine {
     return { ctx, resumePromise };
   }
 
-  _withReadyContext(gen, callback) {
+  _canDecodeSamples(ctx) {
+    return Boolean(
+      ctx &&
+        ctx.state !== 'closed' &&
+        typeof fetch === 'function' &&
+        typeof ctx.decodeAudioData === 'function'
+    );
+  }
+
+  _warmInstrumentAsync(ctx, instrument = 'guitar') {
+    if (!this._canDecodeSamples(ctx)) return;
+    this._preferredInstrument = instrument;
+    if (this._warmedInstruments.has(instrument)) return;
+    this._warmedInstruments.add(instrument);
+
+    const entries = getCoreWarmupSamples(instrument);
+    const batchSize = 4;
+
+    const runQueue = async () => {
+      for (let i = 0; i < entries.length; i += batchSize) {
+        if (!ctx || ctx.state === 'closed' || ctx !== this.ctx) return;
+        const batch = entries.slice(i, i + batchSize);
+        await Promise.all(
+          batch.map((entry) => loadSampleBuffer(ctx, entry, this.sampleBuffers, this.sampleInFlight))
+        );
+      }
+    };
+
+    runQueue().catch(() => {});
+  }
+
+  warmInstrument(instrument = 'guitar') {
+    this._preferredInstrument = instrument;
+    if (this.ctx && this.ctx.state !== 'closed') {
+      this._warmInstrumentAsync(this.ctx, instrument);
+    }
+  }
+
+  _ensureSamplesForFreqs(ctx, instrument, freqs, timeoutMs = 190) {
+    if (!this._canDecodeSamples(ctx) || !Array.isArray(freqs) || freqs.length === 0) {
+      return null;
+    }
+
+    const needed = [];
+    const seenKeys = new Set();
+    for (const freq of freqs) {
+      if (!Number.isFinite(freq) || freq <= 0) continue;
+      const match = findNearestSample(instrument, freq);
+      if (match && !this.sampleBuffers.has(match.key) && !seenKeys.has(match.key)) {
+        seenKeys.add(match.key);
+        needed.push(match);
+      }
+    }
+
+    if (needed.length === 0) {
+      return null;
+    }
+
+    const loadAll = Promise.all(
+      needed.map((entry) => loadSampleBuffer(ctx, entry, this.sampleBuffers, this.sampleInFlight))
+    );
+
+    if (timeoutMs <= 0) {
+      return loadAll;
+    }
+
+    return Promise.race([
+      loadAll,
+      new Promise((resolve) => {
+        setTimeout(resolve, timeoutMs);
+      }),
+    ]);
+  }
+
+  _withReadyContext(gen, callback, { instrument = 'guitar', preloadFreqs = null, preloadTimeoutMs = 190 } = {}) {
     const { ctx, resumePromise } = this._unlockContextSync();
     if (!ctx) return;
 
-    if (ctx.state === 'running' || !resumePromise) {
-      if (gen === this.playGen) {
-        callback(ctx);
+    this._warmInstrumentAsync(ctx, instrument);
+
+    const runAfterLoad = (activeCtx) => {
+      if (gen !== this.playGen || !activeCtx || activeCtx.state === 'closed') return;
+      const pending = preloadFreqs
+        ? this._ensureSamplesForFreqs(activeCtx, instrument, preloadFreqs, preloadTimeoutMs)
+        : null;
+
+      if (pending) {
+        pending
+          .then(() => {
+            if (gen !== this.playGen || !this.ctx || this.ctx.state !== 'running') return;
+            callback(this.ctx);
+          })
+          .catch(() => {
+            if (gen !== this.playGen || !this.ctx || this.ctx.state !== 'running') return;
+            callback(this.ctx);
+          });
+      } else {
+        callback(activeCtx);
       }
+    };
+
+    if (ctx.state === 'running' || !resumePromise) {
+      runAfterLoad(ctx);
       return;
     }
 
     resumePromise.then(() => {
       if (gen !== this.playGen || !this.ctx || this.ctx.state === 'closed') return;
       if (this.ctx.state !== 'running') return;
-      callback(this.ctx);
+      runAfterLoad(this.ctx);
     });
   }
 
@@ -612,6 +766,97 @@ export class LearnAudioEngine {
     return buf;
   }
 
+  _connectToMasterBuses(ctx, outputNode, roomWetMix, startTime) {
+    const roomBus = this.roomWetGains.get('default');
+    if (this.dryBus && roomBus) {
+      if (typeof roomBus.wet.gain.setTargetAtTime === 'function') {
+        roomBus.wet.gain.setTargetAtTime(roomWetMix, startTime, 0.02);
+      } else {
+        roomBus.wet.gain.value = roomWetMix;
+      }
+      outputNode.connect(this.dryBus);
+      outputNode.connect(roomBus.convolver);
+    } else {
+      outputNode.connect(this.compressor || ctx.destination);
+    }
+  }
+
+  _scheduleSampledFreq(
+    ctx,
+    sampleBuffer,
+    playbackRate,
+    {
+      instrument = 'guitar',
+      startTime,
+      durationSec,
+      volume = 0.5,
+      pan = 0,
+      velocity = 1.0,
+    }
+  ) {
+    const profile = getInstrumentTimbre(instrument);
+    const source = ctx.createBufferSource();
+    source.buffer = sampleBuffer;
+    if (source.playbackRate && typeof source.playbackRate.setValueAtTime === 'function') {
+      source.playbackRate.setValueAtTime(playbackRate, startTime);
+    } else if (source.playbackRate) {
+      source.playbackRate.value = playbackRate;
+    }
+
+    const chain = createStudioSampleChain(ctx, instrument, { velocity });
+    const gain = ctx.createGain();
+    const peakGain = Math.max(0.02, volume);
+
+    const maxSamplePlaySec = Math.max(0.35, sampleBuffer.duration / Math.max(0.25, playbackRate));
+    const effectiveDur = Math.min(durationSec, maxSamplePlaySec);
+    const releaseSec = Math.min(0.18, Math.max(0.06, effectiveDur * 0.16));
+    const fadeStart = Math.max(startTime + 0.02, startTime + effectiveDur - releaseSec);
+
+    if (typeof gain.gain.setValueAtTime === 'function') {
+      gain.gain.setValueAtTime(0.001, startTime);
+      if (typeof gain.gain.linearRampToValueAtTime === 'function') {
+        gain.gain.linearRampToValueAtTime(peakGain, startTime + 0.0025);
+        gain.gain.setValueAtTime(peakGain, fadeStart);
+        gain.gain.linearRampToValueAtTime(0.0001, startTime + effectiveDur);
+      } else {
+        gain.gain.setValueAtTime(peakGain, startTime);
+      }
+    } else {
+      gain.gain.value = peakGain;
+    }
+
+    source.connect(chain.input);
+    chain.output.connect(gain);
+
+    let tailNode = gain;
+    let panner = null;
+    if (pan !== 0 && typeof ctx.createStereoPanner === 'function') {
+      panner = ctx.createStereoPanner();
+      panner.pan.value = Math.max(-0.35, Math.min(0.35, pan));
+      gain.connect(panner);
+      tailNode = panner;
+    }
+
+    this._connectToMasterBuses(ctx, tailNode, profile.sampleRoomWetMix ?? profile.roomWetMix, startTime);
+
+    const entry = { source, gain };
+    this.activeNodes.add(entry);
+    source.onended = () => {
+      this.activeNodes.delete(entry);
+      try {
+        source.disconnect();
+        chain.output.disconnect();
+        gain.disconnect();
+        if (panner) panner.disconnect();
+      } catch {
+        // ignore
+      }
+    };
+
+    source.start(startTime);
+    source.stop(startTime + effectiveDur + 0.03);
+  }
+
   _schedulePluckedFreq(
     ctx,
     freq,
@@ -621,6 +866,8 @@ export class LearnAudioEngine {
       startTime: explicitStartTime = null,
       durationSec = null,
       volume = 0.55,
+      pan = 0,
+      velocity = 1.0,
     } = {}
   ) {
     if (!ctx || ctx.state === 'closed' || !Number.isFinite(freq) || freq <= 0) return;
@@ -632,6 +879,27 @@ export class LearnAudioEngine {
         ? explicitStartTime
         : ctx.currentTime + Math.max(0, delaySec);
 
+    // Prefer studio-recorded acoustic/nylon/bass multisamples when decoded
+    if (this._canDecodeSamples(ctx)) {
+      const sampleMatch = findNearestSample(instrument, freq);
+      if (sampleMatch) {
+        const cachedSample = this.sampleBuffers.get(sampleMatch.key);
+        if (cachedSample) {
+          this._scheduleSampledFreq(ctx, cachedSample, sampleMatch.playbackRate, {
+            instrument,
+            startTime,
+            durationSec: dur,
+            volume,
+            pan,
+            velocity,
+          });
+          return;
+        }
+        // Trigger background decode if this chromatic note isn't cached yet
+        loadSampleBuffer(ctx, sampleMatch, this.sampleBuffers, this.sampleInFlight).catch(() => {});
+      }
+    }
+
     const buffer = this._getCachedBuffer(ctx, freq, dur, instrument);
     const source = ctx.createBufferSource();
     source.buffer = buffer;
@@ -642,15 +910,7 @@ export class LearnAudioEngine {
 
     source.connect(body.input);
     body.output.connect(gain);
-
-    const roomBus = this.roomWetGains.get('default');
-    if (this.dryBus && roomBus) {
-      roomBus.wet.gain.setTargetAtTime(profile.roomWetMix, startTime, 0.02);
-      gain.connect(this.dryBus);
-      gain.connect(roomBus.convolver);
-    } else {
-      gain.connect(this.compressor || ctx.destination);
-    }
+    this._connectToMasterBuses(ctx, gain, profile.roomWetMix, startTime);
 
     const entry = { source, gain };
     this.activeNodes.add(entry);
@@ -697,9 +957,13 @@ export class LearnAudioEngine {
   ) {
     if (!Number.isFinite(freq) || freq <= 0) return;
     const gen = this.playGen;
-    this._withReadyContext(gen, (ctx) => {
-      this._schedulePluckedFreq(ctx, freq, { instrument, delaySec, durationSec, volume });
-    });
+    this._withReadyContext(
+      gen,
+      (ctx) => {
+        this._schedulePluckedFreq(ctx, freq, { instrument, delaySec, durationSec, volume });
+      },
+      { instrument, preloadFreqs: [freq], preloadTimeoutMs: 160 }
+    );
   }
 
   playPluckedNote(
@@ -716,31 +980,68 @@ export class LearnAudioEngine {
     this.playPluckedFreq(freq, { instrument, delaySec, durationSec, volume });
   }
 
+  _buildStrumSchedule(midiNotes, refFrequency, instrument) {
+    const profile = getInstrumentTimbre(instrument);
+    const total = midiNotes.length;
+    const baseVol = Math.min(0.46, 1.38 / Math.max(1, total));
+    const events = [];
+
+    midiNotes.forEach((midi, idx) => {
+      if (!Number.isFinite(midi)) return;
+      const freq = midiToFrequency(midi, refFrequency);
+      if (!Number.isFinite(freq) || freq <= 0) return;
+
+      // Expressive downstroke arc: crisp wrist acceleration across bass -> treble strings
+      const curveOffset = idx * idx * 0.00045;
+      const microJitter = (idx % 2 === 0 ? 1 : -1) * 0.0014;
+      const delaySec = Math.max(0, idx * profile.strumStepSec - curveOffset + microJitter);
+
+      // Subtle dynamic balance: warm bass anchor + balanced inner chord + singing top string
+      const accent =
+        idx === 0 ? 1.07 : idx === total - 1 ? 0.99 : 0.86 + (idx / Math.max(1, total)) * 0.08;
+      const pan = total > 1 ? ((idx / (total - 1)) - 0.5) * 0.24 : 0;
+
+      events.push({
+        freq,
+        delaySec,
+        volume: baseVol * accent,
+        pan,
+        velocity: accent,
+      });
+    });
+
+    return events;
+  }
+
   playChordStrum(midiNotes, refFrequency = 440, instrument = 'guitar') {
     this.stopAll();
     if (!Array.isArray(midiNotes) || midiNotes.length === 0) return;
 
     const gen = this.playGen;
     const profile = getInstrumentTimbre(instrument);
-    const perNoteVol = Math.min(0.48, 1.4 / midiNotes.length);
+    const events = this._buildStrumSchedule(midiNotes, refFrequency, instrument);
+    if (events.length === 0) return;
 
-    this._withReadyContext(gen, (ctx) => {
-      midiNotes.forEach((midi, idx) => {
-        if (!Number.isFinite(midi)) return;
-        const freq = midiToFrequency(midi, refFrequency);
-        if (!Number.isFinite(freq) || freq <= 0) return;
-        // Natural slightly expressive downstroke timing
-        const jitter = (idx % 2 === 0 ? 1 : -1) * 0.002;
-        const delaySec = Math.max(0, idx * profile.strumStepSec + jitter);
-        const accent = idx === 0 ? 1.08 : idx === midiNotes.length - 1 ? 0.96 : 0.9;
-        this._schedulePluckedFreq(ctx, freq, {
-          instrument,
-          delaySec,
-          durationSec: profile.defaultChordDuration,
-          volume: perNoteVol * accent,
+    this._withReadyContext(
+      gen,
+      (ctx) => {
+        events.forEach((ev) => {
+          this._schedulePluckedFreq(ctx, ev.freq, {
+            instrument,
+            delaySec: ev.delaySec,
+            durationSec: profile.defaultChordDuration,
+            volume: ev.volume,
+            pan: ev.pan,
+            velocity: ev.velocity,
+          });
         });
-      });
-    });
+      },
+      {
+        instrument,
+        preloadFreqs: events.map((e) => e.freq),
+        preloadTimeoutMs: 210,
+      }
+    );
   }
 
   playChord(
@@ -771,39 +1072,53 @@ export class LearnAudioEngine {
 
     const gen = this.playGen;
     const profile = getInstrumentTimbre(instrument);
-    const noteDurationSec = Math.max(1.05, profile.defaultChordDuration * 0.72);
+    // Let plucked notes ring out cleanly across arpeggio notes just like real fingerpicking
+    const noteDurationSec = Math.max(1.45, profile.defaultChordDuration * 0.78);
+    const freqs = midiNotes
+      .filter((m) => Number.isFinite(m))
+      .map((m) => midiToFrequency(m, refFrequency))
+      .filter((f) => Number.isFinite(f) && f > 0);
 
-    this._withReadyContext(gen, (ctx) => {
-      midiNotes.forEach((midi, idx) => {
-        const delayMs = idx * stepMs;
-        if (Number.isFinite(midi)) {
-          const freq = midiToFrequency(midi, refFrequency);
-          if (Number.isFinite(freq) && freq > 0) {
-            this._schedulePluckedFreq(ctx, freq, {
-              instrument,
-              delaySec: delayMs / 1000,
-              durationSec: noteDurationSec,
-              volume: 0.54,
-            });
+    this._withReadyContext(
+      gen,
+      (ctx) => {
+        const total = midiNotes.length;
+        midiNotes.forEach((midi, idx) => {
+          const delayMs = idx * stepMs;
+          if (Number.isFinite(midi)) {
+            const freq = midiToFrequency(midi, refFrequency);
+            if (Number.isFinite(freq) && freq > 0) {
+              const accent = idx === 0 ? 1.04 : idx === total - 1 ? 0.98 : 0.89;
+              const pan = total > 1 ? ((idx / (total - 1)) - 0.5) * 0.22 : 0;
+              this._schedulePluckedFreq(ctx, freq, {
+                instrument,
+                delaySec: delayMs / 1000,
+                durationSec: noteDurationSec,
+                volume: 0.5 * accent,
+                pan,
+                velocity: accent,
+              });
+            }
           }
-        }
-        if (onStep) {
-          const tId = setTimeout(() => {
-            this.timers.delete(tId);
-            if (gen === this.playGen) onStep(idx, midi);
-          }, delayMs);
-          this.timers.add(tId);
-        }
-      });
+          if (onStep) {
+            const tId = setTimeout(() => {
+              this.timers.delete(tId);
+              if (gen === this.playGen) onStep(idx, midi);
+            }, delayMs);
+            this.timers.add(tId);
+          }
+        });
 
-      if (onComplete) {
-        const endId = setTimeout(() => {
-          this.timers.delete(endId);
-          if (gen === this.playGen) onComplete();
-        }, midiNotes.length * stepMs + 150);
-        this.timers.add(endId);
-      }
-    });
+        if (onComplete) {
+          const endId = setTimeout(() => {
+            this.timers.delete(endId);
+            if (gen === this.playGen) onComplete();
+          }, midiNotes.length * stepMs + 150);
+          this.timers.add(endId);
+        }
+      },
+      { instrument, preloadFreqs: freqs, preloadTimeoutMs: 210 }
+    );
   }
 
   playProgression(
@@ -820,48 +1135,84 @@ export class LearnAudioEngine {
 
     const gen = this.playGen;
     const profile = getInstrumentTimbre(instrument);
-
-    this._withReadyContext(gen, (ctx) => {
-      chords.forEach((chord, cIdx) => {
-        const midiNotes = chord?.voicings?.[0]?.midiNotes || [];
-        const baseDelayMs = cIdx * stepMs;
-        const perNoteVol = Math.min(0.45, 1.3 / Math.max(1, midiNotes.length));
-        const isArp = playMode === 'arpeggio' && midiNotes.length > 1;
-        const stepOffsetMs = isArp
-          ? Math.min(200, Math.max(115, Math.floor((stepMs * 0.68) / midiNotes.length)))
-          : Math.round(profile.strumStepSec * 1000);
-        const noteDurationSec = Math.max(1.15, profile.defaultChordDuration * 0.65);
-
-        midiNotes.forEach((midi, nIdx) => {
-          if (!Number.isFinite(midi)) return;
-          const freq = midiToFrequency(midi, refFrequency);
-          if (!Number.isFinite(freq) || freq <= 0) return;
-          const delaySec = (baseDelayMs + nIdx * stepOffsetMs) / 1000;
-          this._schedulePluckedFreq(ctx, freq, {
-            instrument,
-            delaySec,
-            durationSec: noteDurationSec,
-            volume: perNoteVol,
-          });
-        });
-
-        if (onStep) {
-          const tId = setTimeout(() => {
-            this.timers.delete(tId);
-            if (gen === this.playGen) onStep(cIdx);
-          }, baseDelayMs);
-          this.timers.add(tId);
+    const allFreqs = [];
+    chords.forEach((chord) => {
+      const notes = chord?.voicings?.[0]?.midiNotes || [];
+      notes.forEach((midi) => {
+        if (Number.isFinite(midi)) {
+          const f = midiToFrequency(midi, refFrequency);
+          if (Number.isFinite(f) && f > 0) allFreqs.push(f);
         }
       });
-
-      if (onComplete) {
-        const endId = setTimeout(() => {
-          this.timers.delete(endId);
-          if (gen === this.playGen) onComplete();
-        }, chords.length * stepMs + 180);
-        this.timers.add(endId);
-      }
     });
+
+    this._withReadyContext(
+      gen,
+      (ctx) => {
+        chords.forEach((chord, cIdx) => {
+          const midiNotes = chord?.voicings?.[0]?.midiNotes || [];
+          const baseDelayMs = cIdx * stepMs;
+          const isArp = playMode === 'arpeggio' && midiNotes.length > 1;
+          const stepOffsetMs = isArp
+            ? Math.min(200, Math.max(115, Math.floor((stepMs * 0.7) / midiNotes.length)))
+            : Math.round(profile.strumStepSec * 1000);
+          const chordRingSec = Math.max(
+            1.35,
+            Math.min(profile.defaultChordDuration, (stepMs / 1000) * 1.12)
+          );
+
+          if (isArp) {
+            const total = midiNotes.length;
+            const perNoteVol = Math.min(0.47, 1.34 / Math.max(1, total));
+            midiNotes.forEach((midi, nIdx) => {
+              if (!Number.isFinite(midi)) return;
+              const freq = midiToFrequency(midi, refFrequency);
+              if (!Number.isFinite(freq) || freq <= 0) return;
+              const accent = nIdx === 0 ? 1.05 : nIdx === total - 1 ? 0.98 : 0.9;
+              const pan = total > 1 ? ((nIdx / (total - 1)) - 0.5) * 0.22 : 0;
+              const delaySec = (baseDelayMs + nIdx * stepOffsetMs) / 1000;
+              this._schedulePluckedFreq(ctx, freq, {
+                instrument,
+                delaySec,
+                durationSec: Math.max(1.2, chordRingSec - (nIdx * stepOffsetMs) / 1000 + 0.25),
+                volume: perNoteVol * accent,
+                pan,
+                velocity: accent,
+              });
+            });
+          } else {
+            const strumEvents = this._buildStrumSchedule(midiNotes, refFrequency, instrument);
+            strumEvents.forEach((ev) => {
+              this._schedulePluckedFreq(ctx, ev.freq, {
+                instrument,
+                delaySec: baseDelayMs / 1000 + ev.delaySec,
+                durationSec: chordRingSec,
+                volume: ev.volume,
+                pan: ev.pan,
+                velocity: ev.velocity,
+              });
+            });
+          }
+
+          if (onStep) {
+            const tId = setTimeout(() => {
+              this.timers.delete(tId);
+              if (gen === this.playGen) onStep(cIdx);
+            }, baseDelayMs);
+            this.timers.add(tId);
+          }
+        });
+
+        if (onComplete) {
+          const endId = setTimeout(() => {
+            this.timers.delete(endId);
+            if (gen === this.playGen) onComplete();
+          }, chords.length * stepMs + 180);
+          this.timers.add(endId);
+        }
+      },
+      { instrument, preloadFreqs: allFreqs, preloadTimeoutMs: 220 }
+    );
   }
 
   _scheduleClickAt(ctx, time, isAccent) {
@@ -869,32 +1220,48 @@ export class LearnAudioEngine {
 
     const osc = ctx.createOscillator();
     const clickGain = ctx.createGain();
-    const vol = Math.max(0.05, Math.min(1, this._metroVolume)) * (isAccent ? 0.55 : 0.36);
+    const vol = Math.max(0.05, Math.min(1, this._metroVolume)) * (isAccent ? 0.48 : 0.3);
 
+    // Crisp woody acoustic stick / woodblock click
     osc.type = 'triangle';
-    const startFreq = isAccent ? 1240 : 880;
-    const endFreq = isAccent ? 760 : 540;
+    const startFreq = isAccent ? 1480 : 1040;
+    const endFreq = isAccent ? 920 : 660;
     osc.frequency.setValueAtTime(startFreq, time);
-    osc.frequency.exponentialRampToValueAtTime(endFreq, time + 0.032);
+    osc.frequency.exponentialRampToValueAtTime(endFreq, time + 0.026);
 
     clickGain.gain.setValueAtTime(0.0001, time);
-    clickGain.gain.linearRampToValueAtTime(vol, time + 0.002);
-    clickGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.055);
+    clickGain.gain.linearRampToValueAtTime(vol, time + 0.0018);
+    clickGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.048);
 
     osc.connect(clickGain);
     clickGain.connect(this.compressor || ctx.destination);
+
+    // Subtle harmonic overtone transient for authentic woodblock snap
+    const tapOsc = ctx.createOscillator();
+    const tapGain = ctx.createGain();
+    tapOsc.type = 'sine';
+    tapOsc.frequency.setValueAtTime(isAccent ? 2850 : 2100, time);
+    tapGain.gain.setValueAtTime(0.0001, time);
+    tapGain.gain.linearRampToValueAtTime(vol * 0.28, time + 0.001);
+    tapGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.014);
+    tapOsc.connect(tapGain);
+    tapGain.connect(this.compressor || ctx.destination);
 
     osc.onended = () => {
       try {
         osc.disconnect();
         clickGain.disconnect();
+        tapOsc.disconnect();
+        tapGain.disconnect();
       } catch {
         // ignore
       }
     };
 
     osc.start(time);
-    osc.stop(time + 0.065);
+    osc.stop(time + 0.055);
+    tapOsc.start(time);
+    tapOsc.stop(time + 0.02);
   }
 
   _scheduleMetronomeClick(ctx, time, isAccent, gen) {
@@ -1047,30 +1414,50 @@ export class LearnAudioEngine {
         const profile = getInstrumentTimbre(inst);
         const stepDurationSec = totalBeatsInStep * beatDurSec;
         const noteDurSec = Math.max(
-          0.75,
-          Math.min(profile.defaultChordDuration + 0.35, stepDurationSec * 1.04)
+          0.95,
+          Math.min(profile.defaultChordDuration + 0.25, stepDurationSec * 1.05)
         );
         const midiNotes = step.midiNotes;
-        const perNoteVol = Math.min(0.46, 1.32 / Math.max(1, midiNotes.length));
         const isArp = this._seqPlayMode === 'arpeggio' && midiNotes.length > 1;
-        const stepOffsetSec = isArp
-          ? Math.min(0.2, Math.max(0.085, (stepDurationSec * 0.68) / midiNotes.length))
-          : profile.strumStepSec;
 
-        midiNotes.forEach((midi, nIdx) => {
-          if (!Number.isFinite(midi)) return;
-          const freq = midiToFrequency(midi, this._seqRefFrequency);
-          if (!Number.isFinite(freq) || freq <= 0) return;
-          const jitter = isArp ? 0 : (nIdx % 2 === 0 ? 1 : -1) * 0.0018;
-          const exactStart = Math.max(this.ctx.currentTime, noteTime + nIdx * stepOffsetSec + jitter);
-          const accent = nIdx === 0 ? 1.06 : nIdx === midiNotes.length - 1 ? 0.96 : 0.9;
-          this._schedulePluckedFreq(this.ctx, freq, {
-            instrument: inst,
-            startTime: exactStart,
-            durationSec: noteDurSec,
-            volume: perNoteVol * accent,
+        if (isArp) {
+          const total = midiNotes.length;
+          const perNoteVol = Math.min(0.47, 1.34 / Math.max(1, total));
+          const stepOffsetSec = Math.min(
+            0.22,
+            Math.max(0.095, (stepDurationSec * 0.72) / total)
+          );
+          midiNotes.forEach((midi, nIdx) => {
+            if (!Number.isFinite(midi)) return;
+            const freq = midiToFrequency(midi, this._seqRefFrequency);
+            if (!Number.isFinite(freq) || freq <= 0) return;
+            const noteStart = Math.max(this.ctx.currentTime, noteTime + nIdx * stepOffsetSec);
+            const ringDur = Math.max(0.85, stepDurationSec - nIdx * stepOffsetSec + 0.08);
+            const accent = nIdx === 0 ? 1.05 : nIdx === total - 1 ? 0.98 : 0.9;
+            const pan = total > 1 ? ((nIdx / (total - 1)) - 0.5) * 0.22 : 0;
+            this._schedulePluckedFreq(this.ctx, freq, {
+              instrument: inst,
+              startTime: noteStart,
+              durationSec: Math.min(profile.defaultChordDuration, ringDur),
+              volume: perNoteVol * accent,
+              pan,
+              velocity: accent,
+            });
           });
-        });
+        } else {
+          const strumEvents = this._buildStrumSchedule(midiNotes, this._seqRefFrequency, inst);
+          strumEvents.forEach((ev) => {
+            const exactStart = Math.max(this.ctx.currentTime, noteTime + ev.delaySec);
+            this._schedulePluckedFreq(this.ctx, ev.freq, {
+              instrument: inst,
+              startTime: exactStart,
+              durationSec: noteDurSec,
+              volume: ev.volume,
+              pan: ev.pan,
+              velocity: ev.velocity,
+            });
+          });
+        }
       }
 
       if (this._seqOnStepBeat) {
@@ -1130,13 +1517,45 @@ export class LearnAudioEngine {
     this._seqOnStepBeat = onStepBeat;
     this._seqOnComplete = onComplete;
 
+    // Preload all unique notes used in the progression steps before beat 1
+    const byInst = new Map();
+    steps.forEach((step) => {
+      const inst = step?.instrument || 'guitar';
+      this._warmInstrumentAsync(ctx, inst);
+      if (!byInst.has(inst)) byInst.set(inst, []);
+      (step?.midiNotes || []).forEach((midi) => {
+        if (Number.isFinite(midi)) {
+          const f = midiToFrequency(midi, this._seqRefFrequency);
+          if (Number.isFinite(f) && f > 0) byInst.get(inst).push(f);
+        }
+      });
+    });
+
     const beginLoop = () => {
       if (!this._seqRunning || gen !== this._seqGen || !this.ctx) return;
-      this._seqNextBeatTime = this.ctx.currentTime + 0.03;
-      this._runCustomProgressionScheduler();
-      this._seqIntervalId = setInterval(() => {
+
+      const preloadPromises = [];
+      byInst.forEach((freqs, inst) => {
+        const p = this._ensureSamplesForFreqs(this.ctx, inst, freqs, 220);
+        if (p) preloadPromises.push(p);
+      });
+
+      const launch = () => {
+        if (!this._seqRunning || gen !== this._seqGen || !this.ctx || this.ctx.state !== 'running') {
+          return;
+        }
+        this._seqNextBeatTime = this.ctx.currentTime + 0.03;
         this._runCustomProgressionScheduler();
-      }, 25);
+        this._seqIntervalId = setInterval(() => {
+          this._runCustomProgressionScheduler();
+        }, 25);
+      };
+
+      if (preloadPromises.length > 0) {
+        Promise.all(preloadPromises).then(launch).catch(launch);
+      } else {
+        launch();
+      }
     };
 
     if (ctx.state === 'running' || !resumePromise) {
@@ -1194,6 +1613,9 @@ export class LearnAudioEngine {
     this.stopMetronome();
     this.stopCustomProgression();
     this.bufferCache.clear();
+    this.sampleBuffers.clear();
+    this.sampleInFlight.clear();
+    this._warmedInstruments.clear();
     if (this.ctx && this.ctx.state !== 'closed') {
       this.ctx.close().catch(() => {});
     }

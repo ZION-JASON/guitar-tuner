@@ -119,6 +119,156 @@
   animation: glass-enter 160ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* SVG theme-mode visibility toggles */
+.pixel-only {
+  display: none;
+}
+
+.studio-only {
+  display: initial;
+}
+
+/* ============================================================================
+   PIXELATED THEME (16-Bit Retro Synth / Workstation Mode)
+   Strictly visual: preserves 100% of tuner DSP, YIN accuracy & frame cadence
+   ============================================================================ */
+html[data-theme="pixel"],
+html[data-theme="pixel"] body {
+  --font-display: "Pixelify Sans", "Silkscreen", ui-monospace, monospace;
+  --font-sans: "Pixelify Sans", "Silkscreen", ui-monospace, monospace;
+  --font-mono: "Silkscreen", "IBM Plex Mono", ui-monospace, monospace;
+  background-color: #090c17;
+  color: #f8fafc;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
+  font-smooth: never;
+}
+
+html[data-theme="pixel"] .pixel-only {
+  display: initial;
+}
+
+html[data-theme="pixel"] .studio-only {
+  display: none;
+}
+
+/* Enforce crisp 0px pixel edges site-wide */
+html[data-theme="pixel"] * {
+  border-radius: 0px !important;
+}
+
+html[data-theme="pixel"] .font-mono {
+  letter-spacing: -0.02em;
+}
+
+html[data-theme="pixel"] img,
+html[data-theme="pixel"] canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+html[data-theme="pixel"] svg path,
+html[data-theme="pixel"] svg rect,
+html[data-theme="pixel"] svg line {
+  shape-rendering: crispEdges;
+}
+
+/* Dithered retro pixel studio grid backdrop */
+html[data-theme="pixel"] .studio-grid-bg {
+  background-color: #090c17;
+  background-image:
+    linear-gradient(45deg, rgba(34, 211, 238, 0.04) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(34, 211, 238, 0.04) 25%, transparent 25%),
+    linear-gradient(to right, rgba(56, 189, 248, 0.075) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(56, 189, 248, 0.075) 1px, transparent 1px);
+  background-size: 16px 16px, 16px 16px, 24px 24px, 24px 24px;
+  background-position: 0 0, 8px 8px, 0 0, 0 0;
+}
+
+/* Solid 16-bit hardware panels with stepped pixel shadows & bevels */
+html[data-theme="pixel"] .glass-panel {
+  background: #12182b;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 2px solid #3c4f78;
+  box-shadow:
+    4px 4px 0 #02040a,
+    inset 2px 2px 0 rgba(255, 255, 255, 0.1),
+    inset -2px -2px 0 rgba(2, 6, 23, 0.72);
+}
+
+html[data-theme="pixel"] .glass-recessed {
+  background: #080b15;
+  border: 2px solid #283657;
+  box-shadow:
+    inset 2px 2px 0 #02040a,
+    inset -1px -1px 0 rgba(148, 163, 184, 0.08);
+}
+
+html[data-theme="pixel"] .glass-bar {
+  background: #0d1222;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: #3c4f78;
+  border-width: 2px 0;
+  box-shadow: 0 4px 0 #02040a;
+}
+
+/* Crisp pixel interactive controls & physical press response */
+html[data-theme="pixel"] button[class*="border"],
+html[data-theme="pixel"] a[class*="border"] {
+  border-width: 2px;
+  box-shadow: 2px 2px 0 #02040a;
+}
+
+html[data-theme="pixel"] button:not(:disabled):active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 #02040a;
+}
+
+html[data-theme="pixel"] input[type="text"],
+html[data-theme="pixel"] input[type="search"],
+html[data-theme="pixel"] select {
+  border-width: 2px;
+  background-color: #080b15;
+  box-shadow: inset 2px 2px 0 #02040a;
+}
+
+/* Blocky retro pixel slider fader thumb */
+html[data-theme="pixel"] input[type="range"]::-webkit-slider-thumb {
+  width: 14px;
+  height: 22px;
+  border-radius: 0px;
+  background: #22d3ee;
+  border: 2px solid #040914;
+  box-shadow:
+    2px 2px 0 #02040a,
+    inset 2px 2px 0 #a5f3fc;
+}
+
+html[data-theme="pixel"] input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 22px;
+  border-radius: 0px;
+  background: #22d3ee;
+  border: 2px solid #040914;
+  box-shadow:
+    2px 2px 0 #02040a,
+    inset 2px 2px 0 #a5f3fc;
+}
+
+/* Stepped pixel grid markings inside Tuner ruler (cosmetic only; needle transform stays exact) */
+html[data-theme="pixel"] .pixel-ruler-track {
+  background-image: repeating-linear-gradient(
+    to right,
+    rgba(56, 189, 248, 0.08) 0px,
+    rgba(56, 189, 248, 0.08) 2px,
+    transparent 2px,
+    transparent 8px
+  );
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

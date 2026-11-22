@@ -1,16 +1,33 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import { detectPitchYIN } from './pitchAlgorithm.js';
 import {
   LearnAudioEngine,
   synthesizePluckedStringSamples,
 } from './audioSynth.js';
 import {
+  SAMPLE_LIBRARY_CONFIG,
+  findNearestSample,
+  getInstrumentSampleEntries,
+  noteLabelToMidi,
+} from './sampleLibrary.js';
+import {
   clampRefFrequency,
   getNoteFromFrequency,
   matchPresetString,
   PitchStabilizer,
 } from './frequencyUtils.js';
+import {
+  applyThemeToDocument,
+  loadTheme,
+  normalizeTheme,
+  saveTheme,
+  THEME_IDS,
+  THEME_STORAGE_KEY,
+  toggleThemeValue,
+} from './themeUtils.js';
 
 function makeSine(freq, sampleRate = 48000, size = 4096, amplitude = 0.5, dc = 0) {
   const buf = new Float32Array(size);
@@ -391,5 +408,200 @@ test('LearnAudioEngine unlocks suspended/interrupted mobile AudioContext and awa
         // ignore
       }
     }
+  }
+});
+
+test('sampleLibrary manifests match on-disk MP3 assets and resolve nearest sample pitch accurately', () => {
+  assert.equal(noteLabelToMidi('E2'), 40);
+  assert.equal(noteLabelToMidi('Cs1'), 25);
+  assert.equal(noteLabelToMidi('A4'), 69);
+
+  for (const instrument of Object.keys(SAMPLE_LIBRARY_CONFIG)) {
+    const entries = getInstrumentSampleEntries(instrument);
+    assert.ok(entries.length >= 17, `Expected entries for ${instrument}`);
+    for (const entry of entries) {
+      const diskPath = path.join(process.cwd(), 'public', entry.url.replace(/^\//, ''));
+      assert.ok(fs.existsSync(diskPath), `Missing sample file on disk: ${diskPath}`);
+      assert.ok(fs.statSync(diskPath).size > 10000, `Expected non-empty MP3: ${diskPath}`);
+    }
+  }
+
+  // Exact chromatic guitar sample match at A4=440
+  const exactE2 = findNearestSample('guitar', 82.4068892282175);
+  assert.equal(exactE2.note, 'E2');
+  assert.ok(Math.abs(exactE2.playbackRate - 1.0) < 0.0005);
+
+  // Custom calibration (A4=432Hz) shifts playbackRate smoothly
+  const calibratedA4 = findNearestSample('guitar', 432);
+  assert.equal(calibratedA4.note, 'A4');
+  assert.ok(Math.abs(calibratedA4.playbackRate - 432 / 440) < 0.0005);
+
+  // Bass multisample picks closest note within <= 1.5 semitones
+  const bassA1 = findNearestSample('bass', 55.0);
+  assert.ok(bassA1 && bassA1.note);
+  assert.ok(Math.abs(bassA1.centsShift) <= 200);
+
+  // Ukulele nylon library maps C4 -> Cs4 (-100c) and A4 -> exact A4
+  const ukeA4 = findNearestSample('ukulele', 440.0);
+  assert.equal(ukeA4.note, 'A4');
+  assert.ok(Math.abs(ukeA4.playbackRate - 1.0) < 0.0005);
+});
+
+test('LearnAudioEngine uses decoded studio sample buffers with calibrated playbackRate when fetch & decodeAudioData succeed', async () => {
+  const scheduledPlays = [];
+  const fakeStudioBuffer = { duration: 3.1, length: 136710, sampleRate: 44100 };
+
+  class MockStudioAudioContext {
+    constructor() {
+      this.sampleRate = 44100;
+      this.state = 'running';
+      this.currentTime = 1.0;
+      this.destination = { kind: 'dest' };
+    }
+    createDynamicsCompressor() {
+      return {
+        threshold: { value: 0 },
+        knee: { value: 0 },
+        ratio: { value: 0 },
+        attack: { value: 0 },
+        release: { value: 0 },
+        connect() {},
+      };
+    }
+    createGain() {
+      return {
+        gain: {
+          value: 1,
+          setValueAtTime() {},
+          linearRampToValueAtTime() {},
+          cancelScheduledValues() {},
+          setTargetAtTime() {},
+        },
+        connect() {},
+        disconnect() {},
+      };
+    }
+    createBiquadFilter() {
+      return {
+        type: 'peaking',
+        frequency: { value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {} },
+        Q: { value: 0 },
+        gain: { value: 0 },
+        connect() {},
+        disconnect() {},
+      };
+    }
+    createStereoPanner() {
+      return { pan: { value: 0 }, connect() {}, disconnect() {} };
+    }
+    createBuffer(channels, length, sampleRate) {
+      return {
+        length,
+        sampleRate,
+        duration: length / sampleRate,
+        getChannelData: () => new Float32Array(length),
+      };
+    }
+    createBufferSource() {
+      const src = {
+        buffer: null,
+        playbackRate: { value: 1, setValueAtTime(v) { src.playbackRate.value = v; } },
+        onended: null,
+        connect() {},
+        disconnect() {},
+        start(when) {
+          if (src.buffer && src.buffer.length > 1) {
+            scheduledPlays.push({ buffer: src.buffer, rate: src.playbackRate.value, when });
+          }
+        },
+        stop() {},
+      };
+      return src;
+    }
+    async decodeAudioData() {
+      return fakeStudioBuffer;
+    }
+    async close() {
+      this.state = 'closed';
+    }
+  }
+
+  const prevWindow = globalThis.window;
+  const prevFetch = globalThis.fetch;
+
+  globalThis.window = {
+    AudioContext: MockStudioAudioContext,
+    addEventListener() {},
+    removeEventListener() {},
+  };
+  globalThis.fetch = async () => ({
+    ok: true,
+    async arrayBuffer() {
+      return new ArrayBuffer(16);
+    },
+  });
+
+  try {
+    const engine = new LearnAudioEngine();
+    // Play a 6-string guitar chord at calibrated A4=432Hz
+    engine.playChordStrum([40, 45, 50, 55, 59, 64], 432, 'guitar');
+
+    await new Promise((r) => setTimeout(r, 25));
+
+    assert.equal(scheduledPlays.length, 6);
+    assert.ok(scheduledPlays.every((p) => p.buffer === fakeStudioBuffer));
+    assert.ok(scheduledPlays.every((p) => Math.abs(p.rate - 432 / 440) < 0.001));
+    // Verify staggered downstroke timing
+    for (let i = 1; i < scheduledPlays.length; i++) {
+      assert.ok(scheduledPlays[i].when > scheduledPlays[i - 1].when);
+    }
+  } finally {
+    globalThis.window = prevWindow;
+    globalThis.fetch = prevFetch;
+  }
+});
+
+test('themeUtils normalizes, toggles, persists, and applies Pixelated theme without touching tuner math', () => {
+  assert.equal(normalizeTheme('pixel'), THEME_IDS.PIXEL);
+  assert.equal(normalizeTheme('studio'), THEME_IDS.STUDIO);
+  assert.equal(normalizeTheme('unknown'), THEME_IDS.STUDIO);
+  assert.equal(toggleThemeValue('studio'), 'pixel');
+  assert.equal(toggleThemeValue('pixel'), 'studio');
+
+  const storageMap = new Map();
+  const prevWindow = globalThis.window;
+  globalThis.window = {
+    localStorage: {
+      getItem: (k) => (storageMap.has(k) ? storageMap.get(k) : null),
+      setItem: (k, v) => storageMap.set(k, v),
+    },
+  };
+
+  try {
+    assert.equal(loadTheme(), 'studio');
+    saveTheme('pixel');
+    assert.equal(storageMap.get(THEME_STORAGE_KEY), 'pixel');
+    assert.equal(loadTheme(), 'pixel');
+
+    const classes = new Set();
+    const fakeDoc = {
+      documentElement: {
+        dataset: {},
+        classList: {
+          add: (c) => classes.add(c),
+          remove: (c) => classes.delete(c),
+        },
+      },
+    };
+
+    applyThemeToDocument('pixel', fakeDoc);
+    assert.equal(fakeDoc.documentElement.dataset.theme, 'pixel');
+    assert.equal(classes.has('pixel-theme'), true);
+
+    applyThemeToDocument('studio', fakeDoc);
+    assert.equal(fakeDoc.documentElement.dataset.theme, undefined);
+    assert.equal(classes.has('pixel-theme'), false);
+  } finally {
+    globalThis.window = prevWindow;
   }
 });
