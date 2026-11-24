@@ -61,13 +61,13 @@ const TunerDisplay = ({
       className="glass-panel rounded-[4px] overflow-hidden flex flex-col justify-between transition-colors duration-200"
     >
       {/* Top Status Strip */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 sm:px-5 sm:py-3.5 border-b border-white/14 bg-white/[0.03]">
-        <div className="flex flex-wrap items-center gap-2.5 min-w-0">
-          <span className="font-mono text-xs font-medium tracking-wider text-slate-300 truncate">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 sm:px-5 sm:py-3.5 border-b border-white/14 bg-white/[0.03]">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
+          <span className="font-mono text-[11px] sm:text-xs font-medium tracking-wider text-slate-300 truncate max-w-full">
             {presetLabel}
           </span>
           <span
-            className={`font-mono text-xs tabular-nums whitespace-nowrap ${
+            className={`font-mono text-[11px] sm:text-xs tabular-nums whitespace-nowrap ${
               refFrequency !== 440
                 ? 'text-amber-300 font-semibold'
                 : 'text-slate-400'
@@ -79,7 +79,7 @@ const TunerDisplay = ({
             <button
               type="button"
               onClick={onClearLock}
-              className="min-h-[38px] sm:min-h-[32px] px-3 py-1 rounded-[2px] border border-amber-300/50 bg-amber-400/15 text-amber-200 font-mono text-xs font-semibold hover:bg-amber-400/25 active:scale-[0.98] transition-[transform,background-color] duration-150 whitespace-nowrap shrink-0 cursor-pointer"
+              className="min-h-[38px] sm:min-h-[32px] px-2.5 sm:px-3 py-1 rounded-[2px] border border-amber-300/50 bg-amber-400/15 text-amber-200 font-mono text-[11px] sm:text-xs font-semibold hover:bg-amber-400/25 active:scale-[0.98] transition-[transform,background-color] duration-150 whitespace-nowrap shrink-0 cursor-pointer"
             >
               String {lockedStringNum} Locked · Unlock
             </button>
@@ -87,7 +87,7 @@ const TunerDisplay = ({
         </div>
 
         <div
-          className={`px-3 py-1 rounded-[2px] border font-mono text-xs font-semibold tracking-wide whitespace-nowrap shrink-0 transition-[background-color,border-color,color,box-shadow] duration-150 ${directionClasses}`}
+          className={`px-2.5 sm:px-3 py-1 rounded-[2px] border font-mono text-[11px] sm:text-xs font-semibold tracking-wide whitespace-nowrap shrink-0 transition-[background-color,border-color,color,box-shadow] duration-150 ${directionClasses}`}
           data-testid="tuning-status"
         >
           {directionLabel}
@@ -245,7 +245,7 @@ const TunerDisplay = ({
 
             {/* Moving Sharp Needle Track (GPU-composited transform) */}
             <div
-              className="absolute inset-0 pointer-events-none transition-transform duration-100 ease-out"
+              className="absolute inset-0 pointer-events-none transition-transform duration-100 ease-out will-change-transform"
               style={{
                 transform: `translateX(${hasSignal ? clampedCents : 0}%)`,
               }}
@@ -294,7 +294,7 @@ const TunerDisplay = ({
             </div>
             <div className="h-2 w-full rounded-[1px] bg-white/10 overflow-hidden">
               <div
-                className={`h-full rounded-none transition-transform duration-100 origin-left ${
+                className={`h-full rounded-none transition-transform duration-100 origin-left will-change-transform ${
                   inTune ? 'bg-emerald-400' : 'bg-cyan-400'
                 }`}
                 style={{ transform: `scaleX(${isListening ? inputPercent / 100 : 0})` }}

@@ -140,7 +140,7 @@ function App() {
   };
 
   return (
-    <div className="relative min-h-dvh bg-[#070b14] text-slate-50 flex flex-col overflow-x-hidden">
+    <div className="relative min-h-dvh text-slate-50 flex flex-col overflow-x-hidden">
       {/* Crisp Architectural Studio Grid & Directional Top Accent */}
       <div
         aria-hidden="true"
@@ -151,14 +151,14 @@ function App() {
 
       {/* 3-Zone Single-Row Precision Header */}
       <header className="relative z-20 glass-bar border-b border-white/14">
-        <div className="max-w-[1280px] mx-auto px-2 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-1 sm:gap-8">
+        <div className="max-w-[1280px] mx-auto px-2 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-1 sm:gap-6">
           <button
             type="button"
             onClick={() => switchView('tuner')}
-            className="inline-flex items-center gap-1 sm:gap-2.5 font-display font-bold text-[13px] sm:text-xl tracking-tight text-white whitespace-nowrap shrink-0 cursor-pointer text-left min-h-[38px] sm:min-h-[40px]"
+            className="inline-flex items-center gap-1 sm:gap-2.5 font-display font-bold text-[11px] sm:text-xl tracking-tight text-white whitespace-nowrap shrink-0 cursor-pointer text-left min-h-[36px] sm:min-h-[40px]"
           >
             <ChromaTunerLogo
-              className="w-[18px] h-[18px] sm:w-7 sm:h-7 shrink-0"
+              className="w-4 h-4 sm:w-7 sm:h-7 shrink-0"
               pixel={isPixelTheme}
             />
             <span>ChromaTuner</span>
@@ -173,7 +173,7 @@ function App() {
               type="button"
               onClick={() => switchView('tuner')}
               aria-pressed={activeView === 'tuner'}
-              className={`min-h-[34px] sm:min-h-[38px] px-2 sm:px-5 py-1 sm:py-1.5 rounded-[2px] font-mono text-[11px] sm:text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.98] transition-[transform,background-color,color] duration-150 cursor-pointer ${
+              className={`min-h-[34px] sm:min-h-[38px] px-1.5 sm:px-5 py-1 sm:py-1.5 rounded-[2px] font-mono text-[10px] sm:text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.98] transition-[transform,background-color,color] duration-150 cursor-pointer ${
                 activeView === 'tuner'
                   ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_10px_rgba(34,211,238,0.28)]'
                   : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
@@ -185,7 +185,7 @@ function App() {
               type="button"
               onClick={() => switchView('learn')}
               aria-pressed={activeView === 'learn'}
-              className={`min-h-[34px] sm:min-h-[38px] px-2 sm:px-5 py-1 sm:py-1.5 rounded-[2px] font-mono text-[11px] sm:text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.98] transition-[transform,background-color,color] duration-150 cursor-pointer ${
+              className={`min-h-[34px] sm:min-h-[38px] px-1.5 sm:px-5 py-1 sm:py-1.5 rounded-[2px] font-mono text-[10px] sm:text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.98] transition-[transform,background-color,color] duration-150 cursor-pointer ${
                 activeView === 'learn'
                   ? 'bg-cyan-400 text-slate-950 shadow-[0_2px_10px_rgba(34,211,238,0.28)]'
                   : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
@@ -209,7 +209,7 @@ function App() {
                   ? 'Pixel Theme Active · Click for Studio Theme'
                   : 'Switch to Pixelated 8-Bit Theme'
               }
-              className={`min-h-[36px] min-w-[36px] sm:min-h-[40px] sm:min-w-0 px-2 sm:px-3 py-1 sm:py-1.5 rounded-[2px] border font-mono text-[11px] sm:text-xs font-semibold inline-flex items-center justify-center gap-1.5 active:scale-[0.98] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer ${
+              className={`min-h-[34px] min-w-[34px] sm:min-h-[40px] sm:min-w-0 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-[2px] border font-mono text-[10px] sm:text-xs font-semibold inline-flex items-center justify-center gap-1.5 active:scale-[0.98] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer ${
                 isPixelTheme
                   ? 'bg-amber-400/20 text-amber-200 border-amber-300/60 hover:bg-amber-400/30'
                   : 'bg-white/[0.06] text-slate-200 border-white/16 hover:bg-white/[0.14]'
@@ -240,13 +240,14 @@ function App() {
             <button
               type="button"
               onClick={isListening ? stopTuner : startTuner}
-              className={`min-h-[36px] sm:min-h-[40px] px-2 sm:px-4 py-1 sm:py-1.5 rounded-[2px] border font-mono text-[11px] sm:text-xs font-semibold tracking-wide active:scale-[0.98] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer ${
+              aria-label={isListening ? 'Stop microphone tuner' : 'Start microphone tuner'}
+              className={`min-h-[34px] sm:min-h-[40px] px-2 sm:px-4 py-1 sm:py-1.5 rounded-[2px] border font-mono text-[10px] sm:text-xs font-semibold tracking-wide active:scale-[0.98] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color] duration-150 cursor-pointer ${
                 isListening
                   ? 'bg-rose-500/20 text-rose-100 border-rose-400/55 hover:bg-rose-500/30'
                   : 'bg-white/[0.08] text-slate-100 border-white/18 hover:bg-white/[0.16]'
               }`}
             >
-              <span className="sm:hidden">{isListening ? 'Mic On' : 'Mic Off'}</span>
+              <span className="sm:hidden">{isListening ? 'Live' : 'Mic'}</span>
               <span className="hidden sm:inline">
                 {isListening ? 'Mic Active · Stop' : 'Mic Standby'}
               </span>
@@ -299,7 +300,7 @@ function App() {
 
             <nav
               aria-label="Tuning Presets"
-              className="flex items-center gap-1.5 overflow-x-auto no-scrollbar min-w-0 flex-1"
+              className="flex items-center gap-1.5 overflow-x-auto no-scrollbar min-w-0 flex-1 py-0.5 pr-0.5"
             >
               {visiblePresets.map((preset) => {
                 const active = preset.id === activePreset.id;
@@ -405,7 +406,7 @@ function App() {
 
       {/* Mobile Sticky Bottom Thumb-Zone Control Bar (Tuner View) */}
       {activeView === 'tuner' && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 glass-bar border-t border-white/15 px-3.5 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] flex items-center gap-2.5">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 glass-bar glass-bar-bottom border-t border-white/15 px-3 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] flex items-center gap-2">
           <button
             type="button"
             onClick={isListening ? stopTuner : startTuner}

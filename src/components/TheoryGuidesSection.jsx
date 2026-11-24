@@ -12,10 +12,12 @@ import {
 } from '../utils/musicTheory';
 import { getInstrumentMeta } from '../utils/frequencyUtils';
 import { learnAudio } from '../utils/audioSynth';
+import RhythmTheorySection from './RhythmTheorySection';
 
 const THEORY_TOPICS = [
   { id: 'all', label: 'All Guides' },
   { id: 'circle', label: 'Circle of Fifths' },
+  { id: 'rhythm', label: 'Rhythm & Strumming' },
   { id: 'tabs', label: 'How to Read Tabs' },
   { id: 'nashville', label: 'Nashville Numbers' },
   { id: 'fundamentals', label: 'Guitar Theory' },
@@ -356,11 +358,24 @@ const TheoryGuidesSection = ({
   instrument = 'guitar',
   rootPc = 0,
   refFrequency = 440,
+  bpm = 96,
   playMode = 'strum',
+  topicFilter: controlledTopicFilter,
+  onTopicFilterChange,
+  activeSequenceRhythmId = 'single',
+  onUseRhythmInSequence,
   onSelectRoot,
   onNavigateTab,
 }) => {
-  const [topicFilter, setTopicFilter] = useState('all');
+  const [internalTopicFilter, setInternalTopicFilter] = useState('all');
+  const topicFilter = controlledTopicFilter !== undefined ? controlledTopicFilter : internalTopicFilter;
+  const setTopicFilter = (nextTopic) => {
+    if (onTopicFilterChange) {
+      onTopicFilterChange(nextTopic);
+    } else {
+      setInternalTopicFilter(nextTopic);
+    }
+  };
   const [theorySubTab, setTheorySubTab] = useState('fretboard');
   const [nashvilleChartId, setNashvilleChartId] = useState('pop_anthem');
   const [selectedCagedLetter, setSelectedCagedLetter] = useState('E');
@@ -516,20 +531,20 @@ const TheoryGuidesSection = ({
   return (
     <section aria-label="Music Theory, Tabs, Circle of Fifths, and Nashville Numbers" className="flex flex-col gap-5">
       {/* Sub-Navigation Filter */}
-      <div className="glass-panel rounded-[4px] p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-        <div>
+      <div className="glass-panel rounded-[4px] p-3.5 sm:p-4 flex flex-col gap-2.5">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="font-display font-bold text-base sm:text-lg text-white">
             Theory, Tabs &amp; Studio Guides
           </h2>
           <p className="font-sans text-xs text-slate-300">
-            Interactive reference synced to your selected key ({selectedRootName}) and instrument ({instMeta.label}).
+            Synced to <span className="font-mono text-cyan-300 font-semibold">{selectedRootName}</span> · {instMeta.label}
           </p>
         </div>
 
         <div
           role="group"
           aria-label="Filter Theory Guide Topics"
-          className="flex items-center gap-1.5 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar pb-0.5 sm:pb-0"
+          className="flex items-center gap-1.5 overflow-x-auto lg:overflow-visible lg:grid lg:grid-cols-6 no-scrollbar py-0.5 pr-0.5 lg:py-0 lg:pr-0"
         >
           {THEORY_TOPICS.map((topic) => {
             const active = topicFilter === topic.id;
@@ -539,7 +554,7 @@ const TheoryGuidesSection = ({
                 type="button"
                 aria-pressed={active}
                 onClick={() => setTopicFilter(topic.id)}
-                className={`min-h-[40px] px-3 py-1.5 rounded-[2px] border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+                className={`min-h-[38px] px-2.5 py-1.5 rounded-[2px] border font-mono text-[11px] sm:text-xs font-semibold whitespace-nowrap shrink-0 flex items-center justify-center cursor-pointer transition-colors ${
                   active
                     ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_2px_12px_rgba(34,211,238,0.28)]'
                     : 'bg-white/[0.05] text-slate-300 border-white/12 hover:bg-white/[0.12] hover:text-white'
@@ -584,6 +599,7 @@ const TheoryGuidesSection = ({
 
               <svg
                 viewBox="0 0 360 360"
+                data-smooth-svg="true"
                 className="w-full max-w-[360px] h-auto select-none"
                 role="img"
                 aria-label={`Circle of Fifths wheel centered on ${circleCtx.entry.majorLabel} Major`}
@@ -813,7 +829,7 @@ const TheoryGuidesSection = ({
 
               <div className="glass-recessed rounded-[3px] p-3.5 flex flex-col gap-1.5 font-sans text-xs text-slate-300 leading-relaxed">
                 <p>
-                  <strong className="text-white">1. Instant Songwriting Compass:</strong> Pick any key (`I`). Its neighbor counter-clockwise is <span className="text-emerald-300 font-semibold">IV ({circleCtx.ivEntry.majorLabel})</span>, clockwise is <span className="text-amber-300 font-semibold">V ({circleCtx.vEntry.majorLabel})</span>, and inner ring is <span className="text-cyan-300 font-semibold">vi ({circleCtx.entry.relMinorLabel})</span>.
+                  <strong className="text-white">1. Instant Songwriting Compass:</strong> Pick any key (<span className="font-mono text-white font-semibold">I</span>). Its neighbor counter-clockwise is <span className="text-emerald-300 font-semibold">IV ({circleCtx.ivEntry.majorLabel})</span>, clockwise is <span className="text-amber-300 font-semibold">V ({circleCtx.vEntry.majorLabel})</span>, and inner ring is <span className="text-cyan-300 font-semibold">vi ({circleCtx.entry.relMinorLabel})</span>.
                 </p>
                 <p>
                   <strong className="text-white">2. Memorize Key Signatures:</strong> Moving clockwise adds 1 sharp in order (<span className="font-mono text-slate-200">F–C–G–D–A–E–B</span>). Moving counter-clockwise adds 1 flat (<span className="font-mono text-slate-200">B–E–A–D–G–C–F</span>).
@@ -920,7 +936,14 @@ const TheoryGuidesSection = ({
                             : 'text-amber-300'
                       }`}
                     >
-                      {n.isOctave ? 'Next Octave' : `step: ${n.stepLabel}`}
+                      {n.isOctave ? (
+                        <>
+                          <span className="sm:hidden">Next 8ve</span>
+                          <span className="hidden sm:inline">Next Octave</span>
+                        </>
+                      ) : (
+                        `step: ${n.stepLabel}`
+                      )}
                     </span>
                   </button>
                 );
@@ -930,7 +953,20 @@ const TheoryGuidesSection = ({
         </article>
       )}
 
-      {/* 2. HOW TO READ TABS */}
+      {/* 2. RHYTHM THEORY, SUBDIVISIONS & STRUMMING PATTERNS */}
+      {showSection('rhythm') && (
+        <RhythmTheorySection
+          instrument={instrument}
+          rootPc={rootPc}
+          refFrequency={refFrequency}
+          bpm={bpm}
+          playMode={playMode}
+          activeSequenceRhythmId={activeSequenceRhythmId}
+          onUseRhythmInSequence={onUseRhythmInSequence}
+        />
+      )}
+
+      {/* 3. HOW TO READ TABS */}
       {showSection('tabs') && (
         <article
           aria-label="How to Read Guitar, Bass, and Ukulele Tabs"
@@ -1279,7 +1315,7 @@ const TheoryGuidesSection = ({
             <div
               role="tablist"
               aria-label="Core Theory Topics"
-              className="flex items-center gap-1 glass-recessed rounded-[3px] p-1 overflow-x-auto no-scrollbar shrink-0"
+              className="flex items-center gap-1 glass-recessed rounded-[3px] p-1 overflow-x-auto no-scrollbar py-0.5 pr-0.5 sm:py-1 sm:pr-1 shrink-0"
             >
               {[
                 { id: 'fretboard', label: 'Fretboard & Steps' },

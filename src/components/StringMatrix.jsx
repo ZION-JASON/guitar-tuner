@@ -71,7 +71,7 @@ const StringMatrix = ({
           )}
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-1 gap-2 p-2.5 sm:p-0 sm:gap-0 sm:divide-y sm:divide-white/10">
+        <div className="grid grid-cols-2 sm:grid-cols-1 gap-1.5 sm:gap-0 p-2 sm:p-0 sm:divide-y sm:divide-white/10">
           {hasStrings ? (
             preset.strings.map((s) => {
               const targetHz = midiToFrequency(s.midi, refFrequency);
@@ -83,7 +83,7 @@ const StringMatrix = ({
               return (
                 <div
                   key={s.stringNum}
-                  className={`flex items-center justify-between gap-2 sm:gap-3 px-2.5 py-2 sm:px-4 sm:py-2.5 min-h-[56px] sm:min-h-[58px] rounded-[3px] sm:rounded-none border sm:border-0 transition-colors duration-150 ${
+                  className={`flex items-center justify-between gap-1.5 sm:gap-3 px-2 py-2 sm:px-4 sm:py-2.5 min-h-[54px] sm:min-h-[58px] rounded-[3px] sm:rounded-none border sm:border-0 transition-colors duration-150 ${
                     isLocked
                       ? 'bg-amber-400/15 border-amber-300/45'
                       : isMatched
@@ -94,13 +94,13 @@ const StringMatrix = ({
                   <button
                     type="button"
                     onClick={() => onToggleLockString(s.stringNum)}
-                    className="flex-1 min-w-0 min-h-[44px] flex items-center justify-between gap-2 sm:gap-3 text-left py-0.5 sm:py-1 cursor-pointer"
+                    className="flex-1 min-w-0 min-h-[44px] flex items-center justify-between gap-1.5 sm:gap-3 text-left py-0.5 sm:py-1 cursor-pointer"
                     aria-pressed={isLocked}
                     aria-label={`Lock string ${s.stringNum} ${s.noteName}${s.octave}`}
                   >
-                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
                       <span
-                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-[2px] flex items-center justify-center border font-mono text-xs font-semibold tabular-nums shrink-0 transition-colors duration-150 ${
+                        className={`w-6 h-6 sm:w-8 sm:h-8 rounded-[2px] flex items-center justify-center border font-mono text-[11px] sm:text-xs font-semibold tabular-nums shrink-0 transition-colors duration-150 ${
                           isLocked
                             ? 'border-amber-300/60 bg-amber-400/20 text-amber-200'
                             : isMatched
@@ -111,14 +111,14 @@ const StringMatrix = ({
                         {s.stringNum}
                       </span>
                       <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-1 min-w-0">
-                        <span className="font-display font-bold text-base sm:text-lg text-slate-50 leading-tight">
+                        <span className="font-display font-bold text-sm sm:text-lg text-slate-50 leading-tight whitespace-nowrap">
                           {s.noteName}
-                          <span className="font-mono text-[11px] sm:text-xs font-medium text-slate-400 ml-0.5">
+                          <span className="font-mono text-[10px] sm:text-xs font-medium text-slate-400 ml-0.5">
                             {s.octave}
                           </span>
                         </span>
                         <span className="sm:hidden font-mono text-[10px] tabular-nums text-slate-400 leading-tight truncate">
-                          {isLocked ? 'Locked' : `${targetHz.toFixed(1)} Hz`}
+                          {isLocked ? 'Locked' : `${targetHz.toFixed(1)}Hz`}
                         </span>
                       </div>
                     </div>
@@ -144,7 +144,7 @@ const StringMatrix = ({
                         ? `Stop reference tone for ${s.noteName}${s.octave}`
                         : `Play reference tone for ${s.noteName}${s.octave}`
                     }
-                    className={`min-h-[42px] min-w-[50px] sm:min-w-[68px] px-2.5 sm:px-3 py-1.5 rounded-[2px] border font-mono text-[11px] sm:text-xs font-semibold active:scale-[0.97] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color,box-shadow] duration-150 cursor-pointer ${
+                    className={`min-h-[40px] min-w-[44px] sm:min-w-[68px] px-2 sm:px-3 py-1.5 rounded-[2px] border font-mono text-[10px] sm:text-xs font-semibold active:scale-[0.97] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color,box-shadow] duration-150 cursor-pointer ${
                       isPlaying
                         ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_0_14px_rgba(34,211,238,0.35)]'
                         : 'bg-white/[0.07] text-slate-200 border-white/18 hover:bg-white/[0.15]'
@@ -163,13 +163,13 @@ const StringMatrix = ({
               return (
                 <div
                   key={item.key}
-                  className="flex items-center justify-between gap-2 sm:gap-3 px-2.5 py-2 sm:px-4 sm:py-2.5 min-h-[54px] sm:min-h-[58px] rounded-[3px] sm:rounded-none border sm:border-0 border-white/12 bg-white/[0.03] sm:bg-transparent hover:bg-white/[0.04] transition-colors duration-150"
+                  className="flex items-center justify-between gap-1.5 sm:gap-3 px-2 py-2 sm:px-4 sm:py-2.5 min-h-[54px] sm:min-h-[58px] rounded-[3px] sm:rounded-none border sm:border-0 border-white/12 bg-white/[0.03] sm:bg-transparent hover:bg-white/[0.04] transition-colors duration-150"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3 min-w-0">
-                    <span className="font-display font-bold text-base sm:text-lg text-slate-50 leading-tight">
+                    <span className="font-display font-bold text-sm sm:text-lg text-slate-50 leading-tight">
                       {item.label}
                     </span>
-                    <span className="font-mono text-[11px] sm:text-xs font-medium tabular-nums text-slate-300">
+                    <span className="font-mono text-[10px] sm:text-xs font-medium tabular-nums text-slate-300">
                       {targetHz.toFixed(1)} Hz
                     </span>
                   </div>
@@ -177,7 +177,7 @@ const StringMatrix = ({
                     type="button"
                     onClick={() => onToggleTone(toneKey, targetHz, item.midi)}
                     aria-pressed={isPlaying}
-                    className={`min-h-[42px] min-w-[50px] sm:min-w-[68px] px-2.5 sm:px-3 py-1.5 rounded-[2px] border font-mono text-[11px] sm:text-xs font-semibold active:scale-[0.97] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color,box-shadow] duration-150 cursor-pointer ${
+                    className={`min-h-[40px] min-w-[44px] sm:min-w-[68px] px-2 sm:px-3 py-1.5 rounded-[2px] border font-mono text-[10px] sm:text-xs font-semibold active:scale-[0.97] whitespace-nowrap shrink-0 transition-[transform,background-color,border-color,color,box-shadow] duration-150 cursor-pointer ${
                       isPlaying
                         ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_0_14px_rgba(34,211,238,0.35)]'
                         : 'bg-white/[0.07] text-slate-200 border-white/18 hover:bg-white/[0.15]'

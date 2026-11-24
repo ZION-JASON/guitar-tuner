@@ -12,7 +12,48 @@ import {
   previewProgressionReorder,
 } from '../utils/customProgression';
 import { clampBpm, MAX_BPM, MIN_BPM } from '../utils/metronome';
+import {
+  RHYTHM_PATTERNS,
+  getRhythmPattern,
+  normalizeRhythmId,
+} from '../utils/rhythmTheory';
 import ChordDiagramSVG from './ChordDiagramSVG';
+
+const QUICK_RHYTHM_IDS = [
+  { id: 'single', label: 'Single' },
+  { id: 'quarter-downs', label: '4/4 Downs' },
+  { id: 'pendulum-strum', label: 'Pendulum' },
+  { id: 'rock-eighths', label: 'Rock D-U' },
+  { id: 'island-strum', label: 'Island' },
+  { id: 'pop-backbeat', label: 'Chuck 2&4' },
+  { id: 'sixteenth-full', label: '16th (1e&a)' },
+  { id: 'swing-shuffle', label: 'Swing' },
+  { id: 'waltz-3-4', label: '3/4 Waltz' },
+];
+
+const getMiniSlotTone = (action, isActive) => {
+  if (isActive) {
+    if (action === 'rest') {
+      return 'bg-amber-300/25 border-amber-300 text-amber-100';
+    }
+    return 'bg-emerald-400 border-emerald-200 text-slate-950 shadow-[0_0_12px_rgba(52,211,153,0.45)]';
+  }
+  switch (action) {
+    case 'accent-down':
+      return 'bg-cyan-400/18 border-cyan-300/45 text-cyan-100';
+    case 'down':
+      return 'bg-white/[0.08] border-white/18 text-white';
+    case 'up':
+      return 'bg-sky-400/12 border-sky-300/30 text-sky-200';
+    case 'chuck':
+      return 'bg-amber-400/16 border-amber-300/40 text-amber-200';
+    case 'bass':
+      return 'bg-emerald-400/14 border-emerald-300/35 text-emerald-200';
+    case 'rest':
+    default:
+      return 'bg-slate-950/55 border-white/10 text-slate-500';
+  }
+};
 
 const CustomProgressionSequencer = ({
   steps = [],
@@ -20,6 +61,7 @@ const CustomProgressionSequencer = ({
   bpm = 90,
   defaultStepBeats = 4,
   playMode = 'strum',
+  rhythmId = 'single',
   withClick = true,
   loop = true,
   isPlaying = false,
@@ -31,6 +73,9 @@ const CustomProgressionSequencer = ({
   onToggleWithClick,
   onToggleLoop,
   onChangePlayMode,
+  onChangeRhythm,
+  onChangeStepRhythm,
+  onOpenRhythmGuide,
   onAddFavoriteStep,
   onQueueAllFavorites,
   onRemoveStep,
@@ -114,6 +159,13 @@ const CustomProgressionSequencer = ({
 
   const totalBeats = useMemo(() => getSequenceTotalBeats(steps), [steps]);
   const loopSec = useMemo(() => getSequenceDurationSec(steps, bpm), [steps, bpm]);
+  const sequencePattern = useMemo(() => getRhythmPattern(rhythmId), [rhythmId]);
+  const liveDisplayPattern = useMemo(() => {
+    if (isPlaying && activeState?.rhythmId) {
+      return getRhythmPattern(activeState.rhythmId);
+    }
+    return sequencePattern;
+  }, [isPlaying, activeState?.rhythmId, sequencePattern]);
 
   const displaySteps = useMemo(() => {
     if (!dragUi) return resolvedSteps;
@@ -432,6 +484,119 @@ const CustomProgressionSequencer = ({
         </div>
       </div>
 
+      {/* Sequence Rhythm Selector & Live "Down / Up" Groove Strip */}
+      <div className="glass-recessed rounded-[3px] p-3 sm:p-3.5 border border-white/12 flex flex-col gap-2.5 min-w-0">
+        <div className="flex flex-col gap-2.5 min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+              <label
+                htmlFor="sequence-rhythm-select"
+                className="font-mono text-xs font-semibold text-cyan-300 whitespace-nowrap shrink-0"
+              >
+                Rhythm Groove:
+              </label>
+              <div className="relative flex-1 min-w-0 sm:max-w-md">
+                <select
+                  id="sequence-rhythm-select"
+                  value={sequencePattern.id}
+                  onChange={(e) => onChangeRhythm && onChangeRhythm(e.target.value)}
+                  className="appearance-none w-full min-w-0 min-h-[38px] pl-2.5 pr-7 py-1 rounded-[2px] border border-white/20 bg-slate-950/90 text-white font-mono text-xs font-semibold cursor-pointer focus:border-cyan-300 focus:outline-none"
+                >
+                  {RHYTHM_PATTERNS.map((pat) => (
+                    <option key={pat.id} value={pat.id}>
+                      {pat.name} ({pat.timeSig}) — {pat.shortCode}
+                    </option>
+                  ))}
+                </select>
+                <svg
+                  aria-hidden="true"
+                  data-smooth-svg="true"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
+                >
+                  <path
+                    d="M4 6l4 4 4-4"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="square"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            {onOpenRhythmGuide && (
+              <button
+                type="button"
+                onClick={onOpenRhythmGuide}
+                className="self-start sm:self-auto min-h-[38px] px-3 py-1 rounded-[2px] border border-cyan-300/35 bg-cyan-400/10 hover:bg-cyan-400/20 text-cyan-200 font-mono text-[11px] font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors"
+              >
+                Rhythm Guide →
+              </button>
+            )}
+          </div>
+
+          {/* Quick 1-Tap Popular Rhythms */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {QUICK_RHYTHM_IDS.map((preset) => {
+              const active = sequencePattern.id === preset.id;
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => onChangeRhythm && onChangeRhythm(preset.id)}
+                  className={`min-h-[34px] px-2.5 py-1 rounded-[2px] border font-mono text-[11px] font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+                    active
+                      ? 'bg-cyan-400 text-slate-950 border-cyan-300'
+                      : 'bg-white/[0.04] text-slate-300 border-white/12 hover:bg-white/[0.12] hover:text-white'
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Live "Down / Up" Visual Stroke Strip */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2 pt-2 border-t border-white/10 min-w-0">
+          <div
+            className={
+              liveDisplayPattern.slots.length === 16
+                ? 'grid grid-cols-4 sm:grid-cols-8 gap-1'
+                : liveDisplayPattern.slots.length === 12
+                  ? 'grid grid-cols-3 sm:grid-cols-6 gap-1'
+                  : liveDisplayPattern.slots.length === 8
+                    ? 'grid grid-cols-4 sm:grid-cols-8 gap-1'
+                    : 'flex flex-wrap items-center gap-1'
+            }
+          >
+            {liveDisplayPattern.slots.map((slot, sIdx) => {
+              const slotActive = isPlaying && activeState?.slotIndex === sIdx;
+              return (
+                <div
+                  key={`seq-slot-${liveDisplayPattern.id}-${sIdx}`}
+                  className={`min-w-[38px] rounded-[2px] border px-1.5 py-1 flex flex-col items-center justify-center leading-tight transition-colors ${getMiniSlotTone(
+                    slot.action,
+                    slotActive
+                  )}`}
+                >
+                  <span className="font-mono text-[9px] opacity-80">{slot.countLabel}</span>
+                  <span className="font-display font-bold text-xs">{slot.arrow}</span>
+                  <span className="font-mono text-[9px] font-bold">{slot.shortCode}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="font-mono text-[11px] text-cyan-200 leading-relaxed min-w-0">
+            <span className="text-slate-400">Strum: </span>
+            {liveDisplayPattern.upDownText}
+          </div>
+        </div>
+      </div>
+
       {/* Sequence Steps Timeline */}
       {resolvedSteps.length === 0 ? (
         <div className="glass-recessed rounded-[3px] p-4 sm:p-5 text-center flex flex-col items-center gap-2.5">
@@ -600,11 +765,11 @@ const CustomProgressionSequencer = ({
                     }`}
                     aria-label={`Audition ${chordData.symbol} (${instMeta.shortLabel})`}
                   >
-                    <div className="flex items-baseline justify-between gap-1.5">
-                      <span className="font-display font-bold text-base sm:text-lg text-white truncate">
+                    <div className="flex flex-col items-start gap-0.5 min-w-0">
+                      <span className="font-display font-bold text-base sm:text-lg text-white leading-tight break-words">
                         {chordData.symbol}
                       </span>
-                      <span className="font-mono text-[10px] text-cyan-300 uppercase shrink-0">
+                      <span className="font-mono text-[10px] text-cyan-300 uppercase truncate">
                         {instMeta.shortLabel}
                       </span>
                     </div>
@@ -650,6 +815,44 @@ const CustomProgressionSequencer = ({
                       +
                     </button>
                   </div>
+
+                  {/* Per-Chord Optional Rhythm Override */}
+                  {onChangeStepRhythm && (
+                    <div data-no-drag="true" className="relative">
+                      <select
+                        data-no-drag="true"
+                        aria-label={`Rhythm pattern for step ${displayIdx + 1} (${chordData.symbol})`}
+                        value={normalizeRhythmId(step.rhythmId, { allowInherit: true })}
+                        onChange={(e) => onChangeStepRhythm(step.uid, e.target.value)}
+                        className={`appearance-none w-full min-h-[34px] pl-2 pr-6 py-1 rounded-[2px] border font-mono text-[10px] font-semibold cursor-pointer focus:border-cyan-300 focus:outline-none ${
+                          step.rhythmId && step.rhythmId !== 'inherit'
+                            ? 'border-cyan-300/50 bg-cyan-400/12 text-cyan-100'
+                            : 'border-white/12 bg-slate-950/75 text-slate-300'
+                        }`}
+                      >
+                        <option value="inherit">Rhythm: Use Sequence</option>
+                        {RHYTHM_PATTERNS.map((pat) => (
+                          <option key={`step-r-${pat.id}`} value={pat.id}>
+                            {pat.name} ({pat.shortCode})
+                          </option>
+                        ))}
+                      </select>
+                      <svg
+                        aria-hidden="true"
+                        data-smooth-svg="true"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        className="w-3 h-3 text-slate-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                      >
+                        <path
+                          d="M4 6l4 4 4-4"
+                          stroke="currentColor"
+                          strokeWidth="1.75"
+                          strokeLinecap="square"
+                        />
+                      </svg>
+                    </div>
+                  )}
 
                   {/* Reorder & Duplicate Controls */}
                   <div data-no-drag="true" className="grid grid-cols-3 gap-1">
@@ -712,7 +915,7 @@ const CustomProgressionSequencer = ({
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar pb-0.5 sm:pb-0">
+          <div className="flex items-center gap-1.5 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar py-0.5 pr-0.5 sm:py-0 sm:pr-0">
             {resolvedFavorites.map(({ fav, chordData, instMeta }) => (
               <button
                 key={`pick-${fav.id}`}

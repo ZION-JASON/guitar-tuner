@@ -605,3 +605,25 @@ test('themeUtils normalizes, toggles, persists, and applies Pixelated theme with
     globalThis.window = prevWindow;
   }
 });
+
+test('LearnAudioEngine builds directional down, up, and bass strum schedules accurately', () => {
+  const engine = new LearnAudioEngine();
+  const chordMidi = [40, 45, 50, 55, 59, 64]; // E2 -> E4
+
+  const down = engine._buildStrumSchedule(chordMidi, 440, 'guitar', { direction: 'down' });
+  assert.equal(down.length, 6);
+  assert.ok(down[0].freq < down[5].freq);
+  assert.ok(down[0].delaySec < down[5].delaySec);
+
+  // Upstroke brushes upper 5 strings from highest pitch down to lower pitch
+  const up = engine._buildStrumSchedule(chordMidi, 440, 'guitar', { direction: 'up' });
+  assert.equal(up.length, 5);
+  assert.ok(up[0].freq > up[4].freq);
+  assert.ok(up[0].delaySec < up[4].delaySec);
+
+  // Bass stroke picks only lowest 2 bass strings
+  const bass = engine._buildStrumSchedule(chordMidi, 440, 'guitar', { direction: 'bass' });
+  assert.equal(bass.length, 2);
+  assert.ok(bass[0].freq < bass[1].freq);
+});
+

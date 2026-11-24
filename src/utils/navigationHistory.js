@@ -38,7 +38,7 @@ export function normalizeNavSnapshot(raw) {
     return createInitialNavSnapshot();
   }
   const learnRaw = raw.learn && typeof raw.learn === 'object' ? raw.learn : {};
-  const validTab = ['chords', 'scales', 'progressions', 'theory'].includes(learnRaw.tab)
+  const validTab = ['chords', 'scales', 'progressions', 'theory', 'fretgame'].includes(learnRaw.tab)
     ? learnRaw.tab
     : 'chords';
   const validInstrument = VALID_INSTRUMENTS.includes(raw.instrument)
@@ -117,6 +117,10 @@ export function describeNavSnapshot(snap) {
 
   if (learn.tab === 'theory') {
     return `${instLabel} ${rootName} Theory & Guides`;
+  }
+
+  if (learn.tab === 'fretgame') {
+    return `${instLabel} Fretboard Game`;
   }
 
   return `${instLabel} Learn`;

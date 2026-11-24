@@ -38,19 +38,26 @@ import {
   removeProgressionStep,
   saveCustomProgression,
   updateProgressionStepBeats,
+  updateProgressionStepRhythm,
 } from '../utils/customProgression';
+import {
+  loadSequenceRhythmId,
+  saveSequenceRhythmId,
+} from '../utils/rhythmTheory';
 import { DEFAULT_BPM, getTimeSignatureConfig } from '../utils/metronome';
 import ChordDiagramSVG from './ChordDiagramSVG';
 import PracticeMetronomeBar from './PracticeMetronomeBar';
 import FavoriteChordsTray from './FavoriteChordsTray';
 import CustomProgressionSequencer from './CustomProgressionSequencer';
 import TheoryGuidesSection from './TheoryGuidesSection';
+import FretboardGameSection from './FretboardGameSection';
 
 const LEARN_TABS = [
   { id: 'chords', label: 'Chords' },
   { id: 'scales', label: 'Scales' },
   { id: 'progressions', label: 'Progressions & Intervals' },
   { id: 'theory', label: 'Theory & Guides' },
+  { id: 'fretgame', label: 'Fretboard Game' },
 ];
 
 const CHORD_CATEGORIES = [
@@ -696,16 +703,14 @@ const ChordCard = ({
     <article className="glass-panel rounded-[4px] p-2.5 sm:p-4 flex flex-col justify-between gap-2 sm:gap-3 transition-[border-color,transform] duration-200 hover:border-white/25">
       <div className="flex flex-col gap-2">
         <div className="flex items-start justify-between gap-1.5">
-          <div className="min-w-0">
-            <div className="flex items-baseline gap-1.5 sm:gap-2">
-              <h3 className="font-display font-bold text-lg sm:text-xl text-white truncate">
-                {chordData.symbol}
-              </h3>
-              <span className="font-mono text-[11px] sm:text-xs text-slate-400 truncate">
-                {chordData.quality.name}
-              </span>
-            </div>
-            <div className="mt-0.5 sm:mt-1 flex items-center gap-1.5 sm:gap-2 font-mono text-[11px] sm:text-xs text-cyan-300 truncate">
+          <div className="min-w-0 flex-1">
+            <h3 className="font-display font-bold text-base sm:text-xl text-white leading-tight break-words">
+              {chordData.symbol}
+            </h3>
+            <span className="block mt-0.5 font-mono text-[10px] sm:text-xs text-slate-400 truncate">
+              {chordData.quality.name}
+            </span>
+            <div className="mt-0.5 sm:mt-1 flex items-center gap-1.5 sm:gap-2 font-mono text-[10px] sm:text-xs text-cyan-300 truncate">
               {instrument === 'bass' && isSingleNote && !showVariations ? (
                 <span className="truncate">Root: {chordData.rootName}</span>
               ) : (
@@ -731,7 +736,7 @@ const ChordCard = ({
                   : `Save ${chordData.symbol} to favorites`
               }
               title={isFavorite ? 'Remove from Practice Favorites' : 'Save to Practice Favorites'}
-              className={`min-h-[38px] min-w-[38px] sm:min-h-[34px] sm:min-w-[34px] rounded-[2px] border font-mono text-sm flex items-center justify-center shrink-0 active:scale-[0.93] cursor-pointer transition-colors ${
+              className={`min-h-[36px] min-w-[36px] sm:min-h-[34px] sm:min-w-[34px] rounded-[2px] border font-mono text-sm flex items-center justify-center shrink-0 active:scale-[0.93] cursor-pointer transition-colors ${
                 isFavorite
                   ? 'bg-amber-400/20 text-amber-300 border-amber-300/45'
                   : 'bg-white/[0.04] text-slate-400 border-white/12 hover:text-amber-200 hover:border-amber-300/35'
@@ -930,6 +935,8 @@ const LearnSection = ({
   const [isMetroPlaying, setIsMetroPlaying] = useState(false);
 
   const [customSequence, setCustomSequence] = useState(() => loadCustomProgression());
+  const [seqRhythmId, setSeqRhythmId] = useState(() => loadSequenceRhythmId());
+  const [theoryTopic, setTheoryTopic] = useState('all');
   const [showSequencer, setShowSequencer] = useState(false);
   const [seqWithClick, setSeqWithClick] = useState(true);
   const [seqLoop, setSeqLoop] = useState(true);
@@ -962,6 +969,7 @@ const LearnSection = ({
           uid: step.uid,
           instrument: step.instrument,
           beats: step.beats,
+          rhythmId: step.rhythmId || 'inherit',
           midiNotes: chordData.voicings[safeIdx].midiNotes,
         };
       })
@@ -981,6 +989,7 @@ const LearnSection = ({
       bpm: metroBpm,
       refFrequency,
       playMode: chordPlayMode,
+      rhythmId: seqRhythmId,
       withClick: seqWithClick,
       loop: seqLoop,
     });
@@ -990,6 +999,7 @@ const LearnSection = ({
     metroBpm,
     refFrequency,
     chordPlayMode,
+    seqRhythmId,
     seqWithClick,
     seqLoop,
   ]);
@@ -1055,6 +1065,34 @@ const LearnSection = ({
     setCustomSequence((prev) => updateProgressionStepBeats(prev, uid, nextBeats));
   };
 
+  const handleChangeSequenceStepRhythm = (uid, nextRhythmId) => {
+    setCustomSequence((prev) => updateProgressionStepRhythm(prev, uid, nextRhythmId));
+  };
+
+  const handleChangeSequenceRhythm = (nextRhythmId) => {
+    const saved = saveSequenceRhythmId(nextRhythmId);
+    setSeqRhythmId(saved);
+  };
+
+  const handleUseRhythmInSequence = (pattern) => {
+    if (!pattern?.id) return;
+    const saved = saveSequenceRhythmId(pattern.id);
+    setSeqRhythmId(saved);
+    setShowSequencer(true);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleOpenRhythmGuide = () => {
+    stopPlaybackState();
+    setTheoryTopic('rhythm');
+    onUpdateLearn({ tab: 'theory', familyModalTarget: null });
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const handleClearSequence = () => {
     if (isSeqPlaying) {
       learnAudio.stopCustomProgression();
@@ -1084,6 +1122,7 @@ const LearnSection = ({
       bpm: metroBpm,
       refFrequency,
       playMode: chordPlayMode,
+      rhythmId: seqRhythmId,
       withClick: seqWithClick,
       loop: seqLoop,
       onStepBeat: (beatInfo) => {
@@ -1314,21 +1353,21 @@ const LearnSection = ({
           </div>
         )}
 
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-3">
-          <div>
-            <h1 className="font-display font-bold text-lg sm:text-2xl text-white">
-              Interactive Theory &amp; {instrumentMeta.label} Fretboard Lab
-            </h1>
-            <p className="hidden sm:block mt-0.5 font-sans text-xs sm:text-sm text-slate-300">
-              Switch between Guitar, Bass, and Ukulele or pick any root note to transpose all chord diagrams, scale shapes, and progressions.
-            </p>
-          </div>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+            <div className="min-w-0 flex-1">
+              <h1 className="font-display font-bold text-lg sm:text-2xl text-white headline-balance">
+                Interactive Theory &amp; {instrumentMeta.label} Fretboard Lab
+              </h1>
+              <p className="hidden sm:block mt-0.5 font-sans text-xs sm:text-sm text-slate-300">
+                Switch between Guitar, Bass, and Ukulele or pick any root note to transpose all chord diagrams, scale shapes, and progressions.
+              </p>
+            </div>
 
-          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 shrink-0 w-full lg:w-auto">
             <div
               role="group"
               aria-label="Learn Instrument Selector"
-              className="grid grid-cols-3 sm:flex items-center gap-1 glass-recessed rounded-[3px] p-1 shrink-0"
+              className="grid grid-cols-3 sm:inline-flex items-center gap-1 glass-recessed rounded-[3px] p-1 shrink-0 w-full md:w-auto"
             >
               {INSTRUMENTS.map((inst) => {
                 const active = instrument === inst.id;
@@ -1343,7 +1382,7 @@ const LearnSection = ({
                         if (onSelectInstrument) onSelectInstrument(inst.id);
                       }
                     }}
-                    className={`min-h-[40px] px-3 py-1.5 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
+                    className={`min-h-[38px] px-2.5 sm:px-3.5 py-1.5 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap shrink-0 flex items-center justify-center active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
                       active
                         ? 'bg-cyan-400 text-slate-950 shadow-[0_4px_14px_rgba(34,211,238,0.28)]'
                         : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
@@ -1354,157 +1393,169 @@ const LearnSection = ({
                 );
               })}
             </div>
-
-            <div
-              role="tablist"
-              aria-label="Learn Sections"
-              className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1 sm:gap-1.5 glass-recessed rounded-[3px] p-1 shrink-0"
-            >
-              {LEARN_TABS.map((tab) => {
-                const active = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    onClick={() => {
-                      if (tab.id !== activeTab) {
-                        stopPlaybackState();
-                        onUpdateLearn({ tab: tab.id, familyModalTarget: null });
-                      }
-                    }}
-                    className={`min-h-[40px] px-2.5 sm:px-3.5 py-2 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap shrink-0 active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
-                      active
-                        ? 'bg-cyan-400 text-slate-950 shadow-[0_4px_14px_rgba(34,211,238,0.28)]'
-                        : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
-                    }`}
-                  >
-                    {tab.id === 'progressions' ? (
-                      <>
-                        <span className="sm:hidden">Progressions</span>
-                        <span className="hidden sm:inline">{tab.label}</span>
-                      </>
-                    ) : (
-                      tab.label
-                    )}
-                  </button>
-                );
-              })}
-            </div>
           </div>
-        </div>
 
-        {/* All 12 Chromatic Root Notes */}
-        <div className="flex flex-col gap-1.5 sm:gap-2">
-          <div className="flex items-center justify-between gap-2 font-mono text-[11px] sm:text-xs text-slate-300">
-            <span className="shrink-0">Root Note</span>
-            <span className="text-cyan-300 font-semibold truncate text-right">
-              {selectedRootName} · {instrumentMeta.shortLabel} ({refFrequency} Hz)
-            </span>
-          </div>
           <div
-            role="group"
-            aria-label="Root Note Selector"
-            className="flex overflow-x-auto no-scrollbar sm:grid sm:grid-cols-6 lg:grid-cols-12 gap-1.5 pb-0.5 sm:pb-0"
+            role="tablist"
+            aria-label="Learn Sections"
+            className="grid grid-cols-2 sm:flex sm:flex-wrap lg:grid lg:grid-cols-5 items-center gap-1 sm:gap-1.5 glass-recessed rounded-[3px] p-1 w-full"
           >
-            {CHROMATIC_NOTES.map((note) => {
-              const active = rootPc === note.index;
+            {LEARN_TABS.map((tab) => {
+              const active = activeTab === tab.id;
               return (
                 <button
-                  key={note.index}
+                  key={tab.id}
                   type="button"
-                  onClick={() => handleSelectRoot(note.index)}
-                  aria-pressed={active}
-                  className={`min-h-[44px] min-w-[56px] sm:min-w-0 shrink-0 px-2.5 sm:px-2 py-2 rounded-[2px] border font-mono text-xs font-semibold active:scale-[0.96] transition-transform duration-100 whitespace-nowrap cursor-pointer ${
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => {
+                    if (tab.id !== activeTab) {
+                      stopPlaybackState();
+                      onUpdateLearn({ tab: tab.id, familyModalTarget: null });
+                    }
+                  }}
+                  className={`min-h-[40px] px-2 sm:px-3 py-1.5 rounded-[2px] font-mono text-[11px] sm:text-xs font-semibold whitespace-nowrap flex items-center justify-center active:scale-[0.97] transition-transform duration-100 cursor-pointer ${
+                    tab.id === 'fretgame' ? 'col-span-2 sm:col-span-1' : ''
+                  } ${
                     active
-                      ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_4px_16px_rgba(34,211,238,0.3)]'
-                      : 'bg-white/[0.06] text-slate-200 border-white/12 hover:bg-white/[0.14]'
+                      ? 'bg-cyan-400 text-slate-950 shadow-[0_4px_14px_rgba(34,211,238,0.28)]'
+                      : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
                   }`}
                 >
-                  {note.label}
+                  {tab.id === 'progressions' ? (
+                    <>
+                      <span className="sm:hidden">Progressions</span>
+                      <span className="hidden sm:inline">{tab.label}</span>
+                    </>
+                  ) : (
+                    tab.label
+                  )}
                 </button>
               );
             })}
           </div>
         </div>
+
+        {/* All 12 Chromatic Root Notes (hidden during Fretboard Game so guess pad isn't confused) */}
+        {activeTab !== 'fretgame' && (
+          <div className="flex flex-col gap-1.5 sm:gap-2">
+            <div className="flex items-center justify-between gap-2 font-mono text-[11px] sm:text-xs text-slate-300">
+              <span className="shrink-0">Root Note</span>
+              <span className="text-cyan-300 font-semibold truncate text-right">
+                {selectedRootName} · {instrumentMeta.shortLabel} ({refFrequency} Hz)
+              </span>
+            </div>
+            <div
+              role="group"
+              aria-label="Root Note Selector"
+              className="flex overflow-x-auto no-scrollbar sm:grid sm:grid-cols-6 lg:grid-cols-12 gap-1.5 py-0.5 pr-0.5 sm:py-0 sm:pr-0"
+            >
+              {CHROMATIC_NOTES.map((note) => {
+                const active = rootPc === note.index;
+                return (
+                  <button
+                    key={note.index}
+                    type="button"
+                    onClick={() => handleSelectRoot(note.index)}
+                    aria-pressed={active}
+                    className={`min-h-[44px] min-w-[56px] sm:min-w-0 shrink-0 px-2.5 sm:px-2 py-2 rounded-[2px] border font-mono text-xs font-semibold active:scale-[0.96] transition-transform duration-100 whitespace-nowrap cursor-pointer ${
+                      active
+                        ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-[0_4px_16px_rgba(34,211,238,0.3)]'
+                        : 'bg-white/[0.06] text-slate-200 border-white/12 hover:bg-white/[0.14]'
+                    }`}
+                  >
+                    {note.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Practice Metronome + Saved Favorite Chords + Custom Sequencer Dock */}
-      <PracticeMetronomeBar
-        bpm={metroBpm}
-        onBpmChange={setMetroBpm}
-        timeSigId={metroTimeSigId}
-        onTimeSigChange={setMetroTimeSigId}
-        isPlaying={isMetroPlaying}
-        onPlayingChange={(nextMetro) => {
-          if (nextMetro) {
-            setIsSeqPlaying(false);
-            setActiveSeqState(null);
-          }
-          setIsMetroPlaying(nextMetro);
-        }}
-        favoritesCount={favorites.length}
-        showFavoritesTray={showFavoritesTray}
-        onToggleFavoritesTray={() => setShowFavoritesTray((prev) => !prev)}
-        sequenceCount={customSequence.length}
-        showSequencer={showSequencer}
-        onToggleSequencer={() => setShowSequencer((prev) => !prev)}
-      />
+      {activeTab !== 'fretgame' && (
+        <>
+          <PracticeMetronomeBar
+            bpm={metroBpm}
+            onBpmChange={setMetroBpm}
+            timeSigId={metroTimeSigId}
+            onTimeSigChange={setMetroTimeSigId}
+            isPlaying={isMetroPlaying}
+            onPlayingChange={(nextMetro) => {
+              if (nextMetro) {
+                setIsSeqPlaying(false);
+                setActiveSeqState(null);
+              }
+              setIsMetroPlaying(nextMetro);
+            }}
+            favoritesCount={favorites.length}
+            showFavoritesTray={showFavoritesTray}
+            onToggleFavoritesTray={() => setShowFavoritesTray((prev) => !prev)}
+            sequenceCount={customSequence.length}
+            showSequencer={showSequencer}
+            onToggleSequencer={() => setShowSequencer((prev) => !prev)}
+          />
 
-      {showFavoritesTray && (
-        <FavoriteChordsTray
-          favorites={favorites}
-          currentInstrument={instrument}
-          labelMode={chordLabelMode}
-          playMode={chordPlayMode}
-          refFrequency={refFrequency}
-          activeStrumId={activeStrumId}
-          onPlayChord={handlePlayFavoriteChord}
-          onAddToSequence={handleAddFavoriteToSequence}
-          onQueueAllFavorites={handleQueueAllFavoritesToSequence}
-          onRemoveFavorite={handleRemoveFavorite}
-          onClearAll={handleClearFavorites}
-          onInspectFavorite={handleInspectFavorite}
-          onClose={() => setShowFavoritesTray(false)}
-        />
-      )}
+          {showFavoritesTray && (
+            <FavoriteChordsTray
+              favorites={favorites}
+              currentInstrument={instrument}
+              labelMode={chordLabelMode}
+              playMode={chordPlayMode}
+              refFrequency={refFrequency}
+              activeStrumId={activeStrumId}
+              onPlayChord={handlePlayFavoriteChord}
+              onAddToSequence={handleAddFavoriteToSequence}
+              onQueueAllFavorites={handleQueueAllFavoritesToSequence}
+              onRemoveFavorite={handleRemoveFavorite}
+              onClearAll={handleClearFavorites}
+              onInspectFavorite={handleInspectFavorite}
+              onClose={() => setShowFavoritesTray(false)}
+            />
+          )}
 
-      {showSequencer && (
-        <CustomProgressionSequencer
-          steps={customSequence}
-          favorites={favorites}
-          bpm={metroBpm}
-          defaultStepBeats={defaultStepBeats}
-          playMode={chordPlayMode}
-          withClick={seqWithClick}
-          loop={seqLoop}
-          isPlaying={isSeqPlaying}
-          activeState={activeSeqState}
-          labelMode={chordLabelMode}
-          refFrequency={refFrequency}
-          onBpmChange={setMetroBpm}
-          onTogglePlay={handleToggleSequencePlay}
-          onToggleWithClick={() => setSeqWithClick((prev) => !prev)}
-          onToggleLoop={() => setSeqLoop((prev) => !prev)}
-          onChangePlayMode={(nextMode) => {
-            if (chordPlayMode !== nextMode) {
-              onUpdateLearn({ chordPlayMode: nextMode }, { replace: true });
-            }
-          }}
-          onAddFavoriteStep={handleAddFavoriteToSequence}
-          onQueueAllFavorites={() => handleQueueAllFavoritesToSequence(favorites)}
-          onRemoveStep={handleRemoveSequenceStep}
-          onMoveStep={handleMoveSequenceStep}
-          onDuplicateStep={handleDuplicateSequenceStep}
-          onChangeStepBeats={handleChangeSequenceStepBeats}
-          onClearSequence={handleClearSequence}
-          onPreviewStep={handlePreviewSequenceStep}
-          onBrowseChords={() =>
-            onUpdateLearn({ tab: 'chords', chordQuery: '', familyModalTarget: null })
-          }
-          onClose={() => setShowSequencer(false)}
-        />
+          {showSequencer && (
+            <CustomProgressionSequencer
+              steps={customSequence}
+              favorites={favorites}
+              bpm={metroBpm}
+              defaultStepBeats={defaultStepBeats}
+              playMode={chordPlayMode}
+              rhythmId={seqRhythmId}
+              withClick={seqWithClick}
+              loop={seqLoop}
+              isPlaying={isSeqPlaying}
+              activeState={activeSeqState}
+              labelMode={chordLabelMode}
+              refFrequency={refFrequency}
+              onBpmChange={setMetroBpm}
+              onTogglePlay={handleToggleSequencePlay}
+              onToggleWithClick={() => setSeqWithClick((prev) => !prev)}
+              onToggleLoop={() => setSeqLoop((prev) => !prev)}
+              onChangePlayMode={(nextMode) => {
+                if (chordPlayMode !== nextMode) {
+                  onUpdateLearn({ chordPlayMode: nextMode }, { replace: true });
+                }
+              }}
+              onChangeRhythm={handleChangeSequenceRhythm}
+              onChangeStepRhythm={handleChangeSequenceStepRhythm}
+              onOpenRhythmGuide={handleOpenRhythmGuide}
+              onAddFavoriteStep={handleAddFavoriteToSequence}
+              onQueueAllFavorites={() => handleQueueAllFavoritesToSequence(favorites)}
+              onRemoveStep={handleRemoveSequenceStep}
+              onMoveStep={handleMoveSequenceStep}
+              onDuplicateStep={handleDuplicateSequenceStep}
+              onChangeStepBeats={handleChangeSequenceStepBeats}
+              onClearSequence={handleClearSequence}
+              onPreviewStep={handlePreviewSequenceStep}
+              onBrowseChords={() =>
+                onUpdateLearn({ tab: 'chords', chordQuery: '', familyModalTarget: null })
+              }
+              onClose={() => setShowSequencer(false)}
+            />
+          )}
+        </>
       )}
 
       {/* TAB 1: CHORD LIBRARY & DIAGRAM LOOKUP */}
@@ -1530,6 +1581,7 @@ const LearnSection = ({
               <div className="relative flex-1">
                 <svg
                   aria-hidden="true"
+                  data-smooth-svg="true"
                   viewBox="0 0 20 20"
                   fill="none"
                   className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
@@ -1558,11 +1610,11 @@ const LearnSection = ({
                   }}
                   placeholder={
                     instrument === 'bass'
-                      ? 'Look up bass chord (e.g. G, C#, Am, G5, E7#9)...'
-                      : 'Look up chord diagram (e.g. F#dim, Bbsus4, E7#9, Am11, Cdim7)...'
+                      ? 'Search bass chord (e.g. G, C#, Am, G5)...'
+                      : 'Search chord (e.g. F#dim, E7#9, Am11)...'
                   }
                   aria-label="Search chord diagram"
-                  className="w-full min-h-[48px] sm:min-h-[46px] pl-10 pr-20 py-2.5 rounded-[2px] glass-recessed border border-white/15 focus:border-cyan-300/60 focus:outline-none font-mono text-base sm:text-sm text-white placeholder:text-slate-400 transition-colors"
+                  className="w-full min-h-[48px] sm:min-h-[46px] pl-10 pr-20 py-2.5 rounded-[2px] glass-recessed border border-white/15 focus:border-cyan-300/60 focus:outline-none font-mono text-base sm:text-sm text-white placeholder:text-xs sm:placeholder:text-sm placeholder:text-slate-400 transition-colors"
                 />
                 {chordQuery && (
                   <button
@@ -1653,7 +1705,7 @@ const LearnSection = ({
             </div>
 
             {/* Quick Complex Chord Lookups */}
-            <div className="flex items-center gap-1.5 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar pb-0.5 sm:pb-0">
+            <div className="flex items-center gap-1.5 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar py-0.5 pr-0.5 sm:py-0 sm:pr-0">
               <span className="font-mono text-[11px] text-slate-400 mr-1 whitespace-nowrap shrink-0">
                 {instrument === 'bass' ? 'Try bass shapes:' : 'Try complex:'}
               </span>
@@ -1776,7 +1828,7 @@ const LearnSection = ({
           ) : (
             <>
               <div className="glass-panel rounded-[4px] p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar">
+                <div className="flex items-center gap-1.5 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar py-0.5 pr-0.5 sm:py-0 sm:pr-0">
                   {CHORD_CATEGORIES.map((cat) => {
                     const active = chordCategory === cat;
                     return (
@@ -2014,7 +2066,7 @@ const LearnSection = ({
             </div>
 
             {/* Scale Quality Buttons */}
-            <div className="flex items-center gap-1.5 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar pb-1 sm:pb-0">
+            <div className="flex items-center gap-1.5 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar py-0.5 pr-0.5 sm:py-0 sm:pr-0">
               {SCALE_DEFINITIONS.map((sc) => {
                 const active = sc.id === scaleId;
                 return (
@@ -2090,7 +2142,7 @@ const LearnSection = ({
                 </span>
               </div>
 
-              <div className="flex items-center gap-1.5 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar">
+              <div className="flex items-center gap-1.5 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar py-0.5 pr-0.5 sm:py-0 sm:pr-0">
                 {BOX_FILTERS.map((box) => {
                   const active = boxFilter === box.id;
                   return (
@@ -2120,7 +2172,7 @@ const LearnSection = ({
               <div className="min-w-[780px] glass-recessed rounded-[3px] p-3 sm:p-4">
                 {/* Fret Numbers Header */}
                 <div className="grid grid-cols-[44px_repeat(16,minmax(0,1fr))] items-center gap-1 mb-2">
-                  <div className="sticky left-0 z-20 bg-[#0c1426]/95 backdrop-blur-sm py-1 rounded-[2px] font-mono text-[10px] text-slate-400 text-center">
+                  <div className="sticky left-0 z-20 bg-[#0a1120] border-r border-white/10 py-1 rounded-[2px] font-mono text-[10px] text-slate-400 text-center">
                     STR
                   </div>
                   {Array.from({ length: 16 }).map((_, fret) => (
@@ -2144,7 +2196,7 @@ const LearnSection = ({
                       key={row.label}
                       className="grid grid-cols-[44px_repeat(16,minmax(0,1fr))] items-center gap-1"
                     >
-                      <div className="sticky left-0 z-20 bg-[#0c1426]/95 backdrop-blur-sm py-1.5 rounded-[2px] font-mono text-xs font-semibold text-slate-300 text-center">
+                      <div className="sticky left-0 z-20 bg-[#0a1120] border-r border-white/10 py-1.5 rounded-[2px] font-mono text-xs font-semibold text-slate-300 text-center">
                         {row.label}
                       </div>
 
@@ -2342,7 +2394,7 @@ const LearnSection = ({
             </div>
 
             {/* Quick Guitar Key Families (G-C-D, C-F-G, D-G-A, etc.) */}
-            <div className="flex items-center gap-1.5 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar pb-0.5 sm:pb-0">
+            <div className="flex items-center gap-1.5 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar py-0.5 pr-0.5 sm:py-0 sm:pr-0">
               <span className="font-mono text-[11px] text-slate-400 mr-1 whitespace-nowrap shrink-0">
                 Quick Keys:
               </span>
@@ -2366,7 +2418,7 @@ const LearnSection = ({
               })}
             </div>
 
-            <div className="flex items-center gap-1.5 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar">
+            <div className="flex items-center gap-1.5 overflow-x-auto sm:overflow-visible sm:flex-wrap no-scrollbar py-0.5 pr-0.5 sm:py-0 sm:pr-0">
               {PROGRESSION_TEMPLATES.map((tpl) => {
                 const active = tpl.id === progressionId;
                 return (
@@ -2578,13 +2630,18 @@ const LearnSection = ({
         </section>
       )}
 
-      {/* TAB 4: THEORY & GUIDES (CIRCLE OF FIFTHS, TABS, NASHVILLE NUMBERS, FUNDAMENTALS) */}
+      {/* TAB 4: THEORY & GUIDES (CIRCLE OF FIFTHS, RHYTHM, TABS, NASHVILLE NUMBERS, FUNDAMENTALS) */}
       {activeTab === 'theory' && (
         <TheoryGuidesSection
           instrument={instrument}
           rootPc={rootPc}
           refFrequency={refFrequency}
+          bpm={metroBpm}
           playMode={chordPlayMode}
+          topicFilter={theoryTopic}
+          onTopicFilterChange={setTheoryTopic}
+          activeSequenceRhythmId={seqRhythmId}
+          onUseRhythmInSequence={handleUseRhythmInSequence}
           onSelectRoot={handleSelectRoot}
           onNavigateTab={(nextTab, patch = {}) => {
             stopPlaybackState();
@@ -2597,6 +2654,14 @@ const LearnSection = ({
               window.scrollTo({ top: 0, behavior: 'auto' });
             }
           }}
+        />
+      )}
+
+      {/* TAB 5: INTERACTIVE FRETBOARD NOTE LEARNING GAME */}
+      {activeTab === 'fretgame' && (
+        <FretboardGameSection
+          instrument={instrument}
+          refFrequency={refFrequency}
         />
       )}
 

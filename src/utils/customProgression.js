@@ -1,4 +1,5 @@
 import { CHORD_QUALITIES } from './musicTheory.js';
+import { normalizeRhythmId } from './rhythmTheory.js';
 
 export const CUSTOM_PROGRESSION_STORAGE_KEY = 'chromatuner.customProgression.v1';
 export const MIN_STEP_BEATS = 1;
@@ -49,6 +50,7 @@ export function normalizeProgressionStep(raw) {
 
   const preferFlats = typeof raw.preferFlats === 'boolean' ? raw.preferFlats : null;
   const beats = clampStepBeats(raw.beats ?? DEFAULT_STEP_BEATS);
+  const rhythmId = normalizeRhythmId(raw.rhythmId, { allowInherit: true });
   const uid =
     typeof raw.uid === 'string' && raw.uid.trim().length > 0
       ? raw.uid.trim()
@@ -67,10 +69,15 @@ export function normalizeProgressionStep(raw) {
     voicingIdx,
     preferFlats,
     beats,
+    rhythmId,
   };
 }
 
-export function createProgressionStep(favoriteEntry, beats = DEFAULT_STEP_BEATS) {
+export function createProgressionStep(
+  favoriteEntry,
+  beats = DEFAULT_STEP_BEATS,
+  rhythmId = 'inherit'
+) {
   if (!favoriteEntry || typeof favoriteEntry !== 'object') return null;
   return normalizeProgressionStep({
     uid: generateStepUid(),
@@ -81,6 +88,7 @@ export function createProgressionStep(favoriteEntry, beats = DEFAULT_STEP_BEATS)
     voicingIdx: favoriteEntry.voicingIdx ?? 0,
     preferFlats: favoriteEntry.preferFlats ?? null,
     beats,
+    rhythmId: favoriteEntry.rhythmId ?? rhythmId,
   });
 }
 
@@ -229,6 +237,23 @@ export function updateProgressionStepBeats(steps, uid, beats, storageOverride = 
     if (step.beats === safeBeats) return step;
     changed = true;
     return { ...step, beats: safeBeats };
+  });
+  if (changed) {
+    saveCustomProgression(next, storageOverride);
+  }
+  return next;
+}
+
+export function updateProgressionStepRhythm(steps, uid, rhythmId, storageOverride = null) {
+  const current = Array.isArray(steps) ? steps : [];
+  const safeRhythmId = normalizeRhythmId(rhythmId, { allowInherit: true });
+  let changed = false;
+  const next = current.map((step) => {
+    if (!step || step.uid !== uid) return step;
+    const currentRhythm = normalizeRhythmId(step.rhythmId, { allowInherit: true });
+    if (currentRhythm === safeRhythmId) return step;
+    changed = true;
+    return { ...step, rhythmId: safeRhythmId };
   });
   if (changed) {
     saveCustomProgression(next, storageOverride);

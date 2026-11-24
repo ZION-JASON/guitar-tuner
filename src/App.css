@@ -52,6 +52,8 @@
   button:focus-visible,
   a:focus-visible,
   input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
   [tabindex]:focus-visible {
     outline: 2px solid #22d3ee;
     outline-offset: 2px;
@@ -64,6 +66,10 @@
     linear-gradient(to right, rgba(148, 163, 184, 0.045) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(148, 163, 184, 0.045) 1px, transparent 1px);
   background-size: 36px 36px;
+}
+
+.headline-balance {
+  text-wrap: balance;
 }
 
 /* Primary machined dark studio panel */
@@ -81,6 +87,19 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
+/* On compact mobile viewports, skip heavy backdrop blur on scrolled content panels for 60fps touch scrolling while preserving surface depth */
+@media (max-width: 767px) {
+  .glass-panel {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: linear-gradient(
+      180deg,
+      rgba(18, 26, 44, 0.96) 0%,
+      rgba(11, 17, 30, 0.97) 100%
+    );
+  }
+}
+
 /* Recessed inner bay */
 .glass-recessed {
   background: rgba(7, 11, 20, 0.72);
@@ -90,7 +109,7 @@
 
 /* Sharp header & mobile dock bar */
 .glass-bar {
-  background: rgba(9, 14, 25, 0.9);
+  background: rgba(9, 14, 25, 0.92);
   backdrop-filter: blur(14px) saturate(130%);
   -webkit-backdrop-filter: blur(14px) saturate(130%);
 }
@@ -134,8 +153,8 @@
    ============================================================================ */
 html[data-theme="pixel"],
 html[data-theme="pixel"] body {
-  --font-display: "Pixelify Sans", "Silkscreen", ui-monospace, monospace;
-  --font-sans: "Pixelify Sans", "Silkscreen", ui-monospace, monospace;
+  --font-display: "Silkscreen", "Pixelify Sans", ui-monospace, monospace;
+  --font-sans: "Pixelify Sans", "IBM Plex Sans", ui-monospace, monospace;
   --font-mono: "Silkscreen", "IBM Plex Mono", ui-monospace, monospace;
   background-color: #090c17;
   color: #f8fafc;
@@ -159,7 +178,11 @@ html[data-theme="pixel"] * {
 }
 
 html[data-theme="pixel"] .font-mono {
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+}
+
+html[data-theme="pixel"] .font-display {
+  letter-spacing: -0.025em;
 }
 
 html[data-theme="pixel"] img,
@@ -168,9 +191,10 @@ html[data-theme="pixel"] canvas {
   image-rendering: crisp-edges;
 }
 
-html[data-theme="pixel"] svg path,
-html[data-theme="pixel"] svg rect,
-html[data-theme="pixel"] svg line {
+/* Crisp pixel edges on rectangular geometry & pixel icons, without distorting smooth curved Circle-of-Fifths arcs */
+html[data-theme="pixel"] svg:not([data-smooth-svg="true"]) rect,
+html[data-theme="pixel"] svg:not([data-smooth-svg="true"]) line,
+html[data-theme="pixel"] svg[shape-rendering="crispEdges"] path {
   shape-rendering: crispEdges;
 }
 
@@ -211,8 +235,16 @@ html[data-theme="pixel"] .glass-bar {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   border-color: #3c4f78;
-  border-width: 2px 0;
   box-shadow: 0 4px 0 #02040a;
+}
+
+html[data-theme="pixel"] header.glass-bar {
+  border-bottom-width: 2px;
+}
+
+html[data-theme="pixel"] .glass-bar-bottom {
+  border-top-width: 2px;
+  box-shadow: 0 -4px 0 #02040a;
 }
 
 /* Crisp pixel interactive controls & physical press response */

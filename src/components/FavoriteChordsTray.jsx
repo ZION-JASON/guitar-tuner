@@ -173,17 +173,12 @@ const FavoriteChordsTray = ({
                 className="glass-recessed rounded-[3px] p-2.5 sm:p-3 border border-white/14 flex flex-col justify-between gap-2"
               >
                 <div className="flex items-start justify-between gap-1.5">
-                  <div className="min-w-0">
-                    <div className="flex items-baseline gap-1.5">
-                      <h3 className="font-display font-bold text-base sm:text-lg text-white truncate">
-                        {chordData.symbol}
-                      </h3>
-                      <span className="font-mono text-[10px] text-cyan-300 uppercase shrink-0">
-                        {instMeta.shortLabel}
-                      </span>
-                    </div>
-                    <p className="font-mono text-[10px] text-slate-400 truncate">
-                      {voicing?.label}
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-display font-bold text-base sm:text-lg text-white leading-tight break-words">
+                      {chordData.symbol}
+                    </h3>
+                    <p className="mt-0.5 font-mono text-[10px] text-slate-400 truncate">
+                      <span className="text-cyan-300 uppercase">{instMeta.shortLabel}</span> · {voicing?.label}
                     </p>
                   </div>
 

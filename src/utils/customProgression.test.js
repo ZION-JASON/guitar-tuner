@@ -21,6 +21,7 @@ import {
   removeProgressionStep,
   saveCustomProgression,
   updateProgressionStepBeats,
+  updateProgressionStepRhythm,
 } from './customProgression.js';
 
 function createMemoryStorage(initial = {}) {
@@ -64,6 +65,7 @@ test('normalizeProgressionStep validates fields and repairs missing defaults', (
     qualityId: 'minor',
     voicingIdx: 1.9,
     beats: 6,
+    rhythmId: 'island-strum',
   });
 
   assert.equal(normalized.uid, 'step-a');
@@ -73,6 +75,7 @@ test('normalizeProgressionStep validates fields and repairs missing defaults', (
   assert.equal(normalized.qualityId, 'minor');
   assert.equal(normalized.voicingIdx, 1);
   assert.equal(normalized.beats, 6);
+  assert.equal(normalized.rhythmId, 'island-strum');
 });
 
 test('loadCustomProgression handles corrupt JSON and regenerates duplicate step UIDs', () => {
@@ -92,12 +95,13 @@ test('loadCustomProgression handles corrupt JSON and regenerates duplicate step 
   const loaded = loadCustomProgression(dupStorage);
   assert.equal(loaded.length, 2);
   assert.equal(loaded[0].uid, 'dup-1');
+  assert.equal(loaded[0].rhythmId, 'inherit');
   assert.notEqual(loaded[1].uid, 'dup-1');
   assert.equal(loaded[1].rootPc, 7);
   assert.equal(loaded[1].beats, 2);
 });
 
-test('sequence editing actions append, move, duplicate, update beats, remove, and clear persistently', () => {
+test('sequence editing actions append, move, duplicate, update beats & rhythm, remove, and clear persistently', () => {
   const storage = createMemoryStorage();
   const cMaj = { id: 'guitar:0:major', instrument: 'guitar', rootPc: 0, qualityId: 'major', voicingIdx: 0 };
   const gMaj = { id: 'guitar:7:major', instrument: 'guitar', rootPc: 7, qualityId: 'major', voicingIdx: 1 };
@@ -119,14 +123,17 @@ test('sequence editing actions append, move, duplicate, update beats, remove, an
   seq = moveProgressionStep(seq, 3, 1, storage);
   assert.deepEqual(seq.map((s) => s.rootPc), [0, 9, 7, 7]);
 
-  // Update beats on step 0
+  // Update beats & rhythm override on step 0
   seq = updateProgressionStepBeats(seq, seq[0].uid, 8, storage);
+  seq = updateProgressionStepRhythm(seq, seq[0].uid, 'rock-eighths', storage);
   assert.equal(seq[0].beats, 8);
+  assert.equal(seq[0].rhythmId, 'rock-eighths');
 
   // Verify persistence
   const reloaded = loadCustomProgression(storage);
   assert.equal(reloaded.length, 4);
   assert.equal(reloaded[0].beats, 8);
+  assert.equal(reloaded[0].rhythmId, 'rock-eighths');
   assert.deepEqual(reloaded.map((s) => s.rootPc), [0, 9, 7, 7]);
 
   // Remove step 1

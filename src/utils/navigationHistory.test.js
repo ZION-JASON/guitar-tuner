@@ -109,5 +109,13 @@ test('normalizeNavSnapshot safely handles invalid or malformed popstate payloads
   });
   assert.equal(theorySnap.learn.tab, 'theory');
   assert.equal(describeNavSnapshot(theorySnap), 'Guitar G Theory & Guides');
+
+  const fretGameSnap = normalizeNavSnapshot({
+    view: 'learn',
+    instrument: 'bass',
+    learn: { tab: 'fretgame', rootPc: 0 },
+  });
+  assert.equal(fretGameSnap.learn.tab, 'fretgame');
+  assert.equal(describeNavSnapshot(fretGameSnap), 'Bass Fretboard Game');
 });
 
