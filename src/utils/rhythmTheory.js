@@ -289,75 +289,15 @@ const RAW_PATTERNS = [
     ],
   },
   {
-    id: 'sixteenth-full',
-    name: 'Full 16-Note Rhythm (1 e & a 2 e & a 3 e & a 4 e & a)',
-    category: 'Syncopated & Funk',
-    timeSig: '4/4',
-    cycleBeats: 4,
-    recommendedBpm: 72,
-    level: 'Essential',
-    summary: 'Full 4-bar-beat 16th-note pendulum engine across all sixteen subdivisions: 1 e & a 2 e & a 3 e & a 4 e & a.',
-    feelTip: 'Keep strokes small near the soundhole. Numbers (1,2,3,4) and "&" are always Down; "e" and "a" are always Up.',
-    inTheoryLibrary: true,
-    slots: [
-      makeSlot(0, '1', 'accent-down', { spoken: 'DOWN' }),
-      makeSlot(0.25, 'e', 'up'),
-      makeSlot(0.5, '&', 'down'),
-      makeSlot(0.75, 'a', 'up'),
-      makeSlot(1, '2', 'down'),
-      makeSlot(1.25, 'e', 'up'),
-      makeSlot(1.5, '&', 'down'),
-      makeSlot(1.75, 'a', 'up'),
-      makeSlot(2, '3', 'accent-down', { spoken: 'DOWN' }),
-      makeSlot(2.25, 'e', 'up'),
-      makeSlot(2.5, '&', 'down'),
-      makeSlot(2.75, 'a', 'up'),
-      makeSlot(3, '4', 'down'),
-      makeSlot(3.25, 'e', 'up'),
-      makeSlot(3.5, '&', 'down'),
-      makeSlot(3.75, 'a', 'up'),
-    ],
-  },
-  {
-    id: 'sixteenth-pop',
-    name: '16th-Note Acoustic Pop Groove',
-    category: 'Syncopated & Funk',
-    timeSig: '4/4',
-    cycleBeats: 4,
-    recommendedBpm: 80,
-    level: 'Intermediate',
-    summary: 'Musical acoustic 16th-note groove: pairs big open ringing hits on beats 1–2 with a crisp "3 & a 4 e & a" strum burst.',
-    feelTip: 'Don\'t play every 16th slot! Let beats 1 and 2 breathe, then ride your wrist motion cleanly through the 16th-note tail.',
-    inTheoryLibrary: true,
-    slots: [
-      makeSlot(0, '1', 'accent-down', { spoken: 'DOWN' }),
-      makeSlot(0.25, 'e', 'rest'),
-      makeSlot(0.5, '&', 'rest'),
-      makeSlot(0.75, 'a', 'rest'),
-      makeSlot(1, '2', 'down'),
-      makeSlot(1.25, 'e', 'rest'),
-      makeSlot(1.5, '&', 'down'),
-      makeSlot(1.75, 'a', 'up'),
-      makeSlot(2, '3', 'rest'),
-      makeSlot(2.25, 'e', 'up'),
-      makeSlot(2.5, '&', 'down'),
-      makeSlot(2.75, 'a', 'up'),
-      makeSlot(3, '4', 'chuck'),
-      makeSlot(3.25, 'e', 'up'),
-      makeSlot(3.5, '&', 'down'),
-      makeSlot(3.75, 'a', 'up'),
-    ],
-  },
-  {
     id: 'sixteenth-motor',
-    name: '16th-Note Wrist Motor (2-Beat)',
+    name: '16th-Note Wrist Warmer (1 e & a 2 e & a)',
     category: 'Syncopated & Funk',
     timeSig: '4/4',
     cycleBeats: 2,
     recommendedBpm: 76,
     level: 'Intermediate',
-    summary: 'Compact 2-beat alternating 16th-note wrist engine ("1 e & a 2 e & a") that cycles seamlessly over split-bar chords.',
-    feelTip: 'Downs always fall on the beat and "&"; Ups always fall on "e" and "a". Keep wrist motion compact and loose.',
+    summary: 'Crisp 2-beat alternating 16th-note wrist warmer ("1 e & a 2 e & a") that keeps a loose, even pendulum across full and split-bar chords.',
+    feelTip: 'Downs fall on the beat and "&"; Ups fall on "e" and "a". Keep wrist flicks small near the soundhole.',
     inTheoryLibrary: true,
     slots: [
       makeSlot(0, '1', 'accent-down', { spoken: 'Down' }),
@@ -365,28 +305,6 @@ const RAW_PATTERNS = [
       makeSlot(0.5, '&', 'down'),
       makeSlot(0.75, 'a', 'up'),
       makeSlot(1, '2', 'accent-down', { spoken: 'Down' }),
-      makeSlot(1.25, 'e', 'up'),
-      makeSlot(1.5, '&', 'down'),
-      makeSlot(1.75, 'a', 'up'),
-    ],
-  },
-  {
-    id: 'funk-pocket',
-    name: 'Syncopated 16th Funk Pocket',
-    category: 'Syncopated & Funk',
-    timeSig: '4/4',
-    cycleBeats: 2,
-    recommendedBpm: 84,
-    level: 'Groove',
-    summary: 'Combines crisp muted 16th-note chucks with offbeat upstroke stabs on "a" and "e" for tight funk rhythm.',
-    feelTip: 'Mute with your fretting fingers slightly lifted on "X" hits so the open chord stabs pop out cleanly.',
-    inTheoryLibrary: true,
-    slots: [
-      makeSlot(0, '1', 'accent-down', { spoken: 'Down' }),
-      makeSlot(0.25, 'e', 'chuck'),
-      makeSlot(0.5, '&', 'rest'),
-      makeSlot(0.75, 'a', 'up'),
-      makeSlot(1, '2', 'chuck'),
       makeSlot(1.25, 'e', 'up'),
       makeSlot(1.5, '&', 'down'),
       makeSlot(1.75, 'a', 'up'),
@@ -658,12 +576,12 @@ export const RHYTHM_SUBDIVISIONS = [
   },
   {
     id: 'sixteenth',
-    name: 'Sixteenth Notes (16ths · Full Bar)',
+    name: 'Sixteenth Notes (Wrist Warmer)',
     ratioLabel: '4 hits per beat',
-    countText: '1 e & a 2 e & a 3 e & a 4 e & a',
-    upDownText: '1 D · e U · & D · a U · 2 D · e U · & D · a U · 3 D · e U · & D · a U · 4 D · e U · & D · a U',
-    explanation: 'Full 4-beat 16th-note count ("1 e & a 2 e & a 3 e & a 4 e & a"). Numbers and "&" are Downstrokes; "e" and "a" are Upstrokes.',
-    cycleBeats: 4,
+    countText: '1 e & a · 2 e & a',
+    upDownText: 'Down · Up · Down · Up · Down · Up · Down · Up',
+    explanation: 'Splits each beat into four quick wrist flicks ("1 e & a"). Beat numbers and "&" are Downstrokes; "e" and "a" are Upstrokes.',
+    cycleBeats: 2,
     slots: finalizeSlots(
       [
         makeSlot(0, '1', 'accent-down', { spoken: 'Down' }),
@@ -674,16 +592,8 @@ export const RHYTHM_SUBDIVISIONS = [
         makeSlot(1.25, 'e', 'up'),
         makeSlot(1.5, '&', 'down'),
         makeSlot(1.75, 'a', 'up'),
-        makeSlot(2, '3', 'accent-down', { spoken: 'Down' }),
-        makeSlot(2.25, 'e', 'up'),
-        makeSlot(2.5, '&', 'down'),
-        makeSlot(2.75, 'a', 'up'),
-        makeSlot(3, '4', 'down'),
-        makeSlot(3.25, 'e', 'up'),
-        makeSlot(3.5, '&', 'down'),
-        makeSlot(3.75, 'a', 'up'),
       ],
-      4
+      2
     ),
   },
 ];
@@ -707,17 +617,26 @@ export const RHYTHM_GOLDEN_RULES = [
 ];
 
 const PATTERN_BY_ID = new Map(RHYTHM_PATTERNS.map((p) => [p.id, p]));
+const LEGACY_RHYTHM_ALIASES = new Map([
+  ['sixteenth-full', 'sixteenth-motor'],
+  ['sixteenth-pop', 'sixteenth-motor'],
+  ['funk-pocket', 'sixteenth-motor'],
+]);
 
 export function getRhythmPattern(id = DEFAULT_SEQUENCE_RHYTHM_ID) {
-  return PATTERN_BY_ID.get(id) || PATTERN_BY_ID.get(DEFAULT_SEQUENCE_RHYTHM_ID);
+  const mappedId = LEGACY_RHYTHM_ALIASES.get(id) || id;
+  return PATTERN_BY_ID.get(mappedId) || PATTERN_BY_ID.get(DEFAULT_SEQUENCE_RHYTHM_ID);
 }
 
 export function normalizeRhythmId(id, { allowInherit = false } = {}) {
   if (allowInherit && (id === 'inherit' || id === null || id === undefined || id === '')) {
     return 'inherit';
   }
-  if (typeof id === 'string' && PATTERN_BY_ID.has(id)) {
-    return id;
+  if (typeof id === 'string') {
+    const mappedId = LEGACY_RHYTHM_ALIASES.get(id) || id;
+    if (PATTERN_BY_ID.has(mappedId)) {
+      return mappedId;
+    }
   }
   return allowInherit ? 'inherit' : DEFAULT_SEQUENCE_RHYTHM_ID;
 }

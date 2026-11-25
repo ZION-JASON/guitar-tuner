@@ -30,7 +30,7 @@ function createMemoryStorage(initial = {}) {
 }
 
 test('RHYTHM_PATTERNS include valid Down/Up spoken notation, beat offsets, and non-empty categories', () => {
-  assert.ok(RHYTHM_PATTERNS.length >= 18);
+  assert.ok(RHYTHM_PATTERNS.length >= 15);
   assert.ok(RHYTHM_SUBDIVISIONS.length >= 4);
 
   for (const pat of RHYTHM_PATTERNS) {
@@ -62,21 +62,22 @@ test('RHYTHM_PATTERNS include valid Down/Up spoken notation, beat offsets, and n
   assert.equal(pendulum.shortCode, 'D - D U D - D U');
   assert.match(pendulum.upDownText, /Down · \(air-up\) · Down · Up · Down · \(air-up\) · Down · Up/);
 
-  const sixteenthFull = getRhythmPattern('sixteenth-full');
-  assert.equal(sixteenthFull.cycleBeats, 4);
-  assert.equal(sixteenthFull.slots.length, 16);
+  const wristWarmer = getRhythmPattern('sixteenth-motor');
+  assert.equal(wristWarmer.cycleBeats, 2);
+  assert.equal(wristWarmer.slots.length, 8);
   assert.equal(
-    sixteenthFull.slots.map((s) => s.countLabel).join(' '),
-    '1 e & a 2 e & a 3 e & a 4 e & a'
+    wristWarmer.slots.map((s) => s.countLabel).join(' '),
+    '1 e & a 2 e & a'
   );
-  assert.equal(sixteenthFull.shortCode, 'D U D U D U D U D U D U D U D U');
+  assert.equal(wristWarmer.shortCode, 'D U D U D U D U');
 
   const sixteenthSub = RHYTHM_SUBDIVISIONS.find((s) => s.id === 'sixteenth');
   assert.ok(sixteenthSub);
-  assert.equal(sixteenthSub.slots.length, 16);
+  assert.equal(sixteenthSub.cycleBeats, 2);
+  assert.equal(sixteenthSub.slots.length, 8);
   assert.equal(
     sixteenthSub.slots.map((s) => s.countLabel).join(' '),
-    '1 e & a 2 e & a 3 e & a 4 e & a'
+    '1 e & a 2 e & a'
   );
 
   const blues128 = getRhythmPattern('blues-12-8');
@@ -84,12 +85,15 @@ test('RHYTHM_PATTERNS include valid Down/Up spoken notation, beat offsets, and n
   assert.equal(blues128.slots.length, 12);
 });
 
-test('getRhythmPatternsByCategory filters library patterns cleanly while excluding single hold by default', () => {
+test('getRhythmPatternsByCategory filters library patterns cleanly while excluding removed 16th clutter', () => {
   const allLibrary = getRhythmPatternsByCategory('All');
   assert.equal(allLibrary.some((p) => p.id === 'single'), false);
+  assert.equal(allLibrary.some((p) => p.id === 'sixteenth-full'), false);
+  assert.equal(allLibrary.some((p) => p.id === 'sixteenth-pop'), false);
+  assert.equal(allLibrary.some((p) => p.id === 'funk-pocket'), false);
   assert.equal(allLibrary.some((p) => p.id === 'island-strum'), true);
   assert.equal(allLibrary.some((p) => p.id === 'pendulum-strum'), true);
-  assert.equal(allLibrary.some((p) => p.id === 'sixteenth-full'), true);
+  assert.equal(allLibrary.some((p) => p.id === 'sixteenth-motor'), true);
 
   const compound = getRhythmPatternsByCategory('3/4 & 6/8 Compound');
   assert.ok(compound.length >= 4);
@@ -117,15 +121,15 @@ test('expandRhythmEventsForStep tiles cycles across 8 beats and truncates split 
     ['D', '-', 'D', 'U']
   );
 
-  // Full 16th over 4 beats = 16 quarter-beat slots (0..3.75), split 2 beats = 8 slots (0..1.75)
-  const sixteenth4 = expandRhythmEventsForStep('sixteenth-full', 4);
-  assert.equal(sixteenth4.length, 16);
-  assert.equal(sixteenth4[1].offsetBeats, 0.25);
-  assert.equal(sixteenth4[15].offsetBeats, 3.75);
+  // Wrist Warmer (2-beat cycle) over 4 beats = 16 quarter-beat slots (0..3.75), split 2 beats = 8 slots (0..1.75)
+  const wrist4 = expandRhythmEventsForStep('sixteenth-motor', 4);
+  assert.equal(wrist4.length, 16);
+  assert.equal(wrist4[1].offsetBeats, 0.25);
+  assert.equal(wrist4[15].offsetBeats, 3.75);
 
-  const sixteenth2 = expandRhythmEventsForStep('sixteenth-full', 2);
-  assert.equal(sixteenth2.length, 8);
-  assert.equal(sixteenth2[7].offsetBeats, 1.75);
+  const wrist2 = expandRhythmEventsForStep('sixteenth-motor', 2);
+  assert.equal(wrist2.length, 8);
+  assert.equal(wrist2[7].offsetBeats, 1.75);
 
   // Swing shuffle keeps exact 2:1 triplet timing (0 and 2/3 of each beat)
   const swing4 = expandRhythmEventsForStep('swing-shuffle', 4);
@@ -135,10 +139,13 @@ test('expandRhythmEventsForStep tiles cycles across 8 beats and truncates split 
   assert.ok(Math.abs(activeSwingOffsets[3] - (1 + 2 / 3)) < 1e-6);
 });
 
-test('sequence rhythm persistence normalizes, saves, and loads cleanly', () => {
+test('sequence rhythm persistence normalizes, migrates deprecated 16th IDs, saves, and loads cleanly', () => {
   assert.equal(normalizeRhythmId('island-strum'), 'island-strum');
   assert.equal(normalizeRhythmId('pendulum-strum'), 'pendulum-strum');
-  assert.equal(normalizeRhythmId('sixteenth-full'), 'sixteenth-full');
+  assert.equal(normalizeRhythmId('sixteenth-motor'), 'sixteenth-motor');
+  assert.equal(normalizeRhythmId('sixteenth-full'), 'sixteenth-motor');
+  assert.equal(normalizeRhythmId('sixteenth-pop'), 'sixteenth-motor');
+  assert.equal(normalizeRhythmId('funk-pocket'), 'sixteenth-motor');
   assert.equal(normalizeRhythmId('non-existent'), DEFAULT_SEQUENCE_RHYTHM_ID);
   assert.equal(normalizeRhythmId('inherit', { allowInherit: true }), 'inherit');
   assert.equal(normalizeRhythmId(null, { allowInherit: true }), 'inherit');

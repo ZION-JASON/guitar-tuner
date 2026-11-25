@@ -26,7 +26,7 @@ const QUICK_RHYTHM_IDS = [
   { id: 'rock-eighths', label: 'Rock D-U' },
   { id: 'island-strum', label: 'Island' },
   { id: 'pop-backbeat', label: 'Chuck 2&4' },
-  { id: 'sixteenth-full', label: '16th (1e&a)' },
+  { id: 'sixteenth-motor', label: 'Wrist Warmer' },
   { id: 'swing-shuffle', label: 'Swing' },
   { id: 'waltz-3-4', label: '3/4 Waltz' },
 ];

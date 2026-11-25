@@ -124,8 +124,9 @@ const RhythmTheorySection = ({
   );
 
   // Keep running demo synced when user tweaks BPM, root chord, instrument, or click live
+  const isDemoActive = Boolean(activeDemo);
   useEffect(() => {
-    if (!activeDemo) return;
+    if (!isDemoActive) return;
     learnAudio.updateRhythmDemo({
       bpm,
       midiNotes: demoMidiNotes,
@@ -134,7 +135,7 @@ const RhythmTheorySection = ({
       playMode,
       withClick,
     });
-  }, [activeDemo, bpm, demoMidiNotes, refFrequency, instrument, playMode, withClick]);
+  }, [isDemoActive, bpm, demoMidiNotes, refFrequency, instrument, playMode, withClick]);
 
   useEffect(() => {
     return () => {
@@ -162,6 +163,9 @@ const RhythmTheorySection = ({
       onSlot: ({ slotIndex }) => {
         setActiveDemo({ id: demoId, slotIndex });
       },
+      onStop: () => {
+        setActiveDemo((prev) => (prev?.id === demoId ? null : prev));
+      },
     });
     if (started) {
       setActiveDemo({ id: demoId, slotIndex: 0 });
@@ -177,17 +181,7 @@ const RhythmTheorySection = ({
     if (!sig.stroke || demoMidiNotes.length === 0) return;
     handleStopDemo();
     if (sig.id === 'chuck') {
-      learnAudio.startRhythmDemo({
-        slots: [{ offsetBeats: 0, countLabel: '×', ...sig.stroke }],
-        cycleBeats: 4,
-        bpm: 100,
-        midiNotes: demoMidiNotes,
-        refFrequency,
-        instrument,
-        playMode: 'strum',
-        withClick: false,
-      });
-      setTimeout(() => learnAudio.stopRhythmDemo(), 320);
+      learnAudio.playChuck(instrument, sig.stroke.velocity);
       return;
     }
     const dir = sig.id === 'up' ? 'up' : sig.id === 'bass' ? 'bass' : 'down';

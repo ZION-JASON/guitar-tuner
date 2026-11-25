@@ -553,6 +553,7 @@ export class LearnAudioEngine {
     this._rhythmDemoIntervalId = null;
     this._rhythmDemoUiTimers = new Set();
     this._rhythmDemoOnSlot = null;
+    this._rhythmDemoOnStop = null;
 
     this._bindGlobalUnlock();
   }
@@ -825,10 +826,13 @@ export class LearnAudioEngine {
     const gain = ctx.createGain();
     const peakGain = Math.max(0.02, volume);
 
-    const maxSamplePlaySec = Math.max(0.35, sampleBuffer.duration / Math.max(0.25, playbackRate));
+    const maxSamplePlaySec = Math.max(0.24, sampleBuffer.duration / Math.max(0.25, playbackRate));
     const effectiveDur = Math.min(durationSec, maxSamplePlaySec);
-    const releaseSec = Math.min(0.18, Math.max(0.06, effectiveDur * 0.16));
-    const fadeStart = Math.max(startTime + 0.02, startTime + effectiveDur - releaseSec);
+    const releaseSec =
+      effectiveDur < 0.28
+        ? Math.min(0.06, Math.max(0.025, effectiveDur * 0.28))
+        : Math.min(0.18, Math.max(0.06, effectiveDur * 0.16));
+    const fadeStart = Math.max(startTime + 0.015, startTime + effectiveDur - releaseSec);
 
     if (typeof gain.gain.setValueAtTime === 'function') {
       gain.gain.setValueAtTime(0.001, startTime);
@@ -1003,10 +1007,11 @@ export class LearnAudioEngine {
     midiNotes,
     refFrequency,
     instrument,
-    { direction = 'down', velocityScale = 1.0 } = {}
+    { direction = 'down', velocityScale = 1.0, durationBeats = null, isAccent = false } = {}
   ) {
     if (!Array.isArray(midiNotes) || midiNotes.length === 0) return [];
     const profile = getInstrumentTimbre(instrument);
+    const isRapid = Number.isFinite(durationBeats) && durationBeats <= 0.35;
 
     let orderedNotes = midiNotes;
     let stepScale = 1.0;
@@ -1017,9 +1022,17 @@ export class LearnAudioEngine {
       stepScale = 0.65;
     } else if (direction === 'up' && midiNotes.length > 1) {
       // Natural acoustic upstrokes brush the upper 3-5 strings from treble -> mid
-      const takeCount = midiNotes.length >= 5 ? Math.min(midiNotes.length, 5) : midiNotes.length;
+      const maxTake = isRapid ? 4 : 5;
+      const takeCount =
+        midiNotes.length >= maxTake ? Math.min(midiNotes.length, maxTake) : midiNotes.length;
       orderedNotes = midiNotes.slice(midiNotes.length - takeCount).reverse();
-      stepScale = 0.78;
+      stepScale = isRapid ? 0.32 : 0.78;
+    } else if (isRapid) {
+      // Rapid 16th/triplet wrist flicks stay tight so strokes finish well inside one subdivision
+      if (!isAccent && midiNotes.length >= 5) {
+        orderedNotes = midiNotes.slice(midiNotes.length - 4);
+      }
+      stepScale = isAccent ? 0.42 : 0.34;
     }
 
     const total = orderedNotes.length;
@@ -1031,8 +1044,8 @@ export class LearnAudioEngine {
       const freq = midiToFrequency(midi, refFrequency);
       if (!Number.isFinite(freq) || freq <= 0) return;
 
-      const curveOffset = idx * idx * 0.00042;
-      const microJitter = (idx % 2 === 0 ? 1 : -1) * 0.0012;
+      const curveOffset = isRapid ? 0 : idx * idx * 0.00042;
+      const microJitter = isRapid ? 0 : (idx % 2 === 0 ? 1 : -1) * 0.0012;
       const delaySec = Math.max(
         0,
         idx * profile.strumStepSec * stepScale - curveOffset + microJitter
@@ -1130,6 +1143,22 @@ export class LearnAudioEngine {
     source.stop(safeStart + buf.duration + 0.01);
   }
 
+  playChuck(instrument = 'guitar', velocity = 0.9) {
+    this.stopAll();
+    const gen = this.playGen;
+    this._withReadyContext(
+      gen,
+      (ctx) => {
+        this._scheduleChuck(ctx, {
+          instrument,
+          startTime: ctx.currentTime,
+          volume: 0.36 * velocity,
+        });
+      },
+      { instrument }
+    );
+  }
+
   _scheduleRhythmStroke(
     ctx,
     midiNotes,
@@ -1152,11 +1181,14 @@ export class LearnAudioEngine {
       return;
     }
 
-    const rawRingSec = Math.max(0.14, (stroke.durationBeats || 1) * beatDurSec);
+    const durationBeats = stroke.durationBeats || 1;
+    const isRapid = durationBeats <= 0.35;
+    const rawRingSec = Math.max(0.14, durationBeats * beatDurSec);
+    const tailPad = isRapid ? 0.03 : 0.06;
     const clampedRingSec =
       maxRingSec !== null
-        ? Math.min(maxRingSec, rawRingSec + 0.04)
-        : Math.min(profile.defaultChordDuration + 0.2, rawRingSec + 0.06);
+        ? Math.min(maxRingSec, rawRingSec + tailPad)
+        : Math.min(profile.defaultChordDuration + 0.2, rawRingSec + tailPad);
 
     if (playMode === 'arpeggio' && midiNotes.length > 1 && stroke.action !== 'bass') {
       const idx =
@@ -1169,7 +1201,7 @@ export class LearnAudioEngine {
         this._schedulePluckedFreq(ctx, freq, {
           instrument,
           startTime: safeStart,
-          durationSec: Math.max(0.45, clampedRingSec),
+          durationSec: Math.max(isRapid ? 0.2 : 0.45, clampedRingSec),
           volume: 0.44 * (stroke.velocity || 0.9),
           velocity: stroke.velocity || 0.9,
         });
@@ -1187,6 +1219,8 @@ export class LearnAudioEngine {
     const events = this._buildStrumSchedule(midiNotes, refFrequency, instrument, {
       direction,
       velocityScale: stroke.velocity || 0.94,
+      durationBeats,
+      isAccent: stroke.action === 'accent-down',
     });
 
     events.forEach((ev) => {
@@ -1492,6 +1526,7 @@ export class LearnAudioEngine {
 
   startMetronome({ bpm = 90, beatsPerBar = 4, volume = 0.7, onBeat = null } = {}) {
     this.stopCustomProgression();
+    this.stopRhythmDemo();
     this.stopMetronome();
     const { ctx, resumePromise } = this._unlockContextSync();
     if (!ctx) return false;
@@ -1626,6 +1661,7 @@ export class LearnAudioEngine {
     playMode = 'strum',
     withClick = true,
     onSlot = null,
+    onStop = null,
   } = {}) {
     if (!Array.isArray(slots) || slots.length === 0 || !Array.isArray(midiNotes) || midiNotes.length === 0) {
       return false;
@@ -1649,6 +1685,7 @@ export class LearnAudioEngine {
     this._rhythmDemoPlayMode = playMode === 'arpeggio' ? 'arpeggio' : 'strum';
     this._rhythmDemoWithClick = Boolean(withClick);
     this._rhythmDemoOnSlot = onSlot;
+    this._rhythmDemoOnStop = onStop;
 
     this._warmInstrumentAsync(ctx, this._rhythmDemoInstrument);
 
@@ -1713,14 +1750,21 @@ export class LearnAudioEngine {
   }
 
   stopRhythmDemo() {
+    const wasRunning = this._rhythmDemoRunning;
+    const onStop = this._rhythmDemoOnStop;
     this._rhythmDemoGen += 1;
     this._rhythmDemoRunning = false;
+    this._rhythmDemoOnSlot = null;
+    this._rhythmDemoOnStop = null;
     if (this._rhythmDemoIntervalId !== null) {
       clearInterval(this._rhythmDemoIntervalId);
       this._rhythmDemoIntervalId = null;
     }
     this._rhythmDemoUiTimers.forEach((id) => clearTimeout(id));
     this._rhythmDemoUiTimers.clear();
+    if (wasRunning && onStop) {
+      onStop();
+    }
   }
 
   _runCustomProgressionScheduler() {
