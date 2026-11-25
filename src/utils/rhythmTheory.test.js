@@ -5,6 +5,7 @@ import {
   DEFAULT_SEQUENCE_RHYTHM_ID,
   RHYTHM_CATEGORIES,
   RHYTHM_PATTERNS,
+  RHYTHM_SPEED_OPTIONS,
   RHYTHM_SUBDIVISIONS,
   SEQUENCE_RHYTHM_STORAGE_KEY,
   expandRhythmEventsForStep,
@@ -14,6 +15,7 @@ import {
   getRhythmPatternsByCategory,
   loadSequenceRhythmId,
   normalizeRhythmId,
+  resolveRhythmDemoBpm,
   saveSequenceRhythmId,
 } from './rhythmTheory.js';
 
@@ -159,4 +161,99 @@ test('sequence rhythm persistence normalizes, migrates deprecated 16th IDs, save
 
   saveSequenceRhythmId('bogus-id', storage);
   assert.equal(loadSequenceRhythmId(storage), DEFAULT_SEQUENCE_RHYTHM_ID);
+});
+
+test('resolveRhythmDemoBpm respects original tempo, global override, speed scaling, and BPM bounds', () => {
+  assert.deepEqual(
+    RHYTHM_SPEED_OPTIONS.map((o) => o.scale),
+    [0.5, 0.75, 1, 1.25]
+  );
+
+  // Original tempo ignores global BPM when recommendedBpm is present
+  assert.equal(
+    resolveRhythmDemoBpm({
+      tempoMode: 'original',
+      speedScale: 1,
+      recommendedBpm: 76,
+      globalBpm: 110,
+      anchorGlobalBpm: 110,
+    }),
+    76
+  );
+
+  // Speed presets scale original tempo cleanly and clamp at 40..220 BPM
+  assert.equal(
+    resolveRhythmDemoBpm({
+      tempoMode: 'original',
+      speedScale: 0.75,
+      recommendedBpm: 76,
+      globalBpm: 90,
+      anchorGlobalBpm: 90,
+    }),
+    57
+  );
+  assert.equal(
+    resolveRhythmDemoBpm({
+      tempoMode: 'original',
+      speedScale: 0.5,
+      recommendedBpm: 68,
+      globalBpm: 90,
+      anchorGlobalBpm: 90,
+    }),
+    40
+  );
+  assert.equal(
+    resolveRhythmDemoBpm({
+      tempoMode: 'original',
+      speedScale: 1.25,
+      recommendedBpm: 76,
+      globalBpm: 90,
+      anchorGlobalBpm: 90,
+    }),
+    95
+  );
+
+  // Global mode overrides pattern recommendedBpm with anchor global BPM * speedScale
+  assert.equal(
+    resolveRhythmDemoBpm({
+      tempoMode: 'global',
+      speedScale: 1,
+      recommendedBpm: 76,
+      globalBpm: 105,
+      anchorGlobalBpm: 105,
+    }),
+    105
+  );
+  assert.equal(
+    resolveRhythmDemoBpm({
+      tempoMode: 'global',
+      speedScale: 0.75,
+      recommendedBpm: 76,
+      globalBpm: 79,
+      anchorGlobalBpm: 105,
+    }),
+    79
+  );
+  assert.equal(
+    resolveRhythmDemoBpm({
+      tempoMode: 'global',
+      speedScale: 1.25,
+      recommendedBpm: 112,
+      globalBpm: 200,
+      anchorGlobalBpm: 200,
+    }),
+    220
+  );
+
+  // Subdivisions (recommendedBpm = null) always follow anchor global BPM * speedScale
+  assert.equal(
+    resolveRhythmDemoBpm({
+      tempoMode: 'original',
+      speedScale: 0.75,
+      recommendedBpm: null,
+      globalBpm: 96,
+      anchorGlobalBpm: 96,
+    }),
+    72
+  );
 });

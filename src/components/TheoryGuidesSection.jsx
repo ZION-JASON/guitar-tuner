@@ -359,6 +359,7 @@ const TheoryGuidesSection = ({
   rootPc = 0,
   refFrequency = 440,
   bpm = 96,
+  onBpmChange,
   playMode = 'strum',
   topicFilter: controlledTopicFilter,
   onTopicFilterChange,
@@ -960,6 +961,7 @@ const TheoryGuidesSection = ({
           rootPc={rootPc}
           refFrequency={refFrequency}
           bpm={bpm}
+          onBpmChange={onBpmChange}
           playMode={playMode}
           activeSequenceRhythmId={activeSequenceRhythmId}
           onUseRhythmInSequence={onUseRhythmInSequence}

@@ -1,12 +1,16 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getChordVoicings } from '../utils/musicTheory';
 import { getInstrumentMeta } from '../utils/frequencyUtils';
+import { clampBpm } from '../utils/metronome';
 import { learnAudio } from '../utils/audioSynth';
 import {
   RHYTHM_CATEGORIES,
   RHYTHM_GOLDEN_RULES,
+  RHYTHM_SPEED_OPTIONS,
   RHYTHM_SUBDIVISIONS,
+  getRhythmPattern,
   getRhythmPatternsByCategory,
+  resolveRhythmDemoBpm,
 } from '../utils/rhythmTheory';
 
 const DEMO_CHORD_QUALITIES = [
@@ -97,6 +101,7 @@ const RhythmTheorySection = ({
   rootPc = 0,
   refFrequency = 440,
   bpm = 96,
+  onBpmChange,
   playMode = 'strum',
   activeSequenceRhythmId = 'single',
   onUseRhythmInSequence,
@@ -104,9 +109,34 @@ const RhythmTheorySection = ({
   const [category, setCategory] = useState('All');
   const [demoQualityId, setDemoQualityId] = useState('major');
   const [withClick, setWithClick] = useState(true);
+  const [tempoMode, setTempoMode] = useState('original'); // 'original' | 'global'
+  const [speedScale, setSpeedScale] = useState(1);
+  const [anchorGlobalBpm, setAnchorGlobalBpm] = useState(() => clampBpm(bpm));
   const [activeDemo, setActiveDemo] = useState(null); // { id, slotIndex }
 
+  const pushedGlobalBpmRef = useRef(clampBpm(bpm));
   const instMeta = getInstrumentMeta(instrument);
+
+  const pushGlobalBpm = useCallback(
+    (nextBpm) => {
+      const safe = clampBpm(nextBpm);
+      pushedGlobalBpmRef.current = safe;
+      if (onBpmChange) {
+        onBpmChange(safe);
+      }
+    },
+    [onBpmChange]
+  );
+
+  // Switch cleanly into Global tempo mode when the user edits the global metronome externally
+  useEffect(() => {
+    const safeBpm = clampBpm(bpm);
+    if (safeBpm === pushedGlobalBpmRef.current) return;
+    pushedGlobalBpmRef.current = safeBpm;
+    setTempoMode('global');
+    setSpeedScale(1);
+    setAnchorGlobalBpm(safeBpm);
+  }, [bpm]);
 
   const demoChord = useMemo(
     () => getChordVoicings(rootPc, demoQualityId, null, instrument),
@@ -123,19 +153,48 @@ const RhythmTheorySection = ({
     [category]
   );
 
-  // Keep running demo synced when user tweaks BPM, root chord, instrument, or click live
+  const activePatternRecBpm = useMemo(() => {
+    if (!activeDemo?.id?.startsWith('pat-')) return null;
+    return getRhythmPattern(activeDemo.id.slice(4))?.recommendedBpm ?? null;
+  }, [activeDemo?.id]);
+
+  const activeDemoBpm = useMemo(
+    () =>
+      resolveRhythmDemoBpm({
+        tempoMode,
+        speedScale,
+        recommendedBpm: activePatternRecBpm,
+        globalBpm: bpm,
+        anchorGlobalBpm,
+      }),
+    [tempoMode, speedScale, activePatternRecBpm, bpm, anchorGlobalBpm]
+  );
+
+  const subLiveBpm = useMemo(
+    () =>
+      resolveRhythmDemoBpm({
+        tempoMode,
+        speedScale,
+        recommendedBpm: null,
+        globalBpm: bpm,
+        anchorGlobalBpm,
+      }),
+    [tempoMode, speedScale, bpm, anchorGlobalBpm]
+  );
+
+  // Keep running demo synced when user tweaks tempo, speed, root chord, instrument, or click live
   const isDemoActive = Boolean(activeDemo);
   useEffect(() => {
     if (!isDemoActive) return;
     learnAudio.updateRhythmDemo({
-      bpm,
+      bpm: activeDemoBpm,
       midiNotes: demoMidiNotes,
       refFrequency,
       instrument,
       playMode,
       withClick,
     });
-  }, [isDemoActive, bpm, demoMidiNotes, refFrequency, instrument, playMode, withClick]);
+  }, [isDemoActive, activeDemoBpm, demoMidiNotes, refFrequency, instrument, playMode, withClick]);
 
   useEffect(() => {
     return () => {
@@ -143,14 +202,21 @@ const RhythmTheorySection = ({
     };
   }, []);
 
-  const handleToggleDemo = (demoId, slots, cycleBeats, preferredBpm) => {
+  const handleToggleDemo = (demoId, slots, cycleBeats, preferredBpm = null) => {
     if (activeDemo?.id === demoId) {
       learnAudio.stopRhythmDemo();
       setActiveDemo(null);
       return;
     }
 
-    const demoBpm = bpm || preferredBpm || 96;
+    const demoBpm = resolveRhythmDemoBpm({
+      tempoMode,
+      speedScale,
+      recommendedBpm: preferredBpm,
+      globalBpm: bpm,
+      anchorGlobalBpm,
+    });
+
     const started = learnAudio.startRhythmDemo({
       slots,
       cycleBeats,
@@ -169,6 +235,41 @@ const RhythmTheorySection = ({
     });
     if (started) {
       setActiveDemo({ id: demoId, slotIndex: 0 });
+      pushGlobalBpm(demoBpm);
+    }
+  };
+
+  const handleSelectSpeedScale = (nextScale) => {
+    setSpeedScale(nextScale);
+    if (activeDemo) {
+      const nextTargetBpm = resolveRhythmDemoBpm({
+        tempoMode,
+        speedScale: nextScale,
+        recommendedBpm: activePatternRecBpm,
+        globalBpm: bpm,
+        anchorGlobalBpm,
+      });
+      pushGlobalBpm(nextTargetBpm);
+    }
+  };
+
+  const handleSelectTempoMode = (nextMode) => {
+    if (nextMode === tempoMode) return;
+    const nextAnchor = nextMode === 'global' ? clampBpm(bpm) : anchorGlobalBpm;
+    setTempoMode(nextMode);
+    setSpeedScale(1);
+    if (nextMode === 'global') {
+      setAnchorGlobalBpm(nextAnchor);
+    }
+    if (activeDemo) {
+      const nextTargetBpm = resolveRhythmDemoBpm({
+        tempoMode: nextMode,
+        speedScale: 1,
+        recommendedBpm: activePatternRecBpm,
+        globalBpm: bpm,
+        anchorGlobalBpm: nextAnchor,
+      });
+      pushGlobalBpm(nextTargetBpm);
     }
   };
 
@@ -332,7 +433,7 @@ const RhythmTheorySection = ({
       <div className="flex flex-col gap-2.5">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h4 className="font-display font-bold text-base text-white">
-            Note Subdivisions &amp; Counting ({bpm} BPM)
+            Note Subdivisions &amp; Counting ({subLiveBpm} BPM)
           </h4>
           <span className="font-mono text-[11px] text-slate-400">
             Same steady tempo · faster subdivisions divide each beat
@@ -368,7 +469,7 @@ const RhythmTheorySection = ({
                   <button
                     type="button"
                     onClick={() =>
-                      handleToggleDemo(demoKey, sub.slots, sub.cycleBeats, bpm)
+                      handleToggleDemo(demoKey, sub.slots, sub.cycleBeats, null)
                     }
                     className={`min-h-[38px] px-3 py-1 rounded-[2px] border font-mono text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
                       isPlaying
@@ -453,11 +554,94 @@ const RhythmTheorySection = ({
           </div>
         </div>
 
+        {/* Example Tempo Mode & Multi-Speed Controls */}
+        <div className="glass-recessed rounded-[3px] p-2.5 sm:p-3 border border-white/12 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              Example Tempo:
+            </span>
+            <div
+              role="group"
+              aria-label="Rhythm Example Tempo Source"
+              className="flex items-center gap-1 bg-slate-950/60 border border-white/10 rounded-[2px] p-0.5"
+            >
+              <button
+                type="button"
+                aria-pressed={tempoMode === 'original'}
+                onClick={() => handleSelectTempoMode('original')}
+                className={`min-h-[36px] px-2.5 py-1 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                  tempoMode === 'original'
+                    ? 'bg-cyan-400/20 text-cyan-200 border border-cyan-300/45'
+                    : 'text-slate-300 border border-transparent hover:text-white'
+                }`}
+              >
+                Orig Tempo
+              </button>
+              <button
+                type="button"
+                aria-pressed={tempoMode === 'global'}
+                onClick={() => handleSelectTempoMode('global')}
+                className={`min-h-[36px] px-2.5 py-1 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                  tempoMode === 'global'
+                    ? 'bg-cyan-400/20 text-cyan-200 border border-cyan-300/45'
+                    : 'text-slate-300 border border-transparent hover:text-white'
+                }`}
+              >
+                Global ({tempoMode === 'global' ? anchorGlobalBpm : clampBpm(bpm)} BPM)
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              Speed:
+            </span>
+            <div
+              role="group"
+              aria-label="Rhythm Playback Speed"
+              className="flex items-center gap-1 bg-slate-950/60 border border-white/10 rounded-[2px] p-0.5"
+            >
+              {RHYTHM_SPEED_OPTIONS.map((opt) => {
+                const active = speedScale === opt.scale;
+                return (
+                  <button
+                    key={opt.scale}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => handleSelectSpeedScale(opt.scale)}
+                    className={`min-h-[36px] px-2.5 py-1 rounded-[2px] font-mono text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
+                      active
+                        ? 'bg-white/20 text-white border border-white/30'
+                        : 'text-slate-300 border border-transparent hover:text-white'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
           {visiblePatterns.map((pat) => {
             const demoKey = `pat-${pat.id}`;
             const isPlaying = activeDemo?.id === demoKey;
             const isSelectedInSeq = activeSequenceRhythmId === pat.id;
+            const patLiveBpm = resolveRhythmDemoBpm({
+              tempoMode,
+              speedScale,
+              recommendedBpm: pat.recommendedBpm,
+              globalBpm: bpm,
+              anchorGlobalBpm,
+            });
+            const speedTag = speedScale === 1 ? '' : `${speedScale}×`;
+            const patBpmBadge =
+              tempoMode === 'global'
+                ? `${patLiveBpm} BPM (${speedTag ? `${speedTag} Global` : 'Global'} · orig ${pat.recommendedBpm})`
+                : speedScale !== 1
+                  ? `${patLiveBpm} BPM (${speedTag} · orig ${pat.recommendedBpm})`
+                  : `${patLiveBpm} BPM`;
 
             return (
               <div
@@ -478,7 +662,7 @@ const RhythmTheorySection = ({
                         {pat.name}
                       </h5>
                       <span className="font-mono text-[11px] text-cyan-300">
-                        {pat.timeSig} · {pat.recommendedBpm} BPM · {pat.level}
+                        {pat.timeSig} · {patBpmBadge} · {pat.level}
                       </span>
                     </div>
                     <p className="mt-1 font-sans text-xs text-slate-300 leading-relaxed">
@@ -512,7 +696,8 @@ const RhythmTheorySection = ({
                         type="button"
                         onClick={() => {
                           handleStopDemo();
-                          onUseRhythmInSequence(pat);
+                          pushGlobalBpm(patLiveBpm);
+                          onUseRhythmInSequence(pat, patLiveBpm);
                         }}
                         className={`min-h-[38px] px-2.5 sm:px-3 py-1.5 rounded-[2px] border font-mono text-[11px] sm:text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
                           isSelectedInSeq

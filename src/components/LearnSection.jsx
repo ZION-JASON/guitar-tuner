@@ -1074,10 +1074,13 @@ const LearnSection = ({
     setSeqRhythmId(saved);
   };
 
-  const handleUseRhythmInSequence = (pattern) => {
+  const handleUseRhythmInSequence = (pattern, targetBpm = null) => {
     if (!pattern?.id) return;
     const saved = saveSequenceRhythmId(pattern.id);
     setSeqRhythmId(saved);
+    if (Number.isFinite(targetBpm)) {
+      setMetroBpm(Math.max(40, Math.min(220, Math.round(targetBpm))));
+    }
     setShowSequencer(true);
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2637,6 +2640,7 @@ const LearnSection = ({
           rootPc={rootPc}
           refFrequency={refFrequency}
           bpm={metroBpm}
+          onBpmChange={setMetroBpm}
           playMode={chordPlayMode}
           topicFilter={theoryTopic}
           onTopicFilterChange={setTheoryTopic}

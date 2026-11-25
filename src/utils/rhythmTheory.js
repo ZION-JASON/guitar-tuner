@@ -1,5 +1,40 @@
+import { clampBpm } from './metronome.js';
+
 export const SEQUENCE_RHYTHM_STORAGE_KEY = 'chromatuner.sequenceRhythm.v1';
 export const DEFAULT_SEQUENCE_RHYTHM_ID = 'single';
+
+export const RHYTHM_SPEED_OPTIONS = [
+  { scale: 0.5, label: '0.5×' },
+  { scale: 0.75, label: '0.75×' },
+  { scale: 1, label: '1×' },
+  { scale: 1.25, label: '1.25×' },
+];
+
+export function resolveRhythmDemoBpm({
+  tempoMode = 'original',
+  speedScale = 1,
+  recommendedBpm = null,
+  globalBpm = 90,
+  anchorGlobalBpm = null,
+} = {}) {
+  const parsedScale = Number(speedScale);
+  const safeScale =
+    Number.isFinite(parsedScale) && parsedScale > 0 ? parsedScale : 1;
+  const safeGlobal = clampBpm(globalBpm);
+  const parsedAnchor = Number(anchorGlobalBpm);
+  const safeAnchor =
+    Number.isFinite(parsedAnchor) && parsedAnchor > 0
+      ? clampBpm(parsedAnchor)
+      : safeGlobal;
+  const parsedRec = Number(recommendedBpm);
+  const hasRec = Number.isFinite(parsedRec) && parsedRec > 0;
+
+  if (tempoMode === 'original' && hasRec) {
+    return clampBpm(Math.round(parsedRec * safeScale));
+  }
+
+  return clampBpm(Math.round(safeAnchor * safeScale));
+}
 
 export const RHYTHM_CATEGORIES = [
   'All',
